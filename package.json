@@ -1,0 +1,19 @@
+{
+  "name": "eims-prosystem-kenya",
+  "version": "2.0.0",
+  "description": "African Merchant Assurance Company (AMACO) - County Government Enterprise Insurance Management System (EIMS)",
+  "private": true,
+  "scripts": {
+    "serve": "npx -y firebase-tools@latest serve --port 8282",
+    "dev": "npx -y firebase-tools@latest emulators:start",
+    "deploy": "npx -y firebase-tools@latest deploy",
+    "deploy:hosting": "npx -y firebase-tools@latest deploy --only hosting",
+    "deploy:firestore": "npx -y firebase-tools@latest deploy --only firestore"
+  },
+  "dependencies": {
+    "firebase": "^10.12.0"
+  },
+  "devDependencies": {
+    "firebase-tools": "^13.12.0"
+  }
+}
