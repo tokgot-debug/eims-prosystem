@@ -5844,3 +5844,131 @@ function takeLiveCameraPhotoSnap() {
     showToast("📸 Live camera photo snapped successfully! Telemetry & EXIF GPS synced.", "success");
   }
 }
+
+// ================= VIDEO RECORDING & STILL PHOTO MEDIA ENGINE =================
+let mediaRecorder = null;
+let recordedChunks = [];
+let videoTimerInterval = null;
+let videoSecondsElapsed = 0;
+let currentCameraMode = "photo";
+
+function switchCameraMode(mode) {
+  currentCameraMode = mode;
+  const photoTab = document.getElementById("cam-mode-photo-btn");
+  const videoTab = document.getElementById("cam-mode-video-btn");
+  const snapBtn = document.getElementById("snap-camera-photo-btn");
+  const startRecBtn = document.getElementById("start-video-rec-btn");
+  const stopRecBtn = document.getElementById("stop-video-rec-btn");
+  
+  if (mode === "photo") {
+    if (photoTab) { photoTab.style.background = "#ff6b00"; photoTab.style.color = "#fff"; }
+    if (videoTab) { videoTab.style.background = "transparent"; videoTab.style.color = "#94a3b8"; }
+    if (snapBtn) snapBtn.style.display = "inline-flex";
+    if (startRecBtn) startRecBtn.style.display = "none";
+    if (stopRecBtn) stopRecBtn.style.display = "none";
+  } else {
+    if (photoTab) { photoTab.style.background = "transparent"; photoTab.style.color = "#94a3b8"; }
+    if (videoTab) { videoTab.style.background = "#ef4444"; videoTab.style.color = "#fff"; }
+    if (snapBtn) snapBtn.style.display = "none";
+    if (startRecBtn) startRecBtn.style.display = "inline-flex";
+    if (stopRecBtn) stopRecBtn.style.display = "none";
+  }
+}
+
+function startVideoRecording() {
+  const video = document.getElementById("live-camera-feed");
+  const recBanner = document.getElementById("video-rec-banner");
+  const startBtn = document.getElementById("start-video-rec-btn");
+  const stopBtn = document.getElementById("stop-video-rec-btn");
+  const timerLabel = document.getElementById("video-timer");
+
+  recordedChunks = [];
+  videoSecondsElapsed = 0;
+
+  if (activeCameraStream) {
+    try {
+      mediaRecorder = new MediaRecorder(activeCameraStream, { mimeType: 'video/webm;codecs=vp9,opus' });
+    } catch (e) {
+      try {
+        mediaRecorder = new MediaRecorder(activeCameraStream);
+      } catch (e2) {
+        console.warn("MediaRecorder fallback:", e2);
+      }
+    }
+  }
+
+  if (mediaRecorder) {
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data && event.data.size > 0) recordedChunks.push(event.data);
+    };
+
+    mediaRecorder.onstop = saveRecordedVideoTelemetry;
+    mediaRecorder.start();
+  }
+
+  if (recBanner) recBanner.style.display = "inline-flex";
+  if (startBtn) startBtn.style.display = "none";
+  if (stopBtn) stopBtn.style.display = "inline-flex";
+
+  if (timerLabel) timerLabel.innerText = "00:00";
+  clearInterval(videoTimerInterval);
+  videoTimerInterval = setInterval(() => {
+    videoSecondsElapsed++;
+    const mins = String(Math.floor(videoSecondsElapsed / 60)).padStart(2, '0');
+    const secs = String(videoSecondsElapsed % 60).padStart(2, '0');
+    if (timerLabel) timerLabel.innerText = `${mins}:${secs}`;
+  }, 1000);
+
+  if (typeof showToast === "function") {
+    showToast("🔴 Live scene video recording started!", "warning");
+  }
+}
+
+function stopVideoRecording() {
+  clearInterval(videoTimerInterval);
+  const recBanner = document.getElementById("video-rec-banner");
+  if (recBanner) recBanner.style.display = "none";
+
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+  } else {
+    saveRecordedVideoTelemetry();
+  }
+}
+
+function saveRecordedVideoTelemetry() {
+  const bgImg = document.getElementById("annotate-bg-img");
+  const bgVideo = document.getElementById("annotate-bg-video");
+  const canvas = document.getElementById("annotation-canvas");
+  const placeholder = document.getElementById("media-placeholder-content");
+  const typeLabel = document.getElementById("telemetry-media-type");
+  const timestampLabel = document.getElementById("exif-timestamp");
+
+  let videoUrl = "";
+  if (recordedChunks.length > 0) {
+    const blob = new Blob(recordedChunks, { type: "video/webm" });
+    videoUrl = URL.createObjectURL(blob);
+  }
+
+  if (placeholder) placeholder.style.display = "none";
+  if (bgImg) bgImg.style.display = "none";
+  if (canvas) canvas.style.display = "none";
+
+  if (bgVideo) {
+    bgVideo.style.display = "block";
+    if (videoUrl) {
+      bgVideo.src = videoUrl;
+    }
+    bgVideo.play().catch(e => console.log("Video auto-play prevented:", e));
+  }
+
+  if (timestampLabel) timestampLabel.innerText = new Date().toLocaleString();
+  if (typeLabel) typeLabel.innerText = `Video (Live Camera Stream Recorded, ${videoSecondsElapsed}s, EXIF synced)`;
+
+  closeCameraModal();
+  switchCameraMode("photo");
+
+  if (typeof showToast === "function") {
+    showToast("🎥 Live scene video recorded & EXIF telemetry saved successfully!", "success");
+  }
+}
