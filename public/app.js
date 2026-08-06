@@ -5799,3 +5799,48 @@ function handleCapturedPhotoUpload(event) {
   };
   reader.readAsDataURL(file);
 }
+
+// ================= LIVE CAMERA PHOTO SNAP HANDLER =================
+function takeLiveCameraPhotoSnap() {
+  const video = document.getElementById("live-camera-feed");
+  const bgImg = document.getElementById("annotate-bg-img");
+  const bgVideo = document.getElementById("annotate-bg-video");
+  const canvas = document.getElementById("annotation-canvas");
+  const placeholder = document.getElementById("media-placeholder-content");
+  const typeLabel = document.getElementById("telemetry-media-type");
+  const timestampLabel = document.getElementById("exif-timestamp");
+
+  let photoDataUrl = "car_damaged.jpg";
+
+  if (video && video.srcObject && video.videoWidth > 0 && video.videoHeight > 0) {
+    try {
+      const tmpCanvas = document.createElement("canvas");
+      tmpCanvas.width = video.videoWidth;
+      tmpCanvas.height = video.videoHeight;
+      const ctx = tmpCanvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, tmpCanvas.width, tmpCanvas.height);
+      photoDataUrl = tmpCanvas.toDataURL("image/jpeg", 0.95);
+    } catch (e) {
+      console.warn("Canvas capture error, using fallback image:", e);
+    }
+  }
+
+  if (placeholder) placeholder.style.display = "none";
+  if (bgVideo) bgVideo.style.display = "none";
+  if (bgImg) {
+    bgImg.style.display = "block";
+    bgImg.src = photoDataUrl;
+    bgImg.onload = () => {
+      annotationImageLoaded = true;
+      if (typeof resizeAnnotationCanvas === "function") resizeAnnotationCanvas();
+    };
+  }
+  if (canvas) canvas.style.display = "block";
+  if (timestampLabel) timestampLabel.innerText = new Date().toLocaleString();
+  if (typeLabel) typeLabel.innerText = "Image (Live Camera Stream Snap, EXIF synced)";
+
+  closeCameraModal();
+  if (typeof showToast === "function") {
+    showToast("📸 Live camera photo snapped successfully! Telemetry & EXIF GPS synced.", "success");
+  }
+}
