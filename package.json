@@ -11,6 +11,9 @@
     "deploy:firestore": "npx -y firebase-tools@latest deploy --only firestore"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
     "firebase": "^10.12.0"
   },
   "devDependencies": {
