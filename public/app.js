@@ -5972,3 +5972,46 @@ function saveRecordedVideoTelemetry() {
     showToast("🎥 Live scene video recorded & EXIF telemetry saved successfully!", "success");
   }
 }
+
+// ================= STEP 2 ANPR MEDIA SYNC & UPLOAD HANDLERS =================
+function syncCapturedMediaToANPR(mediaSrc, isVideo = false) {
+  const placeholder = document.getElementById("anpr-placeholder-content");
+  const previewImg = document.getElementById("anpr-preview-img");
+  const previewVideo = document.getElementById("anpr-preview-video");
+
+  if (placeholder) placeholder.style.display = "none";
+
+  if (isVideo) {
+    if (previewImg) previewImg.style.display = "none";
+    if (previewVideo) {
+      previewVideo.style.display = "block";
+      previewVideo.src = mediaSrc;
+      previewVideo.play().catch(e => console.log("ANPR video auto-play:", e));
+    }
+  } else {
+    if (previewVideo) previewVideo.style.display = "none";
+    if (previewImg) {
+      previewImg.style.display = "block";
+      previewImg.src = mediaSrc;
+    }
+  }
+}
+
+function triggerANPRFileUpload() {
+  const fileInput = document.getElementById("anpr-upload-file-input");
+  if (fileInput) fileInput.click();
+}
+
+function handleANPRFileUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  const url = URL.createObjectURL(file);
+  const isVideo = file.type.startsWith("video/");
+
+  syncCapturedMediaToANPR(url, isVideo);
+  if (typeof showToast === "function") {
+    showToast("Media Uploaded", `Uploaded ${file.name} for Step 2 ANPR verification.`, "info");
+  }
+  runANPRScanSimulation();
+}
