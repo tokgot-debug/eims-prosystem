@@ -5727,7 +5727,7 @@ function loadNotificationLogToPhone(logId) {
 let mediaStream = null;
 
 function openCameraModal() {
-  const modal = document.getElementById("camera-capture-modal");
+  const modal = document.getElementById("camera-capture-modal-native");
   if (modal) modal.classList.add("open");
   
   const video = document.getElementById("camera-video-stream");
@@ -5751,8 +5751,12 @@ function openCameraModal() {
   }
 }
 
-function closeCameraModal() {
-  const modal = document.getElementById("camera-capture-modal");
+// Renamed from closeCameraModal: an identically named function already existed
+// for the older .modal-overlay camera modal, and this later definition silently
+// shadowed it — so that modal could no longer be closed and its camera stream
+// was never stopped.
+function closeNativeCameraModal() {
+  const modal = document.getElementById("camera-capture-modal-native");
   if (modal) modal.classList.remove("open");
   if (mediaStream) {
     mediaStream.getTracks().forEach(track => track.stop());
@@ -5776,7 +5780,7 @@ function triggerDeviceCameraCapture() {
     if (wsImg) wsImg.src = "car_damaged.jpg";
   }
   
-  closeCameraModal();
+  closeNativeCameraModal();
   showToast("Damaged component photo captured & EXIF GPS metadata verified!", "success");
 }
 
@@ -5787,7 +5791,7 @@ function handleCapturedPhotoUpload(event) {
   reader.onload = function(e) {
     const wsImg = document.getElementById("ws-damaged-img-preview");
     if (wsImg) wsImg.src = e.target.result;
-    closeCameraModal();
+    closeNativeCameraModal();
     showToast("Damaged component photo uploaded & EXIF GPS metadata verified!", "success");
   };
   reader.readAsDataURL(file);
