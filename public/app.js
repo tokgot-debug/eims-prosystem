@@ -4235,7 +4235,10 @@ function openCameraCaptureModal() {
   const video = document.getElementById("live-camera-feed");
   const fallback = document.getElementById("camera-fallback-view");
   
-  if (modal) modal.classList.add("active");
+  if (modal) {
+    modal.classList.add("open");
+    modal.classList.add("active");
+  }
   
   if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
