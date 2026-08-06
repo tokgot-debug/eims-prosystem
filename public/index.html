@@ -8,6 +8,19 @@
   <meta name="description" content="Claims-centric digital insurance management platform for Motor & General Insurance in the Kenyan market. Built to international standards.">
   <meta name="color-scheme" content="light dark">
   
+  <!-- PWA Manifest & Mobile Web App Readiness -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ff6b00">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW reg error:', err));
+      });
+    }
+  </script>
+  
   <!-- Modern CSS styling -->
   <link rel="stylesheet" href="index.css">
   
