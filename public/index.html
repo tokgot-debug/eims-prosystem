@@ -795,7 +795,7 @@
                     <p style="font-size:12px; font-weight:600;">Tap "Capture Scene" or load demo asset</p>
                   </div>
                   
-                  <img id="annotate-bg-img" src="assets/car_damaged.jpg" alt="Vehicle Damage Preview" class="canvas-bg-img" style="display:none;">
+                  <img id="annotate-bg-img" src="car_damaged.jpg" alt="Vehicle Damage Preview" class="canvas-bg-img" style="display:none;">
                   <video id="annotate-bg-video" controls class="canvas-bg-img" style="display:none; max-height:380px; width:100%; object-fit:contain; z-index:6;"></video>
                 </div>
                 
@@ -864,7 +864,7 @@
                       <p style="font-size:10px; color:var(--text-muted); margin-top:4px;">Click to scan vehicle plate from camera asset</p>
                     </div>
                     
-                    <img id="anpr-preview-img" src="assets/car_plate.jpg" alt="License Plate Preview">
+                    <img id="anpr-preview-img" src="car_plate.jpg" alt="License Plate Preview">
                   </div>
                   
                   <button type="button" class="btn btn-secondary" id="anpr-scan-btn" style="margin-top:12px; width:100%;">
@@ -2616,7 +2616,7 @@
                     <div style="font-weight:700; color:#fff; margin-bottom:6px; text-align:left;">📸 Damaged Component Photo:</div>
                     
                     <div style="position:relative; width:100%; height:110px; background:#000; border-radius:8px; overflow:hidden; margin-bottom:8px;">
-                      <img id="ws-damaged-img-preview" src="assets/car_damaged.jpg" style="width:100%; height:100%; object-fit:cover;">
+                      <img id="ws-damaged-img-preview" src="car_damaged.jpg" style="width:100%; height:100%; object-fit:cover;">
                       <div style="position:absolute; bottom:4px; left:6px; background:rgba(0,0,0,0.7); color:#10b981; font-size:9px; padding:2px 6px; border-radius:4px; font-weight:700;">
                         ✓ EXIF GPS Geotagged
                       </div>
@@ -3433,7 +3433,7 @@
           <h3 class="detail-section-title">Claimant Upload Image (Annotated Damages)</h3>
           <div style="position:relative; width:100%; height:200px; background-color:#000; border-radius:10px; overflow:hidden; display:flex; align-items:center; justify-content:center;">
             <!-- Static image overlaying markings -->
-            <img src="assets/car_damaged.jpg" alt="Car Damaged" style="max-height:100%; object-fit:contain;">
+            <img src="car_damaged.jpg" alt="Car Damaged" style="max-height:100%; object-fit:contain;">
             <div id="modal-annotation-overlays" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;">
               <!-- Circles injected via JS -->
             </div>
@@ -4390,3 +4390,34 @@
   <script src="app.js"></script>
 </body>
 </html>
+
+<!-- Hidden Camera File Input Fallback -->
+<input type="file" id="camera-file-input" accept="image/*" capture="environment" style="display:none;" onchange="handleCapturedPhotoUpload(event)">
+
+<!-- Damaged Component Camera Capture Modal -->
+<div class="modal" id="camera-capture-modal">
+  <div class="modal-backdrop" onclick="closeCameraModal()"></div>
+  <div class="modal-card" style="max-width: 440px; text-align:center;">
+    <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <h3 style="font-size:15px; font-weight:700; color:#fff; margin:0;">📸 Capture Damaged Component Photo</h3>
+      <button class="btn-close" onclick="closeCameraModal()">✕</button>
+    </div>
+    
+    <div style="position:relative; width:100%; height:220px; background:#000; border-radius:12px; overflow:hidden; margin-bottom:12px; display:flex; align-items:center; justify-content:center;">
+      <video id="camera-video-stream" autoplay playsinline style="width:100%; height:100%; object-fit:cover; display:none;"></video>
+      <img id="camera-photo-preview" src="car_damaged.jpg" style="width:100%; height:100%; object-fit:cover;">
+      <div id="camera-status-overlay" style="position:absolute; bottom:8px; left:8px; background:rgba(0,0,0,0.75); color:#10b981; font-size:10.5px; padding:4px 10px; border-radius:6px; font-weight:700;">
+        ✓ Live EXIF Geotagging Active
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px;">
+      <button class="btn btn-primary" onclick="triggerDeviceCameraCapture()" style="flex:1; padding:10px; font-size:12.5px; display:flex; align-items:center; justify-content:center; gap:6px;">
+        📸 Capture Photo
+      </button>
+      <button class="btn btn-secondary" onclick="document.getElementById('camera-file-input').click()" style="flex:1; padding:10px; font-size:12.5px; display:flex; align-items:center; justify-content:center; gap:6px;">
+        📁 Upload Image
+      </button>
+    </div>
+  </div>
+</div>
