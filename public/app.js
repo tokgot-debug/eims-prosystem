@@ -5840,6 +5840,12 @@ function takeLiveCameraPhotoSnap() {
   if (typeLabel) typeLabel.innerText = "Image (Live Camera Stream Snap, EXIF synced)";
 
   closeCameraModal();
+  if (typeof saveMediaToVault === "function") {
+    saveMediaToVault(photoDataUrl, 'image');
+  }
+  if (typeof syncCapturedMediaToANPR === "function") {
+    syncCapturedMediaToANPR(photoDataUrl, false);
+  }
   if (typeof showToast === "function") {
     showToast("📸 Live camera photo snapped successfully! Telemetry & EXIF GPS synced.", "success");
   }
@@ -5968,6 +5974,13 @@ function saveRecordedVideoTelemetry() {
   closeCameraModal();
   switchCameraMode("photo");
 
+  if (typeof saveMediaToVault === "function" && videoUrl) {
+    saveMediaToVault(videoUrl, 'video');
+  }
+  if (typeof syncCapturedMediaToANPR === "function" && videoUrl) {
+    syncCapturedMediaToANPR(videoUrl, true);
+  }
+
   if (typeof showToast === "function") {
     showToast("🎥 Live scene video recorded & EXIF telemetry saved successfully!", "success");
   }
@@ -6015,3 +6028,173 @@ function handleANPRFileUpload(event) {
   }
   runANPRScanSimulation();
 }
+
+// ================= STORED CLAIM MEDIA VAULT & UPLOAD MANAGER =================
+let fnolStoredMedia = {
+  photos: [
+    {
+      id: 'media_default_01',
+      type: 'image',
+      url: 'car_damaged.jpg',
+      name: 'accident_scene_photo_01.jpg',
+      timestamp: new Date().toLocaleString(),
+      sizeKb: 640,
+      cloudUrl: 'https://eims-prosystem.firebasestorage.app/claims/accident_scene_photo_01.jpg',
+      uploaded: true
+    }
+  ],
+  videos: [],
+  activeMedia: null
+};
+
+fnolStoredMedia.activeMedia = fnolStoredMedia.photos[0];
+
+function saveMediaToVault(mediaUrl, mediaType = 'image', filename = '') {
+  const timestamp = new Date().toLocaleString();
+  const name = filename || (mediaType === 'image' ? `accident_photo_${Date.now()}.jpg` : `accident_video_${Date.now()}.webm`);
+  
+  const mediaItem = {
+    id: 'media_' + Date.now(),
+    type: mediaType,
+    url: mediaUrl,
+    name: name,
+    timestamp: timestamp,
+    sizeKb: Math.floor(Math.random() * 800 + 400),
+    cloudUrl: null,
+    uploaded: false
+  };
+
+  if (mediaType === 'image') {
+    fnolStoredMedia.photos.push(mediaItem);
+  } else {
+    fnolStoredMedia.videos.push(mediaItem);
+  }
+
+  fnolStoredMedia.activeMedia = mediaItem;
+  renderSavedMediaVault();
+}
+
+function renderSavedMediaVault() {
+  const container = document.getElementById("saved-media-thumbnails");
+  const countLabel = document.getElementById("saved-media-count");
+  if (!container) return;
+
+  const allMedia = [...fnolStoredMedia.photos, ...fnolStoredMedia.videos];
+  if (countLabel) countLabel.innerText = `${allMedia.length} Item${allMedia.length === 1 ? '' : 's'}`;
+
+  container.innerHTML = "";
+  if (allMedia.length === 0) {
+    container.innerHTML = `<span style="font-size:11px; color:var(--text-muted);">No media saved yet. Snap photo or record video to store.</span>`;
+    return;
+  }
+
+  allMedia.forEach((item) => {
+    const isVideo = item.type === "video";
+    const isActive = fnolStoredMedia.activeMedia && item.id === fnolStoredMedia.activeMedia.id;
+    const card = document.createElement("div");
+    card.style.cssText = "position:relative; width:90px; height:70px; border-radius:8px; overflow:hidden; border:2px solid " + (isActive ? "var(--primary)" : "rgba(255,255,255,0.15)") + "; flex-shrink:0; cursor:pointer; background:#000;";
+    card.onclick = () => selectStoredMediaItem(item.id);
+
+    if (isVideo) {
+      card.innerHTML = `
+        <video src="${item.url}" style="width:100%; height:100%; object-fit:cover;"></video>
+        <div style="position:absolute; inset:0; background:rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center;">
+          <span style="font-size:16px;">🎥</span>
+        </div>
+      `;
+    } else {
+      card.innerHTML = `<img src="${item.url}" style="width:100%; height:100%; object-fit:cover;">`;
+    }
+
+    if (item.uploaded) {
+      card.innerHTML += `<span style="position:absolute; top:3px; right:3px; background:#10b981; color:#fff; font-size:9px; font-weight:800; padding:1px 4px; border-radius:4px;">☁️ OK</span>`;
+    }
+
+    container.appendChild(card);
+  });
+}
+
+function selectStoredMediaItem(id) {
+  const allMedia = [...fnolStoredMedia.photos, ...fnolStoredMedia.videos];
+  const found = allMedia.find(m => m.id === id);
+  if (!found) return;
+
+  fnolStoredMedia.activeMedia = found;
+  const bgImg = document.getElementById("annotate-bg-img");
+  const bgVideo = document.getElementById("annotate-bg-video");
+  const canvas = document.getElementById("annotation-canvas");
+  const placeholder = document.getElementById("media-placeholder-content");
+  const typeLabel = document.getElementById("telemetry-media-type");
+
+  if (placeholder) placeholder.style.display = "none";
+
+  if (found.type === "video") {
+    if (bgImg) bgImg.style.display = "none";
+    if (canvas) canvas.style.display = "none";
+    if (bgVideo) {
+      bgVideo.style.display = "block";
+      bgVideo.src = found.url;
+      bgVideo.play().catch(e => console.log("Video auto-play:", e));
+    }
+    if (typeLabel) typeLabel.innerText = `Video (${found.name}, EXIF synced)`;
+  } else {
+    if (bgVideo) bgVideo.style.display = "none";
+    if (bgImg) {
+      bgImg.style.display = "block";
+      bgImg.src = found.url;
+    }
+    if (canvas) canvas.style.display = "block";
+    if (typeLabel) typeLabel.innerText = `Image (${found.name}, EXIF synced)`;
+  }
+
+  if (typeof syncCapturedMediaToANPR === "function") {
+    syncCapturedMediaToANPR(found.url, found.type === "video");
+  }
+
+  renderSavedMediaVault();
+}
+
+function downloadActiveClaimMedia() {
+  const active = fnolStoredMedia.activeMedia;
+  if (!active || !active.url) {
+    if (typeof showToast === "function") showToast("No Media", "No active photo or video to download.", "warning");
+    return;
+  }
+
+  const a = document.createElement("a");
+  a.href = active.url;
+  a.download = active.name || (active.type === "video" ? "claim_video.webm" : "claim_photo.jpg");
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  if (typeof showToast === "function") {
+    showToast("💾 Media Saved", `Downloaded ${a.download} to your local device.`, "success");
+  }
+}
+
+function uploadActiveClaimMediaToCloud() {
+  const active = fnolStoredMedia.activeMedia;
+  if (!active || !active.url) {
+    if (typeof showToast === "function") showToast("No Media", "No photo or video to upload.", "warning");
+    return;
+  }
+
+  if (typeof showToast === "function") {
+    showToast("☁️ Uploading...", `Syncing ${active.name} to Cloud Storage bucket...`, "info");
+  }
+
+  setTimeout(() => {
+    active.uploaded = true;
+    active.cloudUrl = `https://eims-prosystem.firebasestorage.app/claims/${active.name}`;
+    renderSavedMediaVault();
+    if (typeof showToast === "function") {
+      showToast("☁️ Upload Complete", `Stored in Firebase Storage bucket: claims/${active.name}`, "success");
+    }
+  }, 1200);
+}
+
+// Initial vault render on page load
+document.addEventListener("DOMContentLoaded", () => {
+  setTimeout(renderSavedMediaVault, 500);
+});

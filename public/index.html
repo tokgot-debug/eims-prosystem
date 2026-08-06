@@ -851,6 +851,26 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Stored Claim Media Vault Gallery Tray -->
+              <div id="saved-media-vault-container" style="margin-top:16px; padding:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,107,0,0.25); border-radius:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+                  <span style="font-size:12px; font-weight:700; color:var(--primary); display:flex; align-items:center; gap:6px;">
+                    📁 Stored Claim Media Vault (<span id="saved-media-count">1 Item</span>)
+                  </span>
+                  <div style="display:flex; gap:8px;">
+                    <button type="button" class="btn btn-secondary" onclick="downloadActiveClaimMedia()" style="padding:5px 12px; font-size:11px;">
+                      💾 Download Local Copy
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="uploadActiveClaimMediaToCloud()" style="padding:5px 12px; font-size:11px;">
+                      ☁️ Sync to Cloud Storage
+                    </button>
+                  </div>
+                </div>
+                <div id="saved-media-thumbnails" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:4px;">
+                  <!-- Dynamically Rendered Media Thumbnails -->
+                </div>
+              </div>
             </div>
             
             <!-- STEP 2: ANPR OCR & KRA/NTSA Database Lookup -->
