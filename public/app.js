@@ -1030,6 +1030,7 @@ function initFNOLMap() {
   // Center on Nairobi
   const nairobi = [-1.286389, 36.817223];
   leafletMap = L.map("fnol-leaflet-map").setView(nairobi, 13);
+  lockMapView(leafletMap, nairobi, 13);
   
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: '&copy; OpenStreetMap contributors'
@@ -1373,7 +1374,7 @@ function renderClaimsDirectory() {
       <td>
         <div style="display:flex; gap:6px;">
           <button class="btn btn-secondary" onclick="openAuditModal('${c.id}')" style="padding:4px 8px; font-size:11px;">Audit</button>
-          <button class="btn btn-secondary" onclick="openEditClaim('${c.id}')" style="padding:4px 8px; font-size:11px;">✏️ Edit</button>
+          <button class="btn btn-secondary" onclick="openEditClaim('${c.id}')" style="padding:4px 8px; font-size:11px;"> Edit</button>
         </div>
       </td>
     `;
@@ -1542,6 +1543,7 @@ function initModalMap(coords) {
   }
   
   modalMap = L.map("modal-map-container").setView(coords, 14);
+  lockMapView(modalMap, coords, 14);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: '&copy; OSM contributors'
   }).addTo(modalMap);
@@ -1679,12 +1681,12 @@ function triggerAlertTelegramDispatch() {
   if (!c) return;
 
   c.status = status;
-  showToast("📡 Notification Telegram Dispatched", `Dispatched multi-channel SMS, WhatsApp & Email telemetry for ${c.id} (${c.plate}).`, "success");
+  showToast(" Notification Telegram Dispatched", `Dispatched multi-channel SMS, WhatsApp & Email telemetry for ${c.id} (${c.plate}).`, "success");
 
   const logs = document.getElementById("alerts-console-logs");
   if (logs) {
     const logTime = new Date().toLocaleTimeString();
-    logs.innerHTML += `<div style="color:#34d399; font-weight:700;">[${logTime}] ✅ Dispatched SMS, WhatsApp & Rich Email to ${c.phone}</div>`;
+    logs.innerHTML += `<div style="color:#34d399; font-weight:700;">[${logTime}] Dispatched SMS, WhatsApp & Rich Email to ${c.phone}</div>`;
     logs.innerHTML += `<div style="color:var(--text-secondary);">[${logTime}] Payload: "EIMS Notice: Claim ${c.id} for plate ${c.plate} is ${status.toLowerCase()}."</div>`;
     logs.scrollTop = logs.scrollHeight;
   }
@@ -2161,7 +2163,7 @@ function confirmCreateNewPolicy() {
 
   policies.unshift(newPol);
   closeNewPolicyModal();
-  showToast("📄 Policy Underwritten", `New policy file ${newPolNo} for ${clientName} (${plate}) assigned to ${broker}. Total Debit: KSh ${totalDebit.toLocaleString()}`, "success");
+  showToast(" Policy Underwritten", `New policy file ${newPolNo} for ${clientName} (${plate}) assigned to ${broker}. Total Debit: KSh ${totalDebit.toLocaleString()}`, "success");
   renderPolicyRegistry();
 }
 
@@ -2213,11 +2215,11 @@ function openAKICertModal(policyNo) {
 function verifyCertIntegrityAudit() {
   if (!currentActiveCertPolicy) return;
   const officialHash = generateCertSHA256Hash(currentActiveCertPolicy);
-  showToast("🛡️ SHA-256 Hash Audit Passed", `Integrity 100% Verified! Hash matches official AKI ledger (${officialHash.substring(0, 16)}...). Zero tampering detected.`, "success");
+  showToast(" SHA-256 Hash Audit Passed", `Integrity 100% Verified! Hash matches official AKI ledger (${officialHash.substring(0, 16)}...). Zero tampering detected.`, "success");
 }
 
 function simulateTamperAttempt() {
-  showToast("🚨 FRAUD ATTEMPT DETECTED!", "Tampering Detected! Expiry Date modification attempt blocked by SHA-256 Signature Guard. Reverting to official AKI ledger record.", "warning");
+  showToast(" FRAUD ATTEMPT DETECTED!", "Tampering Detected! Expiry Date modification attempt blocked by SHA-256 Signature Guard. Reverting to official AKI ledger record.", "warning");
   setTimeout(() => {
     if (currentActiveCertPolicy) openAKICertModal(currentActiveCertPolicy.policyNo);
   }, 1200);
@@ -2231,16 +2233,16 @@ function closeAKICertModal() {
 function simulatePoliceQRScan() {
   const plate = document.getElementById("cert-plate").innerText;
   const ref = document.getElementById("cert-ref-no").innerText;
-  showToast("🔍 Police QR Verification Match", `Traffic Officer Scan Verified: Vehicle ${plate} holds valid active AKI Motor Coverage (${ref}).`, "success");
+  showToast(" Police QR Verification Match", `Traffic Officer Scan Verified: Vehicle ${plate} holds valid active AKI Motor Coverage (${ref}).`, "success");
 }
 
 function saveToMobileWallet() {
   const plate = document.getElementById("cert-plate").innerText;
-  showToast("📲 Saved to Mobile Wallet", `Digital AKI QR Certificate pass for ${plate} saved to Apple Wallet & Google Wallet.`, "info");
+  showToast(" Saved to Mobile Wallet", `Digital AKI QR Certificate pass for ${plate} saved to Apple Wallet & Google Wallet.`, "info");
 }
 
 function downloadDigitalCertPDF() {
-  showToast("📥 Downloading Certificate", "Generating official AKI Digital Certificate PDF with encrypted QR seal...", "info");
+  showToast(" Downloading Certificate", "Generating official AKI Digital Certificate PDF with encrypted QR seal...", "info");
   setTimeout(() => window.print(), 800);
 }
 
@@ -2259,9 +2261,9 @@ function triggerSTKPushCheckout(tierName, price) {
   document.getElementById("stk-tier-name").innerText = `${tierName} Tier Plan`;
   document.getElementById("stk-tier-price").innerText = `KSh ${price.toLocaleString()} / month`;
   
-  let userCapText = "👥 Seat Allocation: UNLIMITED Active User Accounts Across All Categories";
-  if (tierName === "Starter") userCapText = "👥 Seat Allocation: Up to 5 Active User Accounts Max (1 Admin, 2 Agents, 2 Garage Inspectors)";
-  if (tierName === "Professional") userCapText = "👥 Seat Allocation: Up to 25 Active User Accounts Max (3 Admins, 10 Underwriters, 8 Agents, 4 Finance)";
+  let userCapText = " Seat Allocation: UNLIMITED Active User Accounts Across All Categories";
+  if (tierName === "Starter") userCapText = " Seat Allocation: Up to 5 Active User Accounts Max (1 Admin, 2 Agents, 2 Garage Inspectors)";
+  if (tierName === "Professional") userCapText = " Seat Allocation: Up to 25 Active User Accounts Max (3 Admins, 10 Underwriters, 8 Agents, 4 Finance)";
   
   document.getElementById("stk-tier-user-cap").innerText = userCapText;
   modal.classList.add("active");
@@ -2274,13 +2276,13 @@ function closeSubscriptionCheckoutModal() {
 
 function confirmSTKPushPayment() {
   const phone = document.getElementById("stk-phone-number").value.trim();
-  showToast("📲 STK Push Dispatched", `M-PESA payment prompt sent to ${phone} for KSh ${selectedSTKPrice.toLocaleString()}`, "info");
+  showToast(" STK Push Dispatched", `M-PESA payment prompt sent to ${phone} for KSh ${selectedSTKPrice.toLocaleString()}`, "info");
   
   setTimeout(() => {
     currentSubscriptionTier = selectedSTKTierName;
     closeSubscriptionCheckoutModal();
     updateSubscriptionUI();
-    showToast("🎉 Subscription Active", `System upgraded to ${selectedSTKTierName} Tier (KSh ${selectedSTKPrice.toLocaleString()}/mo).`, "success");
+    showToast(" Subscription Active", `System upgraded to ${selectedSTKTierName} Tier (KSh ${selectedSTKPrice.toLocaleString()}/mo).`, "success");
   }, 2000);
 }
 
@@ -2289,9 +2291,9 @@ function updateSubscriptionUI() {
   const headerBadge = document.getElementById("header-tier-badge");
   const modalActiveTier = document.getElementById("modal-active-tier-name");
   
-  let label = `👑 Active Plan: ENTERPRISE TIER (Unlimited Users)`;
-  if (currentSubscriptionTier === "Starter") label = `🌱 Active Plan: STARTER TIER (5 Users Max)`;
-  if (currentSubscriptionTier === "Professional") label = `⚡ Active Plan: PROFESSIONAL TIER (25 Users Max)`;
+  let label = ` Active Plan: ENTERPRISE TIER (Unlimited Users)`;
+  if (currentSubscriptionTier === "Starter") label = ` Active Plan: STARTER TIER (5 Users Max)`;
+  if (currentSubscriptionTier === "Professional") label = ` Active Plan: PROFESSIONAL TIER (25 Users Max)`;
   
   if (activeBadge) activeBadge.innerText = label;
   if (headerBadge) headerBadge.innerText = label;
@@ -2349,7 +2351,7 @@ function switchMobileAppMode(mode) {
     workshopBtn.style.background = "#ff6b00";
     workshopBtn.style.color = "#ffffff";
     onWorkshopGarageChange();
-    showToast("🛠️ Workshop Mode Active", "Accredited repairer mobile app interface loaded.", "info");
+    showToast(" Workshop Mode Active", "Accredited repairer mobile app interface loaded.", "info");
   } else {
     clientView.style.display = "block";
     workshopView.style.display = "none";
@@ -2435,7 +2437,7 @@ function submitWorkshopRepairRequest() {
   }
 
   showToast(
-    "⚡ Pre-Repair Permission Granted!",
+    " Pre-Repair Permission Granted!",
     `Work Order ${workOrderNo} authorized for ${garage.name} (KSh ${total.toLocaleString()} for ${comp} replacement on vehicle KDG 123A).`,
     "success"
   );
@@ -2483,7 +2485,7 @@ function renderScheduledPayouts() {
 
   scheduledPayouts.forEach(s => {
     const tr = document.createElement("tr");
-    let statusBadge = `<span class="status-badge pending">📅 ${s.status}</span>`;
+    let statusBadge = `<span class="status-badge pending"> ${s.status}</span>`;
     if (s.status === "Disbursed") statusBadge = `<span class="status-badge approved">✓ Disbursed</span>`;
     if (s.status === "Cancelled") statusBadge = `<span class="status-badge investigation">✕ Cancelled</span>`;
 
@@ -2499,7 +2501,7 @@ function renderScheduledPayouts() {
       <td>
         <div style="display:flex; gap:6px;">
           ${s.status === 'Scheduled' ? `
-            <button class="btn btn-primary" onclick="releaseScheduledPayoutNow('${s.id}')" style="padding:3px 8px; font-size:10.5px;">⚡ Release Now</button>
+            <button class="btn btn-primary" onclick="releaseScheduledPayoutNow('${s.id}')" style="padding:3px 8px; font-size:10.5px;"> Release Now</button>
             <button class="btn btn-danger" onclick="cancelScheduledPayout('${s.id}')" style="padding:3px 8px; font-size:10.5px;">Cancel</button>
           ` : `<span style="font-size:10.5px; color:var(--text-muted);">Locked</span>`}
         </div>
@@ -2565,7 +2567,7 @@ function confirmSchedulePayment() {
   renderScheduledPayouts();
 
   showToast(
-    "📅 Payment Schedule Locked!",
+    " Payment Schedule Locked!",
     `Authorized KSh ${amount.toLocaleString()} disbursement for ${claimObj.owner} (${claimObj.plate}) scheduled on ${relDate} at ${relTime}.`,
     "success"
   );
@@ -2579,7 +2581,7 @@ function releaseScheduledPayoutNow(schId) {
   renderScheduledPayouts();
 
   showToast(
-    "⚡ Instant Payout Released!",
+    " Instant Payout Released!",
     `Disbursed KSh ${sch.amount.toLocaleString()} via ${sch.channel} to ${sch.claimant} (${sch.phone}). Transaction Ref: QK89X201L9.`,
     "success"
   );
@@ -2625,7 +2627,7 @@ function renderPolicyRegistry() {
       <td>${statusBadge}</td>
       <td>
         <div style="display:flex; gap:6px; flex-wrap:wrap;">
-          <button class="btn btn-secondary" onclick="openEditPolicy('${p.policyNo}')" style="padding:4px 8px; font-size:11px;">✏️ Edit</button>
+          <button class="btn btn-secondary" onclick="openEditPolicy('${p.policyNo}')" style="padding:4px 8px; font-size:11px;"> Edit</button>
           <button class="btn btn-secondary" onclick="triggerDebitPolicy('${p.policyNo}')" style="padding:4px 8px; font-size:11px;">Debit</button>
           <button class="btn btn-secondary" onclick="triggerCertPolicy('${p.policyNo}')" style="padding:4px 8px; font-size:11px;">Issue Cert</button>
           <button class="btn btn-secondary" onclick="toggleSuspendPolicy('${p.policyNo}')" style="padding:4px 8px; font-size:11px;">${p.status === 'Suspended' ? 'Unsuspend' : 'Suspend'}</button>
@@ -2745,7 +2747,7 @@ function renderProductionReports() {
     banner.style.backgroundColor = "rgba(2, 102, 204, 0.1)";
     banner.style.borderColor = "var(--primary)";
     banner.style.color = "var(--primary-light)";
-    banner.innerHTML = `⚡ <strong>Daily Real-Time Production Log Active:</strong> Displaying today's 24-hour acquisition audit log for <strong>${branchFilter === "ALL" ? "All Offices" : branchFilter}</strong> (${line} Line).`;
+    banner.innerHTML = ` <strong>Daily Real-Time Production Log Active:</strong> Displaying today's 24-hour acquisition audit log for <strong>${branchFilter === "ALL"? "All Offices": branchFilter}</strong> (${line} Line).`;
   } else {
     banner.style.display = "none";
   }
@@ -2889,7 +2891,7 @@ function openAIAssistantModal() {
   
   if (modal) {
     modal.classList.add("active");
-    showToast("✨ AI Copilot Active", "EIMS Neural Analytics Engine ready. Ask any production query.", "info");
+    showToast(" AI Copilot Active", "EIMS Neural Analytics Engine ready. Ask any production query.", "info");
     if (inputEl) inputEl.focus();
   }
 }
@@ -2987,12 +2989,12 @@ function processAIQuery(queryText) {
     aiDiv.style.alignItems = "flex-start";
     
     aiDiv.innerHTML = `
-      <div style="width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg, #0266cc, #38bdf8); color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">✨</div>
+      <div style="width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg, #0266cc, #38bdf8); color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;"></div>
       <div style="background-color:var(--bg-surface); border:1px solid var(--border-color); padding:16px; border-radius:14px; font-size:13px; line-height:1.6; color:var(--text-primary); max-width:90%;">
         ${responseHTML}
         <div style="margin-top:12px; padding-top:10px; border-top:1px solid var(--border-color); display:flex; gap:10px;">
-          <button class="btn btn-secondary" onclick="exportAIBriefPDF()" style="padding:4px 10px; font-size:11px;">📥 Print AI Executive Brief</button>
-          <button class="btn btn-secondary" onclick="showToast('Copied', 'AI Report copied to clipboard.', 'info')" style="padding:4px 10px; font-size:11px;">📋 Copy Text</button>
+          <button class="btn btn-secondary" onclick="exportAIBriefPDF()" style="padding:4px 10px; font-size:11px;"> Print AI Executive Brief</button>
+          <button class="btn btn-secondary" onclick="showToast('Copied', 'AI Report copied to clipboard.', 'info')" style="padding:4px 10px; font-size:11px;"> Copy Text</button>
         </div>
       </div>
     `;
@@ -3031,7 +3033,7 @@ function generateAIReportSynthesis(query) {
     `).join("");
     
     return `
-      <strong style="color:var(--success); font-size:14px;">✅ Approved & Disbursed Claims Portfolio Analysis</strong><br><br>
+      <strong style="color:var(--success); font-size:14px;"> Approved & Disbursed Claims Portfolio Analysis</strong><br><br>
       Full real-time breakdown of all approved insurance files in the system:<br><br>
       • <strong>Total Approved Files:</strong> <strong>${approvedClaims.length} claims</strong> (Total Indemnity Commitment: <strong style="color:var(--primary);">KSh ${totalApprovedVal.toLocaleString()}</strong>).<br>
       • <strong>AI Auto-Pass Triage Rate:</strong> ${greenPassCount} of ${approvedClaims.length} files approved via <strong>Green Fast-Track Automated Pipeline</strong>.<br>
@@ -3056,7 +3058,7 @@ function generateAIReportSynthesis(query) {
       </div>
       
       <div style="background-color:var(--bg-primary); padding:10px; border-radius:8px; font-size:12px; margin-top:12px;">
-        💡 <strong>Executive Action:</strong> Navigate to <strong>M-PESA Payout Gateway</strong> to trigger instant B2C bulk disbursement for approved files.
+         <strong>Executive Action:</strong> Navigate to <strong>M-PESA Payout Gateway</strong> to trigger instant B2C bulk disbursement for approved files.
       </div>
     `;
   }
@@ -3068,7 +3070,7 @@ function generateAIReportSynthesis(query) {
     const siuCount = claims.filter(c => c.status === "Under Investigation").length;
     
     return `
-      <strong style="color:var(--primary); font-size:14px;">🚗 Complete Claims Portfolio & Telemetry Audit</strong><br><br>
+      <strong style="color:var(--primary); font-size:14px;"> Complete Claims Portfolio & Telemetry Audit</strong><br><br>
       Full analytical breakdown of all ${totalClaimsCount} registered claims in EIMS:<br><br>
       • <strong>Total Claims Filed:</strong> ${totalClaimsCount} claims (Total Estimated Repairs: <strong>KSh ${totalClaimsCost.toLocaleString()}</strong>).<br>
       • <strong>Status Distribution:</strong> 
@@ -3080,60 +3082,60 @@ function generateAIReportSynthesis(query) {
       • <strong>Settlement Payout Channels:</strong> M-PESA B2C (40%), Airtel Money (20%), EFT Bank Transfer PesaLink (40%).<br>
       • <strong>Accredited Garages Assigned:</strong> Nairobi Auto Care (8 repairs), Coast Breakdown (5 repairs), Lakeside Motors (4 repairs), Rift Valley Clinic (3 repairs).<br><br>
       <div style="background-color:var(--bg-primary); padding:10px; border-radius:8px; font-size:12px;">
-        🔍 <strong>SIU Security Notice:</strong> ${siuCount} claim file(s) currently locked under SIU investigation due to camera EXIF location & media metadata verification.
+         <strong>SIU Security Notice:</strong> ${siuCount} claim file(s) currently locked under SIU investigation due to camera EXIF location & media metadata verification.
       </div>
     `;
   }
 
   if (lower.includes("branch") || lower.includes("office") || lower.includes("performance")) {
     return `
-      <strong style="color:var(--primary); font-size:14px;">🏢 Branch Performance Audit & Analysis</strong><br><br>
+      <strong style="color:var(--primary); font-size:14px;"> Branch Performance Audit & Analysis</strong><br><br>
       Based on the August 2026 production ledger across all national branches:<br><br>
       • <strong>Top Performing Branch:</strong> Head Office (Nairobi) leading with <strong>42 new policy acquisitions</strong> (KSh ${(2850000).toLocaleString()} gross premium, representing 38% market share).<br>
       • <strong>Second Position:</strong> Mombasa Branch with <strong>28 new policies</strong> (KSh ${(1920000).toLocaleString()}, 25% share).<br>
       • <strong>Regional Outlets:</strong> Kisumu (22 new policies, KSh 1.45M) and Nakuru (18 new policies, KSh 1.18M).<br><br>
       <div style="background-color:var(--bg-primary); padding:10px; border-radius:8px; font-size:12px;">
-        💡 <strong>AI Recommendation:</strong> Increase marketing outreach in Kisumu and Nakuru sub-counties to lift secondary branch acquisitions by an estimated +14%.
+         <strong>AI Recommendation:</strong> Increase marketing outreach in Kisumu and Nakuru sub-counties to lift secondary branch acquisitions by an estimated +14%.
       </div>
     `;
   }
   
   if (lower.includes("fraud") || lower.includes("risk") || lower.includes("velocity")) {
     return `
-      <strong style="color:var(--danger); font-size:14px;">🛡️ Fraud & Telemetry Risk Audit Report</strong><br><br>
+      <strong style="color:var(--danger); font-size:14px;"> Fraud & Telemetry Risk Audit Report</strong><br><br>
       Analytical breakdown across <strong>${totalClaimsCount} filed claims</strong>:<br><br>
       • <strong>Average Fraud Index:</strong> ${avgFraud}% (Low-Medium overall risk profile).<br>
       • <strong>SIU Flagged Files:</strong> 1 claim file locked under active investigation due to metadata collision (Photo taken in Mombasa vs reported Nairobi location).<br>
       • <strong>Computer Vision Integrity:</strong> 92% of media submissions passed EXIF location & license plate OCR symmetry validation.<br><br>
       <div style="background-color:var(--bg-primary); padding:10px; border-radius:8px; font-size:12px;">
-        🔍 <strong>Key Security Rule:</strong> Camera telemetry cross-referencing maintains automatic Green-path passage for low risk filings (<25% score).
+         <strong>Key Security Rule:</strong> Camera telemetry cross-referencing maintains automatic Green-path passage for low risk filings (<25% score).
       </div>
     `;
   }
   
   if (lower.includes("kira") || lower.includes("compliance") || lower.includes("regulatory")) {
     return `
-      <strong style="color:var(--success); font-size:14px;">📜 KIRA Regulatory Compliance Summary</strong><br><br>
+      <strong style="color:var(--success); font-size:14px;"> KIRA Regulatory Compliance Summary</strong><br><br>
       Official compliance evaluation for the Kenyan Insurance Regulatory Authority:<br><br>
       • <strong>Form 104 Filings:</strong> All notice registrations comply with digital countersigning regulations under the Kenyan Insurance Act.<br>
       • <strong>AKI Certificate Issuance:</strong> Digital motor certificates featuring encrypted QR validation badges are declared valid.<br>
       • <strong>Accounting Compliance:</strong> Production reports strictly calculate <strong>${totalNewPolicies} new acquisitions</strong> (KSh ${(totalGrossPremium).toLocaleString()}) and explicitly exclude ${totalRenewalsExcluded} policy renewals.<br><br>
       <div style="background-color:var(--bg-primary); padding:10px; border-radius:8px; font-size:12px;">
-        ✅ <strong>Audit Rating:</strong> 100% Compliant with KIRA guidelines.
+         <strong>Audit Rating:</strong> 100% Compliant with KIRA guidelines.
       </div>
     `;
   }
   
   // Default Executive Production Summary
   return `
-    <strong style="color:var(--primary); font-size:14px;">📊 Executive Production & Telemetry Summary</strong><br><br>
+    <strong style="color:var(--primary); font-size:14px;"> Executive Production & Telemetry Summary</strong><br><br>
     Synthesized report for August 2026:<br><br>
     1. <strong>New Policy Production:</strong> <strong>${totalNewPolicies} new policies underwritten</strong> generating <strong>KSh ${(totalGrossPremium).toLocaleString()}</strong> in gross new premium.<br>
     2. <strong>Claims Portfolio:</strong> ${totalClaimsCount} total claims active with KSh ${(totalClaimsCost).toLocaleString()} in total repair estimates.<br>
     3. <strong>Accounting Compliance:</strong> ${totalRenewalsExcluded} policy renewals excluded from production tallies in accordance with international auditing standards.<br>
     4. <strong>System Status:</strong> All 4 regional branch ledgers synced. Direct-to-client renewal notice dispatch locked per safety policy.<br><br>
     <div style="background-color:var(--bg-primary); padding:10px; border-radius:8px; font-size:12px;">
-      📈 <strong>Overall Growth:</strong> +12.4% MoM increase in new motor acquisitions.
+       <strong>Overall Growth:</strong> +12.4% MoM increase in new motor acquisitions.
     </div>
   `;
 }
@@ -3160,7 +3162,7 @@ function exportAIBriefPDF() {
     </head>
     <body>
       <div class="header">
-        <div class="logo">✨ EIMS AI Executive Report Brief</div>
+        <div class="logo"> EIMS AI Executive Report Brief</div>
         <p style="font-size:12px; color:#64748b; margin-top:4px;">Synthesized for Insurance ProSystem | August 2026</p>
       </div>
       
@@ -3183,14 +3185,14 @@ function exportAIBriefPDF() {
 
 // 1. GARAGE NETWORK
 let garages = [
-  { id: "GAR-01", name: "Nairobi Auto Care Panel Beaters", location: "Industrial Area, Nairobi", rating: "4.9 ⭐", activeRepairs: 8, slaScore: "98%", status: "Accredited" },
-  { id: "GAR-02", name: "Coast Breakdown & Refinishing Ltd", location: "Shimanzi, Mombasa", rating: "4.8 ⭐", activeRepairs: 5, slaScore: "96%", status: "Accredited" },
-  { id: "GAR-03", name: "Lakeside Motor Body Works", location: "Kisumu Industrial Zone", rating: "4.7 ⭐", activeRepairs: 4, slaScore: "94%", status: "Accredited" },
-  { id: "GAR-04", name: "Rift Valley Panel Beating Clinic", location: "Nakuru Town West", rating: "4.8 ⭐", activeRepairs: 3, slaScore: "97%", status: "Accredited" },
-  { id: "GAR-05", name: "Highland Auto Repairs", location: "Eldoret Highway Zone", rating: "4.9 ⭐", activeRepairs: 4, slaScore: "96%", status: "Accredited" },
-  { id: "GAR-06", name: "Mount Kenya Motor Works", location: "Nyeri King'ong'o Area", rating: "4.7 ⭐", activeRepairs: 2, slaScore: "93%", status: "Accredited" },
-  { id: "GAR-07", name: "Thika Road Auto Technicians", location: "Ruiru Bypass", rating: "4.8 ⭐", activeRepairs: 5, slaScore: "95%", status: "Accredited" },
-  { id: "GAR-08", name: "Eastern Star Garage", location: "Machakos Town", rating: "4.6 ⭐", activeRepairs: 3, slaScore: "92%", status: "Accredited" }
+  { id: "GAR-01", name: "Nairobi Auto Care Panel Beaters", location: "Industrial Area, Nairobi", rating: "4.9 ", activeRepairs: 8, slaScore: "98%", status: "Accredited" },
+  { id: "GAR-02", name: "Coast Breakdown & Refinishing Ltd", location: "Shimanzi, Mombasa", rating: "4.8 ", activeRepairs: 5, slaScore: "96%", status: "Accredited" },
+  { id: "GAR-03", name: "Lakeside Motor Body Works", location: "Kisumu Industrial Zone", rating: "4.7 ", activeRepairs: 4, slaScore: "94%", status: "Accredited" },
+  { id: "GAR-04", name: "Rift Valley Panel Beating Clinic", location: "Nakuru Town West", rating: "4.8 ", activeRepairs: 3, slaScore: "97%", status: "Accredited" },
+  { id: "GAR-05", name: "Highland Auto Repairs", location: "Eldoret Highway Zone", rating: "4.9 ", activeRepairs: 4, slaScore: "96%", status: "Accredited" },
+  { id: "GAR-06", name: "Mount Kenya Motor Works", location: "Nyeri King'ong'o Area", rating: "4.7 ", activeRepairs: 2, slaScore: "93%", status: "Accredited" },
+  { id: "GAR-07", name: "Thika Road Auto Technicians", location: "Ruiru Bypass", rating: "4.8 ", activeRepairs: 5, slaScore: "95%", status: "Accredited" },
+  { id: "GAR-08", name: "Eastern Star Garage", location: "Machakos Town", rating: "4.6 ", activeRepairs: 3, slaScore: "92%", status: "Accredited" }
 ];
 
 function renderGarageNetwork() {
@@ -3209,7 +3211,7 @@ function renderGarageNetwork() {
       <td>
         <div style="display:flex; gap:6px;">
           <button class="btn btn-secondary" onclick="assignGarageClaim('${g.name}')" style="padding:4px 8px; font-size:11px;">Assign Claim</button>
-          <button class="btn btn-secondary" onclick="openEditGarage(${idx})" style="padding:4px 8px; font-size:11px;">✏️ Edit</button>
+          <button class="btn btn-secondary" onclick="openEditGarage(${idx})" style="padding:4px 8px; font-size:11px;"> Edit</button>
         </div>
       </td>
     `;
@@ -3361,11 +3363,11 @@ function executeChannelPayout(claimId) {
 
 // 3. LOSS ASSESSORS
 let assessors = [
-  { name: "General Adjusters Kenya Ltd", location: "Nairobi / National", spec: "Motor & Mechanical Telemetry", rating: "4.9 ⭐" },
-  { name: "GAB Robins Assessment Bureau", location: "Mombasa / Coast", spec: "Commercial Fleets & Heavy Plant", rating: "4.8 ⭐" },
-  { name: "Kenya Assessment Bureau (KAB)", location: "Western & Rift Valley", spec: "Property & Forensic Audit", rating: "4.7 ⭐" },
-  { name: "AutoAssessor Kenya Ltd", location: "Central Kenya / Nyeri", spec: "Passenger & Light Commercial", rating: "4.8 ⭐" },
-  { name: "Apex Valuation Services", location: "North Rift / Eldoret", spec: "Agricultural Machinery", rating: "4.7 ⭐" }
+  { name: "General Adjusters Kenya Ltd", location: "Nairobi / National", spec: "Motor & Mechanical Telemetry", rating: "4.9 " },
+  { name: "GAB Robins Assessment Bureau", location: "Mombasa / Coast", spec: "Commercial Fleets & Heavy Plant", rating: "4.8 " },
+  { name: "Kenya Assessment Bureau (KAB)", location: "Western & Rift Valley", spec: "Property & Forensic Audit", rating: "4.7 " },
+  { name: "AutoAssessor Kenya Ltd", location: "Central Kenya / Nyeri", spec: "Passenger & Light Commercial", rating: "4.8 " },
+  { name: "Apex Valuation Services", location: "North Rift / Eldoret", spec: "Agricultural Machinery", rating: "4.7 " }
 ];
 
 function renderLossAssessors() {
@@ -3383,7 +3385,7 @@ function renderLossAssessors() {
       <td>
         <div style="display:flex; gap:6px;">
           <button class="btn btn-secondary" onclick="dispatchAssessor('${a.name}')" style="padding:4px 8px; font-size:11px;">Dispatch Request</button>
-          <button class="btn btn-secondary" onclick="openEditAssessor('${a.name}')" style="padding:4px 8px; font-size:11px;">✏️ Edit</button>
+          <button class="btn btn-secondary" onclick="openEditAssessor('${a.name}')" style="padding:4px 8px; font-size:11px;"> Edit</button>
         </div>
       </td>
     `;
@@ -3602,7 +3604,7 @@ function renderSubrogationRecovery() {
       <td>
         <div style="display:flex; gap:6px;">
           <button class="btn btn-secondary" onclick="issueSubrogationNotice('${s.claimId}', '${s.thirdPartyInsurer}')" style="padding:4px 8px; font-size:11px;">Demand Notice</button>
-          <button class="btn btn-secondary" onclick="openEditSubrogation('${s.claimId}')" style="padding:4px 8px; font-size:11px;">✏️ Edit</button>
+          <button class="btn btn-secondary" onclick="openEditSubrogation('${s.claimId}')" style="padding:4px 8px; font-size:11px;"> Edit</button>
         </div>
       </td>
     `;
@@ -3640,7 +3642,7 @@ function renderFleetUnderwriting() {
       <td>
         <div style="display:flex; gap:6px;">
           <button class="btn btn-secondary" onclick="batchIssueFleetCerts('${f.county}')" style="padding:4px 8px; font-size:11px;">Batch AKI Certs</button>
-          <button class="btn btn-secondary" onclick="openEditFleetVehicle('${f.id}')" style="padding:4px 8px; font-size:11px;">✏️ Edit</button>
+          <button class="btn btn-secondary" onclick="openEditFleetVehicle('${f.id}')" style="padding:4px 8px; font-size:11px;"> Edit</button>
         </div>
       </td>
     `;
@@ -3660,6 +3662,17 @@ function simulateFleetCSVUpload() {
 let commandCenterMap = null;
 let commandCenterMarkers = [];
 
+// Leaflet caches the container size at construction. When a map is built inside
+// a view that was just un-hidden, that size is stale and the map renders offset
+// (the GeoMap centred on the Red Sea instead of Kenya). Re-measure once the
+// browser has actually laid the container out, then re-assert the centre.
+function lockMapView(map, center, zoom) {
+  requestAnimationFrame(() => {
+    map.invalidateSize();
+    map.setView(center, zoom);
+  });
+}
+
 function renderGeoMapCenter() {
   const mapContainer = document.getElementById("command-center-map");
   if (!mapContainer || typeof L === "undefined") return;
@@ -3671,6 +3684,7 @@ function renderGeoMapCenter() {
   
   // Center map on Kenya (Nairobi / Naivasha corridor)
   commandCenterMap = L.map("command-center-map").setView([-0.8000, 36.8000], 7);
+  lockMapView(commandCenterMap, [-0.8000, 36.8000], 7);
   
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 18,
@@ -3680,30 +3694,30 @@ function renderGeoMapCenter() {
   // Map Pin Data Sets
   const mapData = [
     // Incidents
-    { type: "claim", lat: -1.286389, lng: 36.817223, title: "💥 CLM-2026-001 (Nairobi Collision)", desc: "KDG 123A | Damage KSh 142,500 | Green Pass", color: "#ef4444" },
-    { type: "claim", lat: -4.043477, lng: 39.668206, title: "💥 CLM-2026-002 (Mombasa Port Road)", desc: "KBA 456X | Damage KSh 480,000 | Yellow Flag", color: "#ef4444" },
-    { type: "claim", lat: -0.091702, lng: 34.767956, title: "💥 CLM-2026-003 (Kisumu Bypass)", desc: "KCC 789Y | Damage KSh 390,000 | Green Pass", color: "#ef4444" },
-    { type: "claim", lat: -0.303099, lng: 36.080025, title: "💥 CLM-2026-004 (Nakuru Highway)", desc: "KDD 012Z | Damage KSh 620,000 | Disbursed", color: "#ef4444" },
-    { type: "claim", lat: 0.5143, lng: 35.2698, title: "💥 CLM-2026-007 (Eldoret Airport Rd)", desc: "KDE 112W | Damage KSh 175,000 | Green Pass", color: "#ef4444" },
-    { type: "claim", lat: -1.0383, lng: 37.0734, title: "💥 CLM-2026-008 (Thika Superhighway)", desc: "KDA 554P | Damage KSh 540,000 | Red Flag SIU", color: "#ef4444" },
-    { type: "claim", lat: -0.4201, lng: 36.9476, title: "💥 CLM-2026-009 (Nyeri Town Circle)", desc: "KCR 402B | Damage KSh 92,000 | Disbursed", color: "#ef4444" },
-    { type: "claim", lat: -0.0517, lng: 37.6456, title: "💥 CLM-2026-010 (Meru Mall Junction)", desc: "KDB 991S | Damage KSh 310,000 | Pending OB", color: "#ef4444" },
+    { type: "claim", lat: -1.286389, lng: 36.817223, title: " CLM-2026-001 (Nairobi Collision)", desc: "KDG 123A | Damage KSh 142,500 | Green Pass", color: "#ef4444" },
+    { type: "claim", lat: -4.043477, lng: 39.668206, title: " CLM-2026-002 (Mombasa Port Road)", desc: "KBA 456X | Damage KSh 480,000 | Yellow Flag", color: "#ef4444" },
+    { type: "claim", lat: -0.091702, lng: 34.767956, title: " CLM-2026-003 (Kisumu Bypass)", desc: "KCC 789Y | Damage KSh 390,000 | Green Pass", color: "#ef4444" },
+    { type: "claim", lat: -0.303099, lng: 36.080025, title: " CLM-2026-004 (Nakuru Highway)", desc: "KDD 012Z | Damage KSh 620,000 | Disbursed", color: "#ef4444" },
+    { type: "claim", lat: 0.5143, lng: 35.2698, title: " CLM-2026-007 (Eldoret Airport Rd)", desc: "KDE 112W | Damage KSh 175,000 | Green Pass", color: "#ef4444" },
+    { type: "claim", lat: -1.0383, lng: 37.0734, title: " CLM-2026-008 (Thika Superhighway)", desc: "KDA 554P | Damage KSh 540,000 | Red Flag SIU", color: "#ef4444" },
+    { type: "claim", lat: -0.4201, lng: 36.9476, title: " CLM-2026-009 (Nyeri Town Circle)", desc: "KCR 402B | Damage KSh 92,000 | Disbursed", color: "#ef4444" },
+    { type: "claim", lat: -0.0517, lng: 37.6456, title: " CLM-2026-010 (Meru Mall Junction)", desc: "KDB 991S | Damage KSh 310,000 | Pending OB", color: "#ef4444" },
     
     // Accredited Garages
-    { type: "garage", lat: -1.3000, lng: 36.8350, title: "🔧 Nairobi Auto Care Panel Beaters", desc: "Industrial Area, Nairobi | Rating: 4.9⭐ | SLA 98%", color: "#ff6b00" },
-    { type: "garage", lat: -4.0500, lng: 39.6500, title: "🔧 Coast Breakdown & Refinishing", desc: "Shimanzi, Mombasa | Rating: 4.8⭐ | SLA 96%", color: "#ff6b00" },
-    { type: "garage", lat: -0.1000, lng: 34.7500, title: "🔧 Lakeside Motor Body Works", desc: "Kisumu Industrial Zone | Rating: 4.7⭐ | SLA 94%", color: "#ff6b00" },
-    { type: "garage", lat: -0.2900, lng: 36.0700, title: "🔧 Rift Valley Panel Clinic", desc: "Nakuru Town West | Rating: 4.8⭐ | SLA 97%", color: "#ff6b00" },
-    { type: "garage", lat: 0.5200, lng: 35.2800, title: "🔧 Highland Auto Repairs", desc: "Eldoret Highway Zone | Rating: 4.9⭐ | SLA 96%", color: "#ff6b00" },
-    { type: "garage", lat: -0.4100, lng: 36.9500, title: "🔧 Mount Kenya Motor Works", desc: "Nyeri King'ong'o Area | Rating: 4.7⭐ | SLA 93%", color: "#ff6b00" },
+    { type: "garage", lat: -1.3000, lng: 36.8350, title: " Nairobi Auto Care Panel Beaters", desc: "Industrial Area, Nairobi | Rating: 4.9 | SLA 98%", color: "#ff6b00" },
+    { type: "garage", lat: -4.0500, lng: 39.6500, title: " Coast Breakdown & Refinishing", desc: "Shimanzi, Mombasa | Rating: 4.8 | SLA 96%", color: "#ff6b00" },
+    { type: "garage", lat: -0.1000, lng: 34.7500, title: " Lakeside Motor Body Works", desc: "Kisumu Industrial Zone | Rating: 4.7 | SLA 94%", color: "#ff6b00" },
+    { type: "garage", lat: -0.2900, lng: 36.0700, title: " Rift Valley Panel Clinic", desc: "Nakuru Town West | Rating: 4.8 | SLA 97%", color: "#ff6b00" },
+    { type: "garage", lat: 0.5200, lng: 35.2800, title: " Highland Auto Repairs", desc: "Eldoret Highway Zone | Rating: 4.9 | SLA 96%", color: "#ff6b00" },
+    { type: "garage", lat: -0.4100, lng: 36.9500, title: " Mount Kenya Motor Works", desc: "Nyeri King'ong'o Area | Rating: 4.7 | SLA 93%", color: "#ff6b00" },
 
     // County Branch Offices
-    { type: "branch", lat: -1.2830, lng: 36.8200, title: "🏢 EIMS Head Office Nairobi", desc: "429 New Policies | KSh 37.28M Gross Premium", color: "#10b981" },
-    { type: "branch", lat: -4.0400, lng: 39.6600, title: "🏢 Mombasa Regional Branch", desc: "74 New Policies | KSh 6.42M Gross Premium", color: "#10b981" },
-    { type: "branch", lat: -0.0900, lng: 34.7600, title: "🏢 Kisumu Regional Branch", desc: "58 New Policies | KSh 5.04M Gross Premium", color: "#10b981" },
-    { type: "branch", lat: -0.3000, lng: 36.0750, title: "🏢 Nakuru Regional Branch", desc: "42 New Policies | KSh 3.65M Gross Premium", color: "#10b981" },
-    { type: "branch", lat: 0.5143, lng: 35.2698, title: "🏢 Eldoret Regional Branch", desc: "39 New Policies | KSh 3.39M Gross Premium", color: "#10b981" },
-    { type: "branch", lat: -0.4201, lng: 36.9476, title: "🏢 Nyeri Regional Branch", desc: "29 New Policies | KSh 2.52M Gross Premium", color: "#10b981" }
+    { type: "branch", lat: -1.2830, lng: 36.8200, title: " EIMS Head Office Nairobi", desc: "429 New Policies | KSh 37.28M Gross Premium", color: "#10b981" },
+    { type: "branch", lat: -4.0400, lng: 39.6600, title: " Mombasa Regional Branch", desc: "74 New Policies | KSh 6.42M Gross Premium", color: "#10b981" },
+    { type: "branch", lat: -0.0900, lng: 34.7600, title: " Kisumu Regional Branch", desc: "58 New Policies | KSh 5.04M Gross Premium", color: "#10b981" },
+    { type: "branch", lat: -0.3000, lng: 36.0750, title: " Nakuru Regional Branch", desc: "42 New Policies | KSh 3.65M Gross Premium", color: "#10b981" },
+    { type: "branch", lat: 0.5143, lng: 35.2698, title: " Eldoret Regional Branch", desc: "39 New Policies | KSh 3.39M Gross Premium", color: "#10b981" },
+    { type: "branch", lat: -0.4201, lng: 36.9476, title: " Nyeri Regional Branch", desc: "29 New Policies | KSh 2.52M Gross Premium", color: "#10b981" }
   ];
   
   mapData.forEach(item => {
@@ -3760,7 +3774,7 @@ function openEditClaim(claimId) {
   
   activeEditRecord = { type: "claim", data: claim };
   
-  document.getElementById("edit-modal-title").innerText = `✏️ Edit Claim File: ${claim.id}`;
+  document.getElementById("edit-modal-title").innerText = ` Edit Claim File: ${claim.id}`;
   document.getElementById("edit-record-id").value = claim.id;
   document.getElementById("edit-record-type").value = "claim";
   
@@ -3814,7 +3828,7 @@ function openEditPolicy(policyNo) {
   
   activeEditRecord = { type: "policy", data: policy };
   
-  document.getElementById("edit-modal-title").innerText = `✏️ Edit Policy Record: ${policy.policyNo}`;
+  document.getElementById("edit-modal-title").innerText = ` Edit Policy Record: ${policy.policyNo}`;
   document.getElementById("edit-record-id").value = policy.policyNo;
   document.getElementById("edit-record-type").value = "policy";
   
@@ -3863,7 +3877,7 @@ function openEditGarage(garageIndex) {
   
   activeEditRecord = { type: "garage", data: garage, index: garageIndex };
   
-  document.getElementById("edit-modal-title").innerText = `✏️ Edit Garage & Repair Milestone: ${garage.name}`;
+  document.getElementById("edit-modal-title").innerText = ` Edit Garage & Repair Milestone: ${garage.name}`;
   document.getElementById("edit-record-id").value = garageIndex;
   document.getElementById("edit-record-type").value = "garage";
   
@@ -3896,7 +3910,7 @@ function openEditAssessor(assessorName) {
   const assessor = assessors.find(a => a.name === assessorName) || assessors[0];
   activeEditRecord = { type: "assessor", data: assessor };
   
-  document.getElementById("edit-modal-title").innerText = `✏️ Edit Loss Assessor Firm: ${assessor.name}`;
+  document.getElementById("edit-modal-title").innerText = ` Edit Loss Assessor Firm: ${assessor.name}`;
   document.getElementById("edit-record-id").value = assessor.name;
   document.getElementById("edit-record-type").value = "assessor";
   
@@ -3924,7 +3938,7 @@ function openEditAssessor(assessorName) {
 function openEditReinsurance() {
   activeEditRecord = { type: "reinsurance" };
   
-  document.getElementById("edit-modal-title").innerText = `✏️ Edit Reinsurance Cession Shares & Limits`;
+  document.getElementById("edit-modal-title").innerText = ` Edit Reinsurance Cession Shares & Limits`;
   document.getElementById("edit-record-id").value = "reinsurance";
   document.getElementById("edit-record-type").value = "reinsurance";
   
@@ -3957,7 +3971,7 @@ function openEditSubrogation(claimId) {
   const sub = subrogationCases.find(s => s.claimId === claimId) || subrogationCases[0];
   activeEditRecord = { type: "subrogation", data: sub };
   
-  document.getElementById("edit-modal-title").innerText = `✏️ Edit Subrogation Demand Notice: ${sub.claimId}`;
+  document.getElementById("edit-modal-title").innerText = ` Edit Subrogation Demand Notice: ${sub.claimId}`;
   document.getElementById("edit-record-id").value = sub.claimId;
   document.getElementById("edit-record-type").value = "subrogation";
   
@@ -3994,7 +4008,7 @@ function openEditFleetVehicle(fleetId) {
   const fleet = countyFleets.find(f => f.id === fleetId) || countyFleets[0];
   activeEditRecord = { type: "fleet", data: fleet };
   
-  document.getElementById("edit-modal-title").innerText = `✏️ Edit Fleet Underwriting Policy: ${fleet.id}`;
+  document.getElementById("edit-modal-title").innerText = ` Edit Fleet Underwriting Policy: ${fleet.id}`;
   document.getElementById("edit-record-id").value = fleet.id;
   document.getElementById("edit-record-type").value = "fleet";
   
@@ -4022,7 +4036,7 @@ function openEditFleetVehicle(fleetId) {
 function openEditIRATaxRates() {
   activeEditRecord = { type: "ira" };
   
-  document.getElementById("edit-modal-title").innerText = `✏️ Edit IRA & KRA Statutory Tax Rates`;
+  document.getElementById("edit-modal-title").innerText = ` Edit IRA & KRA Statutory Tax Rates`;
   document.getElementById("edit-record-id").value = "ira";
   document.getElementById("edit-record-type").value = "ira";
   
@@ -4201,7 +4215,7 @@ const demoDamagedCarImage = "data:image/svg+xml;utf8," + encodeURIComponent(`
   </g>
 
   <rect x="20" y="20" width="340" height="40" rx="8" fill="#090d16" fill-opacity="0.85" stroke="#ff6b00" stroke-width="1"/>
-  <text x="35" y="45" font-family="sans-serif" font-size="12" font-weight="bold" fill="#ff6b00">📷 EXIF TELEMETRY VERIFIED • NAIROBI CBD</text>
+  <text x="35" y="45" font-family="sans-serif" font-size="12" font-weight="bold" fill="#ff6b00"> EXIF TELEMETRY VERIFIED • NAIROBI CBD</text>
 </svg>
 `);
 
@@ -4415,7 +4429,7 @@ function renderVehicleLossRatios() {
     
     let riskBadge = `<span class="status-badge approved">Low Risk (${lossRatio.toFixed(1)}%)</span>`;
     if (lossRatio > 75) {
-      riskBadge = `<span class="status-badge investigation">🚨 High Risk (${lossRatio.toFixed(1)}%)</span>`;
+      riskBadge = `<span class="status-badge investigation"> High Risk (${lossRatio.toFixed(1)}%)</span>`;
     } else if (lossRatio >= 50) {
       riskBadge = `<span class="status-badge pending">Moderate Risk (${lossRatio.toFixed(1)}%)</span>`;
     }
@@ -4438,7 +4452,7 @@ function renderVehicleLossRatios() {
       <td>${riskBadge}</td>
       <td>${loadingBadge}</td>
       <td>
-        <button class="btn btn-secondary" onclick="adjustModelLoading('${m.model}')" style="padding:3px 8px; font-size:11px;">✏️ Adjust Premium</button>
+        <button class="btn btn-secondary" onclick="adjustModelLoading('${m.model}')" style="padding:3px 8px; font-size:11px;"> Adjust Premium</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -4455,7 +4469,7 @@ function applyHighRiskRateLoadings() {
 
   renderVehicleLossRatios();
   showToast(
-    "⚡ Actuarial Surcharges Activated!",
+    " Actuarial Surcharges Activated!",
     "Applied +20% mandatory rate loading to all high loss ratio vehicle models (>75% Loss Ratio). Underwriting quota engines updated.",
     "warning"
   );
@@ -4597,7 +4611,7 @@ function issueEVPolicyCertificate() {
 
   policies.unshift(newEVPolicy);
   openAKICertModal(newEVPolicy.policyNo);
-  showToast("⚡ EV Digital Certificate Issued!", `Issued official AKI Motor Certificate for ${model} (${total}/yr). Cryptographic QR generated.`, "success");
+  showToast(" EV Digital Certificate Issued!", `Issued official AKI Motor Certificate for ${model} (${total}/yr). Cryptographic QR generated.`, "success");
 }
 
 // ================= REMOTE WORK (WFH) & STAFF SURVEILLANCE ENGINE =================
@@ -4695,9 +4709,9 @@ function renderRemoteStaffTable() {
   filtered.forEach(s => {
     const tr = document.createElement("tr");
     
-    let statusBadge = `<span class="status-badge approved">🟢 ${s.status}</span>`;
+    let statusBadge = `<span class="status-badge approved"> ${s.status}</span>`;
     if (s.pulsePct < 90) {
-      statusBadge = `<span class="status-badge pending">🟡 ${s.status} (Idle Check)</span>`;
+      statusBadge = `<span class="status-badge pending"> ${s.status} (Idle Check)</span>`;
     }
 
     let pulseColor = "#10b981";
@@ -4720,7 +4734,7 @@ function renderRemoteStaffTable() {
       <td>${statusBadge}</td>
       <td>
         <div style="display:flex; gap:6px;">
-          <button class="btn btn-secondary" onclick="viewRemoteTelemetry('${s.id}')" style="padding:3px 8px; font-size:11px;">👁️ Telemetry</button>
+          <button class="btn btn-secondary" onclick="viewRemoteTelemetry('${s.id}')" style="padding:3px 8px; font-size:11px;"> Telemetry</button>
         </div>
       </td>
     `;
@@ -4733,11 +4747,11 @@ function triggerRemotePulseCheck() {
     s.pulsePct = Math.min(100, Math.max(85, s.pulsePct + Math.floor(Math.random() * 5 - 2)));
   });
   renderRemoteStaffTable();
-  showToast("📡 Remote Telemetry Pinged!", "Active heartbeats & screen focus verified for 6 remote WFH staff sessions. Zero data breach flags.", "success");
+  showToast(" Remote Telemetry Pinged!", "Active heartbeats & screen focus verified for 6 remote WFH staff sessions. Zero data breach flags.", "success");
 }
 
 function toggleWFHMode() {
-  showToast("🟢 WFH Session Active", "Your home device (IP 197.232.14.88) is connected via TLS 1.3 Encrypted Tunnel. Activity pulse active.", "info");
+  showToast(" WFH Session Active", "Your home device (IP 197.232.14.88) is connected via TLS 1.3 Encrypted Tunnel. Activity pulse active.", "info");
 }
 
 function viewRemoteTelemetry(staffId) {
@@ -4745,7 +4759,7 @@ function viewRemoteTelemetry(staffId) {
   if (!staff) return;
 
   showToast(
-    `👁️ Remote Telemetry: ${staff.name}`,
+    ` Remote Telemetry: ${staff.name}`,
     `Location: ${staff.location} | IP: ${staff.ip} | Active Task: ${staff.activeTask} (${staff.pulsePct}% Keyboard/Mouse Pulse).`,
     "info"
   );
@@ -4803,7 +4817,7 @@ function renderPesaFlowTransactionsTable() {
       <td>KSh ${t.stampDuty} (Paid)</td>
       <td><span class="status-badge approved">✓ ${t.status}</span></td>
       <td>
-        <button class="btn btn-secondary" onclick="viewPesaFlowReceipt('${t.ref}')" style="padding:3px 8px; font-size:11px;">📄 Receipt</button>
+        <button class="btn btn-secondary" onclick="viewPesaFlowReceipt('${t.ref}')" style="padding:3px 8px; font-size:11px;"> Receipt</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -4824,16 +4838,16 @@ function confirmECitizenSSO() {
   const idNo = document.getElementById("ecitizen-id-input")?.value || "28910293";
   closeECitizenSSOModal();
   showToast(
-    "🏛️ e-Citizen SSO Authenticated!",
+    " e-Citizen SSO Authenticated!",
     `User National ID ${idNo} authenticated via e-Citizen OAuth2 Single Sign-On. NTSA motor logbooks linked.`,
     "success"
   );
 }
 
 function runECitizenNTSASync() {
-  showToast("🔄 Syncing NTSA Motor Registry", "Querying e-Citizen NTSA Motor Database API for active vehicle logbooks...", "info");
+  showToast(" Syncing NTSA Motor Registry", "Querying e-Citizen NTSA Motor Database API for active vehicle logbooks...", "info");
   setTimeout(() => {
-    showToast("✅ NTSA Registry Synced!", "Verified 4,290 registered motor logbooks and chassis IDs against e-Citizen ledger.", "success");
+    showToast(" NTSA Registry Synced!", "Verified 4,290 registered motor logbooks and chassis IDs against e-Citizen ledger.", "success");
   }, 1200);
 }
 
@@ -4876,7 +4890,7 @@ function confirmPesaFlowPayment() {
   renderPesaFlowTransactionsTable();
 
   showToast(
-    "💳 PesaFlow Payment Confirmed!",
+    " PesaFlow Payment Confirmed!",
     `Settled KSh ${amount.toLocaleString()} via ${channel} (Paybill 222222, Bill Ref: ${billNo}). KRA Stamp Duty remitted.`,
     "success"
   );
@@ -4887,7 +4901,7 @@ function viewPesaFlowReceipt(refId) {
   if (!tx) return;
 
   showToast(
-    `📄 PesaFlow Receipt: ${tx.ref}`,
+    ` PesaFlow Receipt: ${tx.ref}`,
     `Bill: ${tx.billNo} | Payer: ${tx.payer} | Amount: KSh ${tx.amount.toLocaleString()} via ${tx.channel}. KRA Stamp Duty Remitted (KSh 40).`,
     "info"
   );
@@ -4978,7 +4992,7 @@ function renderITaxRemittanceTable() {
       <td><code style="font-size:10px; color:var(--primary);">${r.etimsCode}</code></td>
       <td><span class="status-badge approved">✓ ${r.status}</span></td>
       <td>
-        <button class="btn btn-secondary" onclick="viewITaxReceipt('${r.ackRef}')" style="padding:3px 8px; font-size:11px;">📄 iTax Receipt</button>
+        <button class="btn btn-secondary" onclick="viewITaxReceipt('${r.ackRef}')" style="padding:3px 8px; font-size:11px;"> iTax Receipt</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -5014,16 +5028,16 @@ function confirmITaxFiling() {
   renderITaxRemittanceTable();
 
   showToast(
-    `🇰🇪 KRA iTax Return Filed (${returnType})`,
+    ` KRA iTax Return Filed (${returnType})`,
     `Successfully auto-filed Form ${returnType} on KRA iTax. Ack Ref: ${newAck.ackRef}. Net tax remitted: ${payable}.`,
     "success"
   );
 }
 
 function runETIMSBulkSync() {
-  showToast("⚡ Syncing eTIMS Tax Invoices", "Encrypting and transmitting debit notes & claim invoices to KRA eTIMS Server...", "info");
+  showToast(" Syncing eTIMS Tax Invoices", "Encrypting and transmitting debit notes & claim invoices to KRA eTIMS Server...", "info");
   setTimeout(() => {
-    showToast("✅ eTIMS Invoices Synced!", "Verified 1,842 eTIMS QR Control Codes with KRA eTIMS Central Database.", "success");
+    showToast(" eTIMS Invoices Synced!", "Verified 1,842 eTIMS QR Control Codes with KRA eTIMS Central Database.", "success");
   }, 1200);
 }
 
@@ -5032,7 +5046,7 @@ function viewITaxReceipt(ackRef) {
   if (!r) return;
 
   showToast(
-    `📄 KRA iTax Certificate: ${r.ackRef}`,
+    ` KRA iTax Certificate: ${r.ackRef}`,
     `Origin: ${r.origin} | Tax Head: ${r.head} | Tax Paid: KSh ${r.taxAmount.toLocaleString()} | eTIMS: ${r.etimsCode}`,
     "info"
   );
@@ -5198,7 +5212,7 @@ function renderLPRScansTable() {
       <td><span class="status-badge approved">✓ ${s.status}</span></td>
       <td><span style="font-size:11.5px; color:var(--text-secondary);">${s.location}</span></td>
       <td>
-        <button class="btn btn-secondary" onclick="viewLPREXIFMedia('${s.plate}')" style="padding:3px 8px; font-size:11px;">👁️ EXIF Frame</button>
+        <button class="btn btn-secondary" onclick="viewLPREXIFMedia('${s.plate}')" style="padding:3px 8px; font-size:11px;"> EXIF Frame</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -5224,7 +5238,7 @@ function onLPRFormatChange() {
   if (anConf) anConf.innerText = `${data.conf}% Match`;
   if (anRfid) anRfid.innerText = `RFID Tag ID: ${data.rfid}`;
 
-  showToast(`📸 LPR Recognized: ${data.plate}`, `Extracted ${data.type} with ${data.conf}% OCR Confidence. NTSA Database Synced.`, "info");
+  showToast(` LPR Recognized: ${data.plate}`, `Extracted ${data.type} with ${data.conf}% OCR Confidence. NTSA Database Synced.`, "info");
 }
 
 function triggerLPRLiveFeedScan() {
@@ -5250,11 +5264,11 @@ function triggerLPRLiveFeedScan() {
   lprScanLogs.unshift(newLog);
   renderLPRScansTable();
 
-  showToast("📸 Live Camera ANPR Capture", `Successfully scanned vehicle plate ${data.plate} (${data.type}) at 60 FPS.`, "success");
+  showToast(" Live Camera ANPR Capture", `Successfully scanned vehicle plate ${data.plate} (${data.type}) at 60 FPS.`, "success");
 }
 
 function simulateAllKenyanPlates() {
-  showToast("⚡ Running ANPR Batch Test", "Executing OCR multi-category recognition on 8 Kenyan plate formats...", "info");
+  showToast(" Running ANPR Batch Test", "Executing OCR multi-category recognition on 8 Kenyan plate formats...", "info");
   
   setTimeout(() => {
     Object.keys(lprSampleFormats).forEach(k => {
@@ -5270,14 +5284,14 @@ function simulateAllKenyanPlates() {
       });
     });
     renderLPRScansTable();
-    showToast("✅ 8 Kenyan Plate Formats Passed!", "Successfully recognized Civilian, EV, PSV, GK, County, Diplomatic CD, Military KDF, and Boda Boda plates.", "success");
+    showToast(" 8 Kenyan Plate Formats Passed!", "Successfully recognized Civilian, EV, PSV, GK, County, Diplomatic CD, Military KDF, and Boda Boda plates.", "success");
   }, 1200);
 }
 
 function viewLPREXIFMedia(plateNo) {
   const item = lprScanLogs.find(x => x.plate === plateNo);
   showToast(
-    `👁️ LPR Frame Audit: ${plateNo}`,
+    ` LPR Frame Audit: ${plateNo}`,
     `Location: ${item ? item.location : "Highway Camera 01"} | OCR Confidence: ${item ? item.conf : "99.4%"} | RFID Tag Verified.`,
     "info"
   );
@@ -5320,10 +5334,12 @@ function renderStandardQRCodeContainer(container, text, options = {}) {
       setTimeout(() => {
         const logoOverlay = document.createElement("div");
         const logoSize = Math.floor(size * 0.20);
-        let badgeIcon = "☂️";
+        // Text acronyms rather than emoji: they scale cleanly and render the
+        // same on every device, which pictographs did not.
+        let badgeIcon = "AMACO";
 
-        if (logoType === "aki") { badgeIcon = "🛡️"; }
-        else if (logoType === "kra") { badgeIcon = "🇰🇪"; }
+        if (logoType === "aki") { badgeIcon = "AKI"; }
+        else if (logoType === "kra") { badgeIcon = "KRA"; }
 
         logoOverlay.style.cssText = `
           position: absolute;
@@ -5338,7 +5354,10 @@ function renderStandardQRCodeContainer(container, text, options = {}) {
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: ${Math.floor(logoSize * 0.5)}px;
+          font-size: ${Math.floor(logoSize * (badgeIcon.length > 3 ? 0.21 : 0.3))}px;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+          color: ${fgColor};
           box-shadow: 0 4px 10px rgba(0,0,0,0.3);
           pointer-events: none;
         `;
@@ -5361,7 +5380,7 @@ function loadQRPreset(type) {
     else if (type === "kra") logoSel.value = "none";
     else if (type === "ecitizen" || type === "ntsa") logoSel.value = "none";
     updateTestQRCode();
-    showToast(`⚡ Test Payload Loaded: ${type.toUpperCase()}`, "Ultra-scannable QR Code generated.", "info");
+    showToast(` Test Payload Loaded: ${type.toUpperCase()}`, "Ultra-scannable QR Code generated.", "info");
   }
 }
 
@@ -5444,7 +5463,7 @@ function downloadNTSAPoliceBadge() {
     downloadLink.download = "NTSA-POLICE-SCAN-TO-VERIFY-BADGE.png";
     document.body.appendChild(downloadLink);
     downloadLink.click();
-    showToast("📥 Badge Downloaded", "Saved NTSA / Police Verified Scannable Badge PNG.", "success");
+    showToast(" Badge Downloaded", "Saved NTSA / Police Verified Scannable Badge PNG.", "success");
   }
 }
 
@@ -5466,7 +5485,7 @@ function downloadQRCodePNG() {
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
-    showToast("📥 QR Code Downloaded", "Saved 100% scannable PNG image.", "success");
+    showToast(" QR Code Downloaded", "Saved 100% scannable PNG image.", "success");
   }
 }
 
@@ -5474,7 +5493,7 @@ function copyQRPayload() {
   const payloadBox = document.getElementById("qr-input-payload");
   if (payloadBox && payloadBox.value) {
     navigator.clipboard.writeText(payloadBox.value).then(() => {
-      showToast("📋 Copied Payload Text", "QR Code URL copied to clipboard.", "info");
+      showToast(" Copied Payload Text", "QR Code URL copied to clipboard.", "info");
     });
   }
 }
@@ -5496,14 +5515,14 @@ function simulateQRScanTrigger() {
   const textElem = document.getElementById("qr-scan-result-text");
 
   if (statusElem) {
-    statusElem.innerText = "⏳ Optical Scanning & Hashing...";
+    statusElem.innerText = " Optical Scanning & Hashing...";
   }
 
   setTimeout(() => {
-    if (statusElem) statusElem.innerText = "✅ AUTHENTICATED SHA-256 QR PAYLOAD DETECTED";
+    if (statusElem) statusElem.innerText = " AUTHENTICATED SHA-256 QR PAYLOAD DETECTED";
     if (textElem) textElem.innerText = payload;
 
-    showToast("✅ QR Scan Successful!", `Parsed payload: ${payload.substring(0, 45)}...`, "success");
+    showToast(" QR Scan Successful!", `Parsed payload: ${payload.substring(0, 45)}...`, "success");
   }, 700);
 }
 
@@ -5613,9 +5632,9 @@ function renderNotificationDispatchTable() {
   tbody.innerHTML = "";
   notificationLogs.forEach(log => {
     let channelBadge = "";
-    if (log.channel === "SMS Alert") channelBadge = `<span class="badge-tag" style="background:rgba(255,107,0,0.15); color:#ff8533;">📱 SMS Alert</span>`;
-    else if (log.channel === "WhatsApp") channelBadge = `<span class="badge-tag" style="background:rgba(16,185,129,0.15); color:#34d399;">💬 WhatsApp</span>`;
-    else channelBadge = `<span class="badge-tag" style="background:rgba(2,102,204,0.15); color:#38bdf8;">✉️ Rich Email</span>`;
+    if (log.channel === "SMS Alert") channelBadge = `<span class="badge-tag" style="background:rgba(255,107,0,0.15); color:#ff8533;"> SMS Alert</span>`;
+    else if (log.channel === "WhatsApp") channelBadge = `<span class="badge-tag" style="background:rgba(16,185,129,0.15); color:#34d399;"> WhatsApp</span>`;
+    else channelBadge = `<span class="badge-tag" style="background:rgba(2,102,204,0.15); color:#38bdf8;"> Rich Email</span>`;
 
     const tr = document.createElement("tr");
     tr.style.borderBottom = "1px solid var(--border-color)";
@@ -5625,10 +5644,10 @@ function renderNotificationDispatchTable() {
       <td style="padding:10px;">${channelBadge}</td>
       <td style="padding:10px;"><code style="color:#38bdf8;">${log.claimId}</code><br><span style="font-size:11px; color:var(--text-muted);">${log.plate}</span></td>
       <td style="padding:10px; font-weight:600; color:var(--text-primary);">${log.event}</td>
-      <td style="padding:10px; font-size:11.5px; color:var(--text-secondary);"><span style="color:#34d399;">✅</span> ${log.delivery}</td>
+      <td style="padding:10px; font-size:11.5px; color:var(--text-secondary);"><span style="color:#34d399;"></span> ${log.delivery}</td>
       <td style="padding:10px; text-align:right;">
         <button class="btn btn-secondary" onclick="loadNotificationLogToPhone('${log.id}')" style="font-size:11.5px; padding:4px 10px;">
-          👁️ Load in Sim
+           Load in Sim
         </button>
       </td>
     `;
@@ -5701,7 +5720,7 @@ function loadNotificationLogToPhone(logId) {
     `;
   }
 
-  showToast(`📡 Telemetry Loaded: ${log.id}`, `Previewing ${log.channel} for ${log.recipient} (${log.plate}).`, "info");
+  showToast(` Telemetry Loaded: ${log.id}`, `Previewing ${log.channel} for ${log.recipient} (${log.plate}).`, "info");
 }
 
 // ================= CAMERA CAPTURE SYSTEM =================
