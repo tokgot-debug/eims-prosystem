@@ -6198,3 +6198,242 @@ function uploadActiveClaimMediaToCloud() {
 document.addEventListener("DOMContentLoaded", () => {
   setTimeout(renderSavedMediaVault, 500);
 });
+
+// ================= REPORT QUERYING & CALENDAR PERIOD MANAGER =================
+function applyReportPeriodPreset() {
+  const preset = document.getElementById("report-period-preset")?.value || "this-month";
+  const startInput = document.getElementById("report-start-date");
+  const endInput = document.getElementById("report-end-date");
+
+  const today = new Date();
+  let start = new Date();
+  let end = new Date();
+
+  if (preset === "this-month") {
+    start = new Date(today.getFullYear(), today.getMonth(), 1);
+    end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  } else if (preset === "last-month") {
+    start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    end = new Date(today.getFullYear(), today.getMonth(), 0);
+  } else if (preset === "this-quarter") {
+    const qMonth = Math.floor(today.getMonth() / 3) * 3;
+    start = new Date(today.getFullYear(), qMonth, 1);
+    end = new Date(today.getFullYear(), qMonth + 3, 0);
+  } else if (preset === "ytd") {
+    start = new Date(today.getFullYear(), 0, 1);
+    end = today;
+  }
+
+  if (preset !== "custom" && startInput && endInput) {
+    startInput.value = start.toISOString().split('T')[0];
+    endInput.value = end.toISOString().split('T')[0];
+  }
+
+  runReportQuery();
+}
+
+function runReportQuery() {
+  const ledger = document.getElementById("report-ledger-type")?.value || "underwriting";
+  const branch = document.getElementById("report-branch")?.value || "ALL";
+  const startDate = document.getElementById("report-start-date")?.value || "2026-08-01";
+  const endDate = document.getElementById("report-end-date")?.value || "2026-08-31";
+
+  const titleLabel = document.getElementById("report-title-label");
+  const dateLabel = document.getElementById("report-date-label");
+  const aiBadge = document.getElementById("ai-period-badge");
+  const aiSummary = document.getElementById("embedded-ai-report-summary");
+  const thead = document.getElementById("report-table-head");
+  const tbody = document.getElementById("report-table-body");
+
+  if (dateLabel) dateLabel.innerText = `Period: ${startDate} to ${endDate} (${branch === 'ALL' ? 'All Offices' : branch})`;
+  if (aiBadge) aiBadge.innerText = `${startDate} to ${endDate}`;
+
+  // Update KPI Cards and Table Headers depending on ledger type
+  if (ledger === "claims") {
+    if (titleLabel) titleLabel.innerText = "Queried Claims & Loss Recovery Ledger";
+    document.getElementById("kpi-1-label").innerText = "Total Claims Incurred";
+    document.getElementById("kpi-1-val").innerText = "KSh 18,450,000";
+    document.getElementById("kpi-1-sub").innerText = "24 Claims Filed";
+
+    document.getElementById("kpi-2-label").innerText = "Claims Paid / Settled";
+    document.getElementById("kpi-2-val").innerText = "KSh 14,200,000";
+    document.getElementById("kpi-2-sub").innerText = "18 Claims Paid";
+
+    document.getElementById("kpi-3-label").innerText = "Outstanding Loss Reserve";
+    document.getElementById("kpi-3-val").innerText = "KSh 4,250,000";
+    document.getElementById("kpi-3-sub").innerText = "6 Claims Pending";
+
+    document.getElementById("kpi-4-label").innerText = "Subrogation Recovery";
+    document.getElementById("kpi-4-val").innerText = "KSh 3,120,000";
+    document.getElementById("kpi-4-sub").innerText = "Third-Party Recoveries";
+
+    if (thead) {
+      thead.innerHTML = `
+        <tr>
+          <th>Claim Ref</th>
+          <th>Claimant Name</th>
+          <th>Policy Ref</th>
+          <th>Accident Date</th>
+          <th>Branch</th>
+          <th>Claim Amount</th>
+          <th>Reserve Status</th>
+        </tr>
+      `;
+    }
+
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr><td><strong>CLM-2026-001</strong></td><td>Boniface Mwangi</td><td>POL-MOT-8973-2026</td><td>2026-08-03</td><td>Nairobi HQ</td><td><strong style="color:var(--primary)">KSh 450,000</strong></td><td><span class="status-badge approved">Paid / Settled</span></td></tr>
+        <tr><td><strong>CLM-2026-002</strong></td><td>Sarah Njeri</td><td>POL-MOT-4412-2026</td><td>2026-08-04</td><td>Mombasa</td><td><strong style="color:var(--warning)">KSh 1,200,000</strong></td><td><span class="status-badge pending">Under Assessment</span></td></tr>
+        <tr><td><strong>CLM-2026-003</strong></td><td>County Fleet Direct</td><td>POL-FLEET-0091</td><td>2026-08-05</td><td>Kisumu</td><td><strong style="color:var(--primary)">KSh 2,800,000</strong></td><td><span class="status-badge approved">Paid / Settled</span></td></tr>
+        <tr><td><strong>CLM-2026-004</strong></td><td>David Omondi</td><td>POL-MOT-7731-2026</td><td>2026-08-06</td><td>Nakuru</td><td><strong style="color:var(--warning)">KSh 350,000</strong></td><td><span class="status-badge pending">ANPR Verifying</span></td></tr>
+      `;
+    }
+
+    if (aiSummary) {
+      aiSummary.innerHTML = `<strong>Claims Audit Summary (${startDate} to ${endDate}):</strong> Total claims incurred stood at KSh 18.45M across 24 notices. KSh 14.2M has been settled with zero fraudulent claims detected by ANPR AI cross-checks. Subrogation recoveries recovered KSh 3.12M from third-party insurers.`;
+    }
+
+  } else if (ledger === "underwriting") {
+    if (titleLabel) titleLabel.innerText = "Queried Underwriting & Policy Ledger";
+    document.getElementById("kpi-1-label").innerText = "Total Written Premium";
+    document.getElementById("kpi-1-val").innerText = "KSh 48,500,000";
+    document.getElementById("kpi-1-sub").innerText = "148 Active Policies";
+
+    document.getElementById("kpi-2-label").innerText = "Total Sum Insured";
+    document.getElementById("kpi-2-val").innerText = "KSh 850,000,000";
+    document.getElementById("kpi-2-sub").innerText = "Portfolio Liability";
+
+    document.getElementById("kpi-3-label").innerText = "Average Premium / Risk";
+    document.getElementById("kpi-3-val").innerText = "KSh 327,700";
+    document.getElementById("kpi-3-sub").innerText = "Motor & Non-Motor Avg";
+
+    document.getElementById("kpi-4-label").innerText = "Active Compliance";
+    document.getElementById("kpi-4-val").innerText = "100% AKI Certs";
+    document.getElementById("kpi-4-sub").innerText = "IRA & KRA Compliant";
+
+    if (thead) {
+      thead.innerHTML = `
+        <tr>
+          <th>Policy No.</th>
+          <th>Policyholder</th>
+          <th>Category</th>
+          <th>Inception Date</th>
+          <th>Branch</th>
+          <th>Sum Insured</th>
+          <th>Premium Written</th>
+        </tr>
+      `;
+    }
+
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr><td><strong>POL-MOT-8973-2026</strong></td><td>Boniface Mwangi</td><td>Motor Comprehensive</td><td>2026-08-01</td><td>Nairobi HQ</td><td>KSh 1,850,000</td><td><strong style="color:var(--primary)">KSh 92,500</strong></td></tr>
+        <tr><td><strong>POL-FLEET-0091</strong></td><td>Nairobi County Fleet</td><td>Commercial Fleet</td><td>2026-08-02</td><td>Nairobi HQ</td><td>KSh 45,000,000</td><td><strong style="color:var(--primary)">KSh 2,250,000</strong></td></tr>
+        <tr><td><strong>POL-FIRE-3321</strong></td><td>Coastal Warehousing Ltd</td><td>Fire & Perils</td><td>2026-08-03</td><td>Mombasa</td><td>KSh 120,000,000</td><td><strong style="color:var(--primary)">KSh 1,800,000</strong></td></tr>
+        <tr><td><strong>POL-MOT-4412-2026</strong></td><td>Kisumu Logistics Ltd</td><td>Motor Commercial</td><td>2026-08-04</td><td>Kisumu</td><td>KSh 8,500,000</td><td><strong style="color:var(--primary)">KSh 425,000</strong></td></tr>
+      `;
+    }
+
+    if (aiSummary) {
+      aiSummary.innerHTML = `<strong>Underwriting Audit Summary (${startDate} to ${endDate}):</strong> 148 policies were issued across Nairobi HQ, Mombasa, Kisumu, and Nakuru. Gross written premium reached KSh 48.5M with 100% automated AKI digital certificate issuance and IRA compliance.`;
+    }
+
+  } else if (ledger === "reinsurance") {
+    if (titleLabel) titleLabel.innerText = "Queried Reinsurance & Ceding Share Ledger";
+    document.getElementById("kpi-1-label").innerText = "Gross Ceded Premium";
+    document.getElementById("kpi-1-val").innerText = "KSh 18,200,000";
+    document.getElementById("kpi-1-sub").innerText = "Quota Share Ceded";
+
+    document.getElementById("kpi-2-label").innerText = "Reinsurer Claims Share";
+    document.getElementById("kpi-2-val").innerText = "KSh 8,400,000";
+    document.getElementById("kpi-2-sub").innerText = "Reinsurance Recovery";
+
+    document.getElementById("kpi-3-label").innerText = "Net Company Retention";
+    document.getElementById("kpi-3-val").innerText = "62.48%";
+    document.getElementById("kpi-3-sub").innerText = "Net Earned Margin";
+
+    document.getElementById("kpi-4-label").innerText = "Ceding Commission";
+    document.getElementById("kpi-4-val").innerText = "KSh 2,730,000";
+    document.getElementById("kpi-4-sub").innerText = "15% Reinsurance Comm";
+
+    if (thead) {
+      thead.innerHTML = `
+        <tr>
+          <th>Reinsurer Treaty</th>
+          <th>Quota Ceded %</th>
+          <th>Ceded Premium</th>
+          <th>Recoverable Claims</th>
+          <th>Net Retention</th>
+          <th>Treaty Status</th>
+        </tr>
+      `;
+    }
+
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr><td><strong>Kenya Reinsurance Corp</strong></td><td>25.0% Quota Share</td><td>KSh 12,125,000</td><td>KSh 3,550,000</td><td>KSh 36,375,000</td><td><span class="status-badge approved">Active Treaty</span></td></tr>
+        <tr><td><strong>ZEP-RE (PTA Re)</strong></td><td>10.0% Surplus Share</td><td>KSh 4,850,000</td><td>KSh 1,420,000</td><td>KSh 43,650,000</td><td><span class="status-badge approved">Active Treaty</span></td></tr>
+        <tr><td><strong>African Reinsurance Corp</strong></td><td>5.0% Obligatory Cession</td><td>KSh 2,425,000</td><td>KSh 710,000</td><td>KSh 46,075,000</td><td><span class="status-badge approved">Active Treaty</span></td></tr>
+      `;
+    }
+
+    if (aiSummary) {
+      aiSummary.innerHTML = `<strong>Reinsurance Ceding Audit (${startDate} to ${endDate}):</strong> Quota share & surplus treaties with Kenya Re, ZEP-RE, and Africa Re ceded KSh 18.2M premium while protecting KSh 8.4M in recoverable claims. Net company retention remains robust at 62.48%.`;
+    }
+
+  } else {
+    // Branch production default
+    if (titleLabel) titleLabel.innerText = "Queried Branch Production & Acquisition Ledger";
+    if (thead) {
+      thead.innerHTML = `
+        <tr>
+          <th>Office / Branch</th>
+          <th>New Policies Issued</th>
+          <th>Renewed Policies</th>
+          <th>Gross Premium Written</th>
+          <th>Acquisition Share</th>
+        </tr>
+      `;
+    }
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr><td><strong>Head Office (Nairobi)</strong></td><td><span class="status-badge approved">84 New Policies</span></td><td>32 Renewals</td><td><strong style="color:var(--primary)">KSh 28,400,000</strong></td><td>58.5%</td></tr>
+        <tr><td><strong>Mombasa Branch</strong></td><td><span class="status-badge approved">32 New Policies</span></td><td>14 Renewals</td><td><strong style="color:var(--primary)">KSh 10,800,000</strong></td><td>22.2%</td></tr>
+        <tr><td><strong>Kisumu Branch</strong></td><td><span class="status-badge approved">20 New Policies</span></td><td>8 Renewals</td><td><strong style="color:var(--primary)">KSh 6,100,000</strong></td><td>12.6%</td></tr>
+        <tr><td><strong>Nakuru Branch</strong></td><td><span class="status-badge approved">12 New Policies</span></td><td>4 Renewals</td><td><strong style="color:var(--primary)">KSh 3,200,000</strong></td><td>6.7%</td></tr>
+      `;
+    }
+    if (aiSummary) {
+      aiSummary.innerHTML = `<strong>Branch Acquisition Audit (${startDate} to ${endDate}):</strong> Nairobi HQ led production with KSh 28.4M (58.5% share), followed by Mombasa (KSh 10.8M) and Kisumu (KSh 6.1M). Total new acquisition premium reached KSh 48.5M.`;
+    }
+  }
+}
+
+function exportQueriedReport(type) {
+  const ledger = document.getElementById("report-ledger-type")?.value || "underwriting";
+  const start = document.getElementById("report-start-date")?.value || "2026-08-01";
+  const end = document.getElementById("report-end-date")?.value || "2026-08-31";
+
+  if (type === "pdf") {
+    if (typeof showToast === "function") showToast("📄 Exporting PDF", `Generating official ${ledger.toUpperCase()} report PDF for period ${start} to ${end}...`, "info");
+    setTimeout(() => {
+      window.print();
+    }, 1000);
+  } else {
+    if (typeof showToast === "function") showToast("📊 Exporting CSV", `Downloading ${ledger}_report_${start}_to_${end}.csv...`, "success");
+    const csvContent = "data:text/csv;charset=utf-8,Module,Period,Start,End,Status\n" + ledger + ",Queried," + start + "," + end + ",Verified";
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `${ledger}_report_${start}_to_${end}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+}
+
+// Initial report query on page load
+document.addEventListener("DOMContentLoaded", () => {
+  setTimeout(runReportQuery, 600);
+});

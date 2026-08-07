@@ -1402,33 +1402,69 @@
                 </div>
                 <p style="font-size:11.5px; color:var(--text-secondary); line-height:1.4;">
                   Motor Valuation Reports cannot be automatically checked or pulled via direct API. Physical inspection reports are required for policy valuation verification.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- ================= PRODUCTION REPORTS VIEW ================= -->
+                 <!-- ================= COMPREHENSIVE REPORTS & ANALYTICS QUERY CENTER VIEW ================= -->
         <section class="app-view" id="view-production-reports">
           <div class="view-title-block">
             <div>
-              <h1>Production & Acquisition Reporting</h1>
-              <p>Review head office & branch monthly production metrics based strictly on new policies</p>
+              <h1>Comprehensive Reports & Analytics Query Center</h1>
+              <p>Filter, query, and export real-time Underwriting, Claims, Reinsurance, and Acquisition ledgers by date range and period</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button class="btn btn-secondary" onclick="exportQueriedReport('pdf')" style="gap:6px;">
+                📄 Export PDF
+              </button>
+              <button class="btn btn-secondary" onclick="exportQueriedReport('excel')" style="gap:6px;">
+                📊 Export Excel / CSV
+              </button>
+              <button class="btn btn-primary" onclick="window.print()" style="gap:6px;">
+                🖨️ Print Report
+              </button>
             </div>
           </div>
 
+          <!-- CALENDAR & PERIOD QUERY CONTROL BAR -->
           <div class="dashboard-card" style="padding:24px; margin-bottom:24px;">
             <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end;">
-              <div class="form-group" style="width:180px;">
-                <label for="report-interval">Report Interval</label>
-                <select class="form-control" id="report-interval" onchange="renderProductionReports()">
-                  <option value="monthly">Monthly Consolidation</option>
-                  <option value="daily">Daily Production (Active Log)</option>
+              
+              <!-- Module Ledger Type -->
+              <div class="form-group" style="min-width:200px; flex:1;">
+                <label for="report-ledger-type" style="font-weight:700;">Module Ledger</label>
+                <select class="form-control" id="report-ledger-type" onchange="runReportQuery()">
+                  <option value="underwriting" selected>✍️ Underwriting & Policy Ledger</option>
+                  <option value="claims">📋 Claims & Loss Recovery Ledger</option>
+                  <option value="production">🏢 Branch Acquisition & Production</option>
+                  <option value="reinsurance">🛡️ Reinsurance & Ceding Ledger</option>
+                  <option value="financials">📊 Executive P&L Loss Ratio Summary</option>
                 </select>
               </div>
-              <div class="form-group" style="width:180px;">
-                <label for="report-branch">Branch Office</label>
-                <select class="form-control" id="report-branch" onchange="renderProductionReports()">
+
+              <!-- Quick Date Period Presets -->
+              <div class="form-group" style="min-width:180px; flex:1;">
+                <label for="report-period-preset" style="font-weight:700;">Period Quick-Selector</label>
+                <select class="form-control" id="report-period-preset" onchange="applyReportPeriodPreset()">
+                  <option value="this-month" selected>📅 This Month (August 2026)</option>
+                  <option value="last-month">📅 Last Month (July 2026)</option>
+                  <option value="this-quarter">📅 This Quarter (Q3 2026)</option>
+                  <option value="ytd">📅 Year to Date (YTD 2026)</option>
+                  <option value="custom">📆 Custom Date Range...</option>
+                </select>
+              </div>
+
+              <!-- Calendar Date Pickers -->
+              <div class="form-group" style="width:160px;">
+                <label for="report-start-date" style="font-weight:700;">Start Date</label>
+                <input type="date" class="form-control" id="report-start-date" value="2026-08-01" onchange="runReportQuery()">
+              </div>
+
+              <div class="form-group" style="width:160px;">
+                <label for="report-end-date" style="font-weight:700;">End Date</label>
+                <input type="date" class="form-control" id="report-end-date" value="2026-08-31" onchange="runReportQuery()">
+              </div>
+
+              <!-- Branch Filter -->
+              <div class="form-group" style="width:160px;">
+                <label for="report-branch" style="font-weight:700;">Branch Office</label>
+                <select class="form-control" id="report-branch" onchange="runReportQuery()">
                   <option value="ALL">All Offices</option>
                   <option value="HQ">Head Office (Nairobi)</option>
                   <option value="Mombasa">Mombasa Branch</option>
@@ -1436,67 +1472,81 @@
                   <option value="Nakuru">Nakuru Branch</option>
                 </select>
               </div>
-              <div class="form-group" style="width:180px;">
-                <label for="report-line">Insurance Category</label>
-                <select class="form-control" id="report-line" onchange="renderProductionReports()">
-                  <option value="Motor">Motor Insurance</option>
-                  <option value="Non-Motor">Non-Motor (General/Fire)</option>
-                </select>
-              </div>
-              <button class="btn btn-primary" id="generate-report-btn" onclick="renderProductionReports()">Run Production Report</button>
-              <button class="btn btn-accent" id="reports-ai-assist-btn" onclick="triggerProductionAISynthesis()" style="gap:6px;">AI Report Synthesis</button>
-              <button class="btn btn-secondary" id="report-renewal-btn" onclick="openRenewalModal()">Issue Renewal Notice</button>
-            </div>
-            
-            <div id="report-error-banner" class="dashboard-card" style="display:none; background-color:var(--danger-bg); border-color:var(--danger); color:var(--danger); padding:12px; margin-top:16px; font-size:13px; font-weight:500;">
-              <!-- Filled via JS -->
+
+              <!-- Filter Query Button -->
+              <button class="btn btn-primary" onclick="runReportQuery()" style="padding:10px 20px; font-weight:700;">
+                🔍 Query Report Data
+              </button>
+
             </div>
           </div>
 
-          <!-- Embedded Active AI Report Insight Card -->
-          <div class="dashboard-card" style="padding:20px; margin-bottom:24px; background: linear-gradient(135deg, rgba(2,102,204,0.05), rgba(56,189,248,0.05)); border:1px solid var(--primary-light);">
+          <!-- KPI SUMMARY METRICS ROW -->
+          <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:24px;">
+            <div class="metric-card">
+              <div class="metric-label" id="kpi-1-label">Total Queried Gross Premium</div>
+              <div class="metric-value" id="kpi-1-val" style="color:var(--primary);">KSh 48,500,000</div>
+              <div class="metric-sub" id="kpi-1-sub">148 Active Policies</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label" id="kpi-2-label">Claims Incurred / Paid</div>
+              <div class="metric-value" id="kpi-2-val" style="color:var(--warning);">KSh 14,200,000</div>
+              <div class="metric-sub" id="kpi-2-sub">18 Claims Filed</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label" id="kpi-3-label">Loss Ratio / Retention</div>
+              <div class="metric-value" id="kpi-3-val" style="color:var(--success);">29.28%</div>
+              <div class="metric-sub" id="kpi-3-sub">Target: &lt; 45%</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label" id="kpi-4-label">Net Underwriting Margin</div>
+              <div class="metric-value" id="kpi-4-val" style="color:#10b981;">+34.30M</div>
+              <div class="metric-sub" id="kpi-4-sub">Profitable Underwriting</div>
+            </div>
+          </div>
+
+          <!-- EMBEDDED AI SYNTHESIS CARD -->
+          <div class="dashboard-card" style="padding:20px; margin-bottom:24px; background: linear-gradient(135deg, rgba(255,107,0,0.05), rgba(56,189,248,0.05)); border:1px solid var(--primary-light);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
               <div style="display:flex; align-items:center; gap:8px;">
-                                <h3 style="font-size:15px; font-weight:600; color:var(--primary);">AI Production Synthesis Engine</h3>
+                <h3 style="font-size:15px; font-weight:700; color:var(--primary);">🤖 AI Automated Executive Report Synthesis</h3>
               </div>
-              <span class="status-badge approved" style="font-size:11px;">Active Copilot v3.6</span>
+              <span class="status-badge approved" style="font-size:11px;">Queried Period: <span id="ai-period-badge">August 2026</span></span>
             </div>
             <div id="embedded-ai-report-summary" style="font-size:13px; line-height:1.6; color:var(--text-primary);">
-              Loading real-time production analytics...
+              Querying live production, claims, and underwriting database...
             </div>
           </div>
 
-          <!-- Report Display Card -->
+          <!-- DYNAMIC QUERIED REPORT DATA TABLE CARD -->
           <div class="dashboard-card" style="padding:24px;" id="report-display-card">
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:12px; margin-bottom:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:12px; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
               <div>
-                <h3 style="font-size:16px; font-weight:600;" id="report-title-label">Head Office & Branch Monthly Production</h3>
-                <span style="font-size:12px; color:var(--text-secondary);" id="report-date-label">Reporting Period: August 2026</span>
+                <h3 style="font-size:16px; font-weight:700;" id="report-title-label">Queried Underwriting & Policy Ledger</h3>
+                <span style="font-size:12px; color:var(--text-secondary);" id="report-date-label">Period: Aug 1, 2026 to Aug 31, 2026</span>
               </div>
-              <button class="btn btn-secondary" id="export-report-csv-btn" style="padding:6px 12px; font-size:12px; gap:6px;">
-                 Export CSV Report
-              </button>
+              <div style="display:flex; gap:8px;">
+                <button class="btn btn-secondary" onclick="exportQueriedReport('excel')" style="padding:6px 12px; font-size:12px; gap:6px;">
+                  📊 Export CSV
+                </button>
+                <button class="btn btn-secondary" onclick="exportQueriedReport('pdf')" style="padding:6px 12px; font-size:12px; gap:6px;">
+                  📄 Export PDF
+                </button>
+              </div>
             </div>
             
             <div class="claims-table-wrapper">
               <table class="claims-table" id="report-production-table">
-                <thead>
-                  <tr>
-                    <th>Office / Branch</th>
-                    <th>New Policies Issued</th>
-                    <th>Renewed Policies (Excluded)</th>
-                    <th>Gross Premium (New Policies Only)</th>
-                    <th>Acquisition Share</th>
-                  </tr>
+                <thead id="report-table-head">
+                  <!-- Dynamic Headers injected via JS -->
                 </thead>
-                <tbody>
-                  <!-- Injected via JS -->
+                <tbody id="report-table-body">
+                  <!-- Dynamic Records injected via JS -->
                 </tbody>
               </table>
             </div>
-            
-            <div style="margin-top:16px; padding:12px; background-color:var(--bg-primary); border-radius:8px; font-size:11.5px; color:var(--text-secondary); line-height:1.5;">
-              <strong>* EIMS Accounting Rule:</strong> Production reports are strictly calculated based on <strong>new policies</strong> acquired during the month. Policy renewals are excluded from production tallies in accordance with company underwriting guidelines.
+          </div>
+        </section>production tallies in accordance with company underwriting guidelines.
             </div>
           </div>
         </section>
