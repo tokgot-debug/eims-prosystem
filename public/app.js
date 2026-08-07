@@ -5957,7 +5957,7 @@ function takeLiveCameraPhotoSnap() {
     syncCapturedMediaToANPR(photoDataUrl, false);
   }
   if (typeof showToast === "function") {
-    showToast("📸 Live camera photo snapped successfully! Telemetry & EXIF GPS synced.", "success");
+    showToast(" Live camera photo snapped successfully! Telemetry & EXIF GPS synced.", "success");
   }
 }
 
@@ -6036,7 +6036,7 @@ function startVideoRecording() {
   }, 1000);
 
   if (typeof showToast === "function") {
-    showToast("🔴 Live scene video recording started!", "warning");
+    showToast(" Live scene video recording started!", "warning");
   }
 }
 
@@ -6092,7 +6092,7 @@ function saveRecordedVideoTelemetry() {
   }
 
   if (typeof showToast === "function") {
-    showToast("🎥 Live scene video recorded & EXIF telemetry saved successfully!", "success");
+    showToast(" Live scene video recorded & EXIF telemetry saved successfully!", "success");
   }
 }
 
@@ -6209,7 +6209,7 @@ function renderSavedMediaVault() {
       card.innerHTML = `
         <video src="${item.url}" style="width:100%; height:100%; object-fit:cover;"></video>
         <div style="position:absolute; inset:0; background:rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center;">
-          <span style="font-size:16px;">🎥</span>
+          <span style="font-size:16px;"></span>
         </div>
       `;
     } else {
@@ -6217,7 +6217,7 @@ function renderSavedMediaVault() {
     }
 
     if (item.uploaded) {
-      card.innerHTML += `<span style="position:absolute; top:3px; right:3px; background:#10b981; color:#fff; font-size:9px; font-weight:800; padding:1px 4px; border-radius:4px;">☁️ OK</span>`;
+      card.innerHTML += `<span style="position:absolute; top:3px; right:3px; background:#10b981; color:#fff; font-size:9px; font-weight:800; padding:1px 4px; border-radius:4px;"> OK</span>`;
     }
 
     container.appendChild(card);
@@ -6279,7 +6279,7 @@ function downloadActiveClaimMedia() {
   document.body.removeChild(a);
 
   if (typeof showToast === "function") {
-    showToast("💾 Media Saved", `Downloaded ${a.download} to your local device.`, "success");
+    showToast(" Media Saved", `Downloaded ${a.download} to your local device.`, "success");
   }
 }
 
@@ -6291,7 +6291,7 @@ function uploadActiveClaimMediaToCloud() {
   }
 
   if (typeof showToast === "function") {
-    showToast("☁️ Uploading...", `Syncing ${active.name} to Cloud Storage bucket...`, "info");
+    showToast(" Uploading...", `Syncing ${active.name} to Cloud Storage bucket...`, "info");
   }
 
   setTimeout(() => {
@@ -6299,7 +6299,7 @@ function uploadActiveClaimMediaToCloud() {
     active.cloudUrl = `https://eims-prosystem.firebasestorage.app/claims/${active.name}`;
     renderSavedMediaVault();
     if (typeof showToast === "function") {
-      showToast("☁️ Upload Complete", `Stored in Firebase Storage bucket: claims/${active.name}`, "success");
+      showToast(" Upload Complete", `Stored in Firebase Storage bucket: claims/${active.name}`, "success");
     }
   }, 1200);
 }
@@ -6710,12 +6710,12 @@ function exportQueriedReport(type) {
   const end = document.getElementById("report-end-date")?.value || "2026-08-31";
 
   if (type === "pdf") {
-    if (typeof showToast === "function") showToast("📄 Exporting PDF", `Generating official ${ledger.toUpperCase()} report PDF for period ${start} to ${end}...`, "info");
+    if (typeof showToast === "function") showToast(" Exporting PDF", `Generating official ${ledger.toUpperCase()} report PDF for period ${start} to ${end}...`, "info");
     setTimeout(() => {
       window.print();
     }, 1000);
   } else {
-    if (typeof showToast === "function") showToast("📊 Exporting CSV", `Downloading ${ledger}_report_${start}_to_${end}.csv...`, "success");
+    if (typeof showToast === "function") showToast(" Exporting CSV", `Downloading ${ledger}_report_${start}_to_${end}.csv...`, "success");
     const csvContent = "data:text/csv;charset=utf-8,Module,Period,Start,End,Status\n" + ledger + ",Queried," + start + "," + end + ",Verified";
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");

@@ -195,7 +195,7 @@
           <div class="accordion-content">
             <a class="accordion-item" data-view="production-reports" id="nav-production-reports">
               <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-              📊 Reports & Query Center
+               Reports & Query Center
             </a>
             <a class="accordion-item" data-view="vehicle-loss-ratios" id="nav-vehicle-loss-ratios">
               <svg viewBox="0 0 24 24"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>
@@ -556,7 +556,7 @@
             </div>
             <div style="display:flex; gap:10px;">
               <button class="btn btn-secondary" onclick="navigateToView('production-reports')">
-                📊 Reports & Query Center
+                 Reports & Query Center
               </button>
               <button class="btn btn-primary" onclick="navigateToView('create-claim')">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -861,14 +861,14 @@
               <div id="saved-media-vault-container" style="margin-top:16px; padding:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,107,0,0.25); border-radius:10px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
                   <span style="font-size:12px; font-weight:700; color:var(--primary); display:flex; align-items:center; gap:6px;">
-                    📁 Stored Claim Media Vault (<span id="saved-media-count">1 Item</span>)
+                     Stored Claim Media Vault (<span id="saved-media-count">1 Item</span>)
                   </span>
                   <div style="display:flex; gap:8px;">
                     <button type="button" class="btn btn-secondary" onclick="downloadActiveClaimMedia()" style="padding:5px 12px; font-size:11px;">
-                      💾 Download Local Copy
+                       Download Local Copy
                     </button>
                     <button type="button" class="btn btn-primary" onclick="uploadActiveClaimMediaToCloud()" style="padding:5px 12px; font-size:11px;">
-                      ☁️ Sync to Cloud Storage
+                       Sync to Cloud Storage
                     </button>
                   </div>
                 </div>
@@ -917,10 +917,10 @@
 
                   <div style="display:flex; gap:10px; margin-top:12px;">
                     <button type="button" class="btn btn-primary" id="anpr-scan-btn" onclick="runANPRScanSimulation()" style="flex:1;">
-                      ⚡ Execute ANPR OCR Scan
+                       Execute ANPR OCR Scan
                     </button>
                     <button type="button" class="btn btn-secondary" onclick="triggerANPRFileUpload()" style="padding:10px 14px; font-size:12px;">
-                      📤 Upload Photo / Video
+                       Upload Photo / Video
                     </button>
                   </div>
                 </div>
@@ -1422,13 +1422,13 @@
             </div>
             <div style="display:flex; gap:10px;">
               <button class="btn btn-secondary" onclick="exportQueriedReport('pdf')" style="gap:6px;">
-                📄 Export PDF
+                 Export PDF
               </button>
               <button class="btn btn-secondary" onclick="exportQueriedReport('excel')" style="gap:6px;">
-                📊 Export Excel / CSV
+                 Export Excel / CSV
               </button>
               <button class="btn btn-primary" onclick="window.print()" style="gap:6px;">
-                🖨️ Print Report
+                 Print Report
               </button>
             </div>
           </div>
@@ -1441,11 +1441,11 @@
               <div class="form-group" style="min-width:200px; flex:1;">
                 <label for="report-ledger-type" style="font-weight:700;">Module Ledger</label>
                 <select class="form-control" id="report-ledger-type" onchange="window.runReportQuery()">
-                  <option value="underwriting" selected>✍️ Underwriting & Policy Ledger</option>
-                  <option value="claims">📋 Claims & Loss Recovery Ledger</option>
-                  <option value="production">🏢 Branch Acquisition & Production</option>
-                  <option value="reinsurance">🛡️ Reinsurance & Ceding Ledger</option>
-                  <option value="financials">📊 Executive P&L Loss Ratio Summary</option>
+                  <option value="underwriting" selected> Underwriting & Policy Ledger</option>
+                  <option value="claims"> Claims & Loss Recovery Ledger</option>
+                  <option value="production"> Branch Acquisition & Production</option>
+                  <option value="reinsurance"> Reinsurance & Ceding Ledger</option>
+                  <option value="financials"> Executive P&L Loss Ratio Summary</option>
                 </select>
               </div>
 
@@ -1453,11 +1453,11 @@
               <div class="form-group" style="min-width:180px; flex:1;">
                 <label for="report-period-preset" style="font-weight:700;">Period Quick-Selector</label>
                 <select class="form-control" id="report-period-preset" onchange="window.applyReportPeriodPreset()">
-                  <option value="this-month" selected>📅 This Month (August 2026)</option>
-                  <option value="last-month">📅 Last Month (July 2026)</option>
-                  <option value="this-quarter">📅 This Quarter (Q3 2026)</option>
-                  <option value="ytd">📅 Year to Date (YTD 2026)</option>
-                  <option value="custom">📆 Custom Date Range...</option>
+                  <option value="this-month" selected> This Month (August 2026)</option>
+                  <option value="last-month"> Last Month (July 2026)</option>
+                  <option value="this-quarter"> This Quarter (Q3 2026)</option>
+                  <option value="ytd"> Year to Date (YTD 2026)</option>
+                  <option value="custom"> Custom Date Range...</option>
                 </select>
               </div>
 
@@ -1490,17 +1490,17 @@
                 <label for="report-lob-filter" style="font-weight:700;">Line of Business</label>
                 <select class="form-control" id="report-lob-filter" onchange="window.runReportQuery()">
                   <option value="ALL" selected>All Risk Lines</option>
-                  <option value="Motor Comprehensive">🚗 Motor Comprehensive</option>
-                  <option value="Motor Commercial">🚛 Motor Commercial / Fleet</option>
-                  <option value="Fire & Perils">🔥 Fire & Special Perils</option>
-                  <option value="Marine Cargo">🚢 Marine & Freight Import</option>
-                  <option value="Engineering">🏗️ Engineering All Risks</option>
+                  <option value="Motor Comprehensive"> Motor Comprehensive</option>
+                  <option value="Motor Commercial"> Motor Commercial / Fleet</option>
+                  <option value="Fire & Perils"> Fire & Special Perils</option>
+                  <option value="Marine Cargo"> Marine & Freight Import</option>
+                  <option value="Engineering"> Engineering All Risks</option>
                 </select>
               </div>
 
               <!-- Filter Query Button -->
               <button class="btn btn-primary" id="report-query-btn" onclick="window.runReportQuery()" style="padding:10px 20px; font-weight:700;">
-                🔍 Query Report Data
+                 Query Report Data
               </button>
 
             </div>
@@ -1592,7 +1592,7 @@
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
                 <div>
                   <h3 style="font-size:15.5px; font-weight:800; color:#ffffff; display:flex; align-items:center; gap:8px;">
-                    <span>📈</span> Financial Underwriting & Loss Performance Curve
+                    <span></span> Financial Underwriting & Loss Performance Curve
                   </h3>
                   <span style="font-size:11.5px; color:#94a3b8;">Real-time comparison of Gross Written Premium vs Incurred Loss Claims</span>
                 </div>
@@ -1601,10 +1601,10 @@
                 <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
                   <div style="display:flex; background:rgba(255,255,255,0.06); border-radius:6px; padding:3px; gap:4px;">
                     <button id="chart-style-spline-btn" onclick="setReportChartType('spline')" style="padding:4px 10px; font-size:11px; font-weight:700; border-radius:4px; background:#ff6b00; color:#fff; border:none; cursor:pointer;">
-                      📈 Glowing Wave
+                       Glowing Wave
                     </button>
                     <button id="chart-style-bar-btn" onclick="setReportChartType('bar')" style="padding:4px 10px; font-size:11px; font-weight:700; border-radius:4px; background:transparent; color:#94a3b8; border:none; cursor:pointer;">
-                      📊 3D Dual Bars
+                       3D Dual Bars
                     </button>
                   </div>
 
@@ -1638,7 +1638,7 @@
           <div class="dashboard-card" style="padding:20px; margin-bottom:24px; background: linear-gradient(135deg, rgba(255,107,0,0.05), rgba(56,189,248,0.05)); border:1px solid var(--primary-light);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
               <div style="display:flex; align-items:center; gap:8px;">
-                <h3 style="font-size:15px; font-weight:700; color:var(--primary);">🤖 AI Automated Executive Report Synthesis</h3>
+                <h3 style="font-size:15px; font-weight:700; color:var(--primary);"> AI Automated Executive Report Synthesis</h3>
               </div>
               <span class="status-badge approved" style="font-size:11px;">Queried Period: <span id="ai-period-badge">August 2026</span></span>
             </div>
@@ -1656,10 +1656,10 @@
               </div>
               <div style="display:flex; gap:8px;">
                 <button class="btn btn-secondary" onclick="exportQueriedReport('excel')" style="padding:6px 12px; font-size:12px; gap:6px;">
-                  📊 Export CSV
+                   Export CSV
                 </button>
                 <button class="btn btn-secondary" onclick="exportQueriedReport('pdf')" style="padding:6px 12px; font-size:12px; gap:6px;">
-                  📄 Export PDF
+                   Export PDF
                 </button>
               </div>
             </div>
@@ -3971,10 +3971,10 @@
         <!-- Media Mode Selector Bar -->
         <div style="display:flex; background:rgba(255,255,255,0.08); border-radius:10px; padding:4px; margin-bottom:14px; gap:6px;">
           <button id="cam-mode-photo-btn" type="button" onclick="switchCameraMode('photo')" style="flex:1; padding:8px; font-size:12px; font-weight:700; border-radius:8px; background:#ff6b00; color:#fff; border:none; cursor:pointer;">
-            📸 Still Photo Mode
+             Still Photo Mode
           </button>
           <button id="cam-mode-video-btn" type="button" onclick="switchCameraMode('video')" style="flex:1; padding:8px; font-size:12px; font-weight:700; border-radius:8px; background:transparent; color:#94a3b8; border:none; cursor:pointer;">
-            🎥 Video Recording Mode
+             Video Recording Mode
           </button>
         </div>
 
@@ -4007,15 +4007,15 @@
           
           <!-- Still Photo Controls -->
           <button class="btn btn-primary" id="snap-camera-photo-btn" onclick="takeLiveCameraPhotoSnap()" style="padding:10px 22px; font-size:13.5px; display:inline-flex; align-items:center; gap:6px;">
-             📸 Take Photo Snap
+              Take Photo Snap
           </button>
 
           <!-- Video Controls -->
           <button class="btn btn-danger" id="start-video-rec-btn" onclick="startVideoRecording()" style="padding:10px 22px; font-size:13.5px; display:none; background:#ef4444; color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer;">
-             ⏺️ Start Video Recording
+              Start Video Recording
           </button>
           <button class="btn btn-success" id="stop-video-rec-btn" onclick="stopVideoRecording()" style="padding:10px 22px; font-size:13.5px; display:none; background:#10b981; color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer;">
-             ⏹️ Stop & Save Video
+              Stop & Save Video
           </button>
 
           <button class="btn btn-secondary" onclick="loadHighResDemoPhoto()" style="padding:10px 18px; font-size:12.5px;">
