@@ -3020,7 +3020,68 @@ function generateAIReportSynthesis(query) {
   const totalNewPolicies = branchProductionData.reduce((acc, b) => acc + b.newCount, 0);
   const totalRenewalsExcluded = branchProductionData.reduce((acc, b) => acc + b.renewedCount, 0);
   const totalGrossPremium = branchProductionData.reduce((acc, b) => acc + b.newPremium, 0);
+
+  // 1. KIRA Compliance Brief
+  if (lower.includes("kira") || lower.includes("compliance") || lower.includes("regulatory")) {
+    return `
+      <strong style="color:var(--success); font-size:14px;">KIRA Regulatory Compliance Summary</strong><br><br>
+      Official compliance evaluation for the Kenyan Insurance Regulatory Authority:<br><br>
+      • <strong>Form 104 Filings:</strong> All notice registrations comply with digital countersigning regulations under the Kenyan Insurance Act.<br>
+      • <strong>AKI Certificate Issuance:</strong> Digital motor certificates featuring encrypted QR validation badges are declared valid.<br>
+      • <strong>Accounting Compliance:</strong> Production reports strictly calculate <strong>${totalNewPolicies} new acquisitions</strong> (KSh ${(totalGrossPremium).toLocaleString()}) and explicitly exclude ${totalRenewalsExcluded} policy renewals.<br><br>
+      <div style="background-color:var(--bg-primary); padding:10px; border-radius:8px; font-size:12px;">
+         <strong>Audit Rating:</strong> 100% Compliant with KIRA guidelines.
+      </div>
+    `;
+  }
   
+  // 2. Fraud & Risk Audit
+  if (lower.includes("fraud") || lower.includes("risk") || lower.includes("velocity") || lower.includes("siu")) {
+    return `
+      <strong style="color:var(--danger); font-size:14px;">Fraud and Telemetry Risk Audit Report</strong><br><br>
+      Analytical breakdown across <strong>${totalClaimsCount} filed claims</strong>:<br><br>
+      • <strong>Average Fraud Index:</strong> ${avgFraud}% (Low-Medium overall risk profile).<br>
+      • <strong>SIU Flagged Files:</strong> 1 claim file locked under active investigation due to metadata collision (Photo taken in Mombasa vs reported Nairobi location).<br>
+      • <strong>Computer Vision Integrity:</strong> 92% of media submissions passed EXIF location and license plate OCR symmetry validation.<br><br>
+      <div style="background-color:var(--bg-primary); padding:10px; border-radius:8px; font-size:12px;">
+         <strong>Key Security Rule:</strong> Camera telemetry cross-referencing maintains automatic Green-path passage for low risk filings (&lt;25% score).
+      </div>
+    `;
+  }
+  
+  // 3. Branch Performance
+  if (lower.includes("branch performance") || (lower.includes("branch") && (lower.includes("lead") || lower.includes("performance") || lower.includes("which")))) {
+    return `
+      <strong style="color:var(--primary); font-size:14px;">Branch Performance Audit and Analysis</strong><br><br>
+      Based on the August 2026 production ledger across all national branches:<br><br>
+      • <strong>Top Performing Branch:</strong> Head Office (Nairobi) leading with <strong>42 new policy acquisitions</strong> (KSh ${(2850000).toLocaleString()} gross premium, representing 38% market share).<br>
+      • <strong>Second Position:</strong> Mombasa Branch with <strong>28 new policies</strong> (KSh ${(1920000).toLocaleString()}, 25% share).<br>
+      • <strong>Regional Outlets:</strong> Kisumu (22 new policies, KSh 1.45M) and Nakuru (18 new policies, KSh 1.18M).<br><br>
+      <div style="background-color:var(--bg-primary); padding:10px; border-radius:8px; font-size:12px;">
+         <strong>AI Recommendation:</strong> Increase marketing outreach in Kisumu and Nakuru sub-counties to lift secondary branch acquisitions by an estimated +14%.
+      </div>
+    `;
+  }
+  
+  // 4. Custom Branch Query (e.g. "Nairobi", "Mombasa", "Kisumu", etc.)
+  for (const b of branchProductionData) {
+    const bNameLower = b.branch.toLowerCase().replace(" branch", "");
+    if (lower.includes(bNameLower)) {
+      return `
+        <strong style="color:var(--primary); font-size:14px;">Branch Analysis: ${b.branch}</strong><br><br>
+        Specific performance details extracted from EIMS Production Database:<br><br>
+        • <strong>New Acquisitions:</strong> ${b.newCount} policies underwritten.<br>
+        • <strong>Premium Revenue Generated:</strong> KSh ${b.newPremium.toLocaleString()}<br>
+        • <strong>Active Renewals:</strong> ${b.renewedCount} renewal files managed.<br>
+        • <strong>Regional Market Share:</strong> ${b.share} of total premium portfolio.<br><br>
+        <div style="background-color:var(--bg-primary); padding:10px; border-radius:8px; font-size:12px;">
+          <strong>Branch Health:</strong> Normal operations. Underwriting and claims ledgers synced.
+        </div>
+      `;
+    }
+  }
+  
+  // 5. Approved Claims portfolio
   if (lower.includes("approval") || lower.includes("approved")) {
     const approvedClaims = claims.filter(c => c.status === "Approved" || c.status === "Disbursed");
     const totalApprovedVal = approvedClaims.reduce((sum, c) => sum + c.cost, 0);
@@ -3038,7 +3099,7 @@ function generateAIReportSynthesis(query) {
     `).join("");
     
     return `
-      <strong style="color:var(--success); font-size:14px;"> Approved & Disbursed Claims Portfolio Analysis</strong><br><br>
+      <strong style="color:var(--success); font-size:14px;">Approved Claims Portfolio Analysis</strong><br><br>
       Full real-time breakdown of all approved insurance files in the system:<br><br>
       • <strong>Total Approved Files:</strong> <strong>${approvedClaims.length} claims</strong> (Total Indemnity Commitment: <strong style="color:var(--primary);">KSh ${totalApprovedVal.toLocaleString()}</strong>).<br>
       • <strong>AI Auto-Pass Triage Rate:</strong> ${greenPassCount} of ${approvedClaims.length} files approved via <strong>Green Fast-Track Automated Pipeline</strong>.<br>
@@ -3068,14 +3129,15 @@ function generateAIReportSynthesis(query) {
     `;
   }
 
-  if (lower.includes("claim") || lower.includes("analyse") || lower.includes("analyze")) {
+  // 6. Claims Audit & Telemetry
+  if (lower.includes("claim") || lower.includes("claims") || lower.includes("repair") || lower.includes("repairs") || lower.includes("accident")) {
     const approvedCount = claims.filter(c => c.status === "Approved").length;
     const disbursedCount = claims.filter(c => c.status === "Disbursed").length;
     const pendingCount = claims.filter(c => c.status === "Pending").length;
     const siuCount = claims.filter(c => c.status === "Under Investigation").length;
     
     return `
-      <strong style="color:var(--primary); font-size:14px;"> Complete Claims Portfolio & Telemetry Audit</strong><br><br>
+      <strong style="color:var(--primary); font-size:14px;">Complete Claims Portfolio and Telemetry Audit</strong><br><br>
       Full analytical breakdown of all ${totalClaimsCount} registered claims in EIMS:<br><br>
       • <strong>Total Claims Filed:</strong> ${totalClaimsCount} claims (Total Estimated Repairs: <strong>KSh ${totalClaimsCost.toLocaleString()}</strong>).<br>
       • <strong>Status Distribution:</strong> 
@@ -3087,53 +3149,35 @@ function generateAIReportSynthesis(query) {
       • <strong>Settlement Payout Channels:</strong> M-PESA B2C (40%), Airtel Money (20%), EFT Bank Transfer PesaLink (40%).<br>
       • <strong>Accredited Garages Assigned:</strong> Nairobi Auto Care (8 repairs), Coast Breakdown (5 repairs), Lakeside Motors (4 repairs), Rift Valley Clinic (3 repairs).<br><br>
       <div style="background-color:var(--bg-primary); padding:10px; border-radius:8px; font-size:12px;">
-         <strong>SIU Security Notice:</strong> ${siuCount} claim file(s) currently locked under SIU investigation due to camera EXIF location & media metadata verification.
+         <strong>SIU Security Notice:</strong> ${siuCount} claim file(s) currently locked under SIU investigation due to camera EXIF location and media metadata verification.
+      </div>
+    `;
+  }
+  
+  // 7. Policies Audit & Registry
+  if (lower.includes("policy") || lower.includes("policies") || lower.includes("underwrite") || lower.includes("premium")) {
+    const activePolicies = policies.filter(p => p.status === "Active");
+    const suspendedPolicies = policies.filter(p => p.status === "Suspended");
+    const cancelledPolicies = policies.filter(p => p.status === "Cancelled");
+    const totalPremiumVal = policies.reduce((sum, p) => sum + p.premium, 0);
+    const totalDebitedVal = policies.reduce((sum, p) => sum + p.debited, 0);
+    
+    return `
+      <strong style="color:var(--primary); font-size:14px;">Policy Registry and Portfolio Audit</strong><br><br>
+      Full real-time breakdown of EIMS Policy Registry:<br><br>
+      • <strong>Total Underwritten Policies:</strong> ${policies.length} records (Gross Premium Booked: <strong>KSh ${totalPremiumVal.toLocaleString()}</strong>).<br>
+      • <strong>Active Policy Count:</strong> ${activePolicies.length} files (Premium Debited: <strong>KSh ${totalDebitedVal.toLocaleString()}</strong>).<br>
+      • <strong>Delinquency & Interrupted status:</strong> Suspended: ${suspendedPolicies.length} | Cancelled: ${cancelledPolicies.length}.<br>
+      • <strong>Digital Certificate Issuance:</strong> 100% of active policies have secure AKI certificate references issued.<br><br>
+      <div style="background-color:var(--bg-primary); padding:10px; border-radius:8px; font-size:12px;">
+        <strong>Audit Guidance:</strong> New policies auto-report via digital API. Counter-signature compliance is verified.
       </div>
     `;
   }
 
-  if (lower.includes("branch") || lower.includes("office") || lower.includes("performance")) {
-    return `
-      <strong style="color:var(--primary); font-size:14px;"> Branch Performance Audit & Analysis</strong><br><br>
-      Based on the August 2026 production ledger across all national branches:<br><br>
-      • <strong>Top Performing Branch:</strong> Head Office (Nairobi) leading with <strong>42 new policy acquisitions</strong> (KSh ${(2850000).toLocaleString()} gross premium, representing 38% market share).<br>
-      • <strong>Second Position:</strong> Mombasa Branch with <strong>28 new policies</strong> (KSh ${(1920000).toLocaleString()}, 25% share).<br>
-      • <strong>Regional Outlets:</strong> Kisumu (22 new policies, KSh 1.45M) and Nakuru (18 new policies, KSh 1.18M).<br><br>
-      <div style="background-color:var(--bg-primary); padding:10px; border-radius:8px; font-size:12px;">
-         <strong>AI Recommendation:</strong> Increase marketing outreach in Kisumu and Nakuru sub-counties to lift secondary branch acquisitions by an estimated +14%.
-      </div>
-    `;
-  }
-  
-  if (lower.includes("fraud") || lower.includes("risk") || lower.includes("velocity")) {
-    return `
-      <strong style="color:var(--danger); font-size:14px;"> Fraud & Telemetry Risk Audit Report</strong><br><br>
-      Analytical breakdown across <strong>${totalClaimsCount} filed claims</strong>:<br><br>
-      • <strong>Average Fraud Index:</strong> ${avgFraud}% (Low-Medium overall risk profile).<br>
-      • <strong>SIU Flagged Files:</strong> 1 claim file locked under active investigation due to metadata collision (Photo taken in Mombasa vs reported Nairobi location).<br>
-      • <strong>Computer Vision Integrity:</strong> 92% of media submissions passed EXIF location & license plate OCR symmetry validation.<br><br>
-      <div style="background-color:var(--bg-primary); padding:10px; border-radius:8px; font-size:12px;">
-         <strong>Key Security Rule:</strong> Camera telemetry cross-referencing maintains automatic Green-path passage for low risk filings (<25% score).
-      </div>
-    `;
-  }
-  
-  if (lower.includes("kira") || lower.includes("compliance") || lower.includes("regulatory")) {
-    return `
-      <strong style="color:var(--success); font-size:14px;"> KIRA Regulatory Compliance Summary</strong><br><br>
-      Official compliance evaluation for the Kenyan Insurance Regulatory Authority:<br><br>
-      • <strong>Form 104 Filings:</strong> All notice registrations comply with digital countersigning regulations under the Kenyan Insurance Act.<br>
-      • <strong>AKI Certificate Issuance:</strong> Digital motor certificates featuring encrypted QR validation badges are declared valid.<br>
-      • <strong>Accounting Compliance:</strong> Production reports strictly calculate <strong>${totalNewPolicies} new acquisitions</strong> (KSh ${(totalGrossPremium).toLocaleString()}) and explicitly exclude ${totalRenewalsExcluded} policy renewals.<br><br>
-      <div style="background-color:var(--bg-primary); padding:10px; border-radius:8px; font-size:12px;">
-         <strong>Audit Rating:</strong> 100% Compliant with KIRA guidelines.
-      </div>
-    `;
-  }
-  
-  // Default Executive Production Summary
+  // 8. Default Synthesized Executive Production Summary (if no match)
   return `
-    <strong style="color:var(--primary); font-size:14px;"> Executive Production & Telemetry Summary</strong><br><br>
+    <strong style="color:var(--primary); font-size:14px;">Executive Production and Telemetry Summary</strong><br><br>
     Synthesized report for August 2026:<br><br>
     1. <strong>New Policy Production:</strong> <strong>${totalNewPolicies} new policies underwritten</strong> generating <strong>KSh ${(totalGrossPremium).toLocaleString()}</strong> in gross new premium.<br>
     2. <strong>Claims Portfolio:</strong> ${totalClaimsCount} total claims active with KSh ${(totalClaimsCost).toLocaleString()} in total repair estimates.<br>
