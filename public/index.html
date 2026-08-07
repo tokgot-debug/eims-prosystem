@@ -2031,31 +2031,57 @@
             </div>
           </div>
 
-          <!-- Actuarial Metrics Cards -->
-          <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:16px; margin-bottom:24px;">
-            <div class="dashboard-card" style="padding:16px; text-align:center;">
-              <div style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Overall Fleet Portfolio Loss Ratio</div>
-              <div style="font-size:24px; font-weight:900; color:var(--primary); margin:4px 0;" id="model-overall-loss-ratio">68.4%</div>
-              <div style="font-size:11px; color:var(--success);">Target Ceiling: 70.0%</div>
+          <!-- Actuarial Metrics Cards (Attachment 1 Dark Modern Styling) -->
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:24px;">
+            
+            <!-- Card 1: Overall Portfolio Loss Ratio -->
+            <div style="background:#111622; border:1px solid #1e2638; border-radius:8px; padding:18px 20px; display:flex; flex-direction:column; justify-content:space-between; min-height:85px; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:12px; font-weight:500; color:#94a3b8; letter-spacing:0.2px;">Fleet Portfolio Loss Ratio</span>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6M6 20V10M18 20V4"/></svg>
+              </div>
+              <div>
+                <div style="font-size:24px; font-weight:800; color:#ffffff; margin-top:8px; line-height:1; letter-spacing:-0.5px;" id="model-overall-loss-ratio">62.4%</div>
+                <div style="font-size:11px; color:#10b981; margin-top:6px;">Target Ceiling: &lt; 70.0%</div>
+              </div>
             </div>
 
-            <div class="dashboard-card" style="padding:16px; text-align:center;">
-              <div style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Highest Loss Ratio Model</div>
-              <div style="font-size:20px; font-weight:900; color:var(--danger); margin:4px 0;">Probox (91.9%)</div>
-              <div style="font-size:11px; color:var(--danger);">Commercial Surcharge Active</div>
+            <!-- Card 2: Highest Loss Ratio Model -->
+            <div style="background:#111622; border:1px solid #1e2638; border-radius:8px; padding:18px 20px; display:flex; flex-direction:column; justify-content:space-between; min-height:85px; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:12px; font-weight:500; color:#94a3b8; letter-spacing:0.2px;">Highest Risk Model</span>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+              <div>
+                <div style="font-size:20px; font-weight:800; color:#f87171; margin-top:8px; line-height:1; letter-spacing:-0.5px;">HiAce Matatu (88.0%)</div>
+                <div style="font-size:11px; color:#f87171; margin-top:6px;">PSV Surcharge +30% Active</div>
+              </div>
             </div>
 
-            <div class="dashboard-card" style="padding:16px; text-align:center;">
-              <div style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Most Profitable Model</div>
-              <div style="font-size:20px; font-weight:900; color:var(--success); margin:4px 0;">Mercedes E-Class (35.0%)</div>
-              <div style="font-size:11px; color:var(--success);">Low Claim Severity</div>
+            <!-- Card 3: Most Profitable EV / Model -->
+            <div style="background:#111622; border:1px solid #1e2638; border-radius:8px; padding:18px 20px; display:flex; flex-direction:column; justify-content:space-between; min-height:85px; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:12px; font-weight:500; color:#94a3b8; letter-spacing:0.2px;">Most Profitable Model</span>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+              </div>
+              <div>
+                <div style="font-size:20px; font-weight:800; color:#34d399; margin-top:8px; line-height:1; letter-spacing:-0.5px;">BYD Atto 3 EV (24.0%)</div>
+                <div style="font-size:11px; color:#34d399; margin-top:6px;">Green Preferred Rebate -10%</div>
+              </div>
             </div>
 
-            <div class="dashboard-card" style="padding:16px; text-align:center;">
-              <div style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">High Risk Models (>75%)</div>
-              <div style="font-size:24px; font-weight:900; color:#ff8533; margin:4px 0;">3 Vehicle Models</div>
-              <div style="font-size:11px; color:#ff8533;">+15% Rate Loading Mandatory</div>
+            <!-- Card 4: High Risk Flagged Models -->
+            <div style="background:#111622; border:1px solid #1e2638; border-radius:8px; padding:18px 20px; display:flex; flex-direction:column; justify-content:space-between; min-height:85px; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:12px; font-weight:500; color:#94a3b8; letter-spacing:0.2px;">High Risk Flagged (>75%)</span>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ff8533" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+              </div>
+              <div>
+                <div style="font-size:24px; font-weight:800; color:#ff8533; margin-top:8px; line-height:1; letter-spacing:-0.5px;">5 Vehicle Models</div>
+                <div style="font-size:11px; color:#ff8533; margin-top:6px;">Rate Loading Mandatory</div>
+              </div>
             </div>
+
           </div>
 
           <!-- Loss Ratio Ledger Table -->
@@ -2071,6 +2097,11 @@
                   <option value="Commercial Truck">Commercial Truck</option>
                   <option value="SUV">SUV</option>
                   <option value="Saloon">Saloon</option>
+                  <option value="PSV Commercial">PSV Commercial</option>
+                  <option value="Pickup / Fleet">Pickup / Fleet</option>
+                  <option value="EV Electric">EV Electric</option>
+                  <option value="Hatchback / Ride-Hailing">Hatchback / Ride-Hailing</option>
+                  <option value="Commercial Van">Commercial Van</option>
                 </select>
               </div>
             </div>

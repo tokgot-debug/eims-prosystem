@@ -4345,6 +4345,24 @@ let vehicleModelLossRatios = [
     recommendation: "Commercial Surcharge +20%"
   },
   {
+    model: "Toyota HiAce Matatu (14-Seater PSV)",
+    category: "PSV Commercial",
+    activePolicies: 1950,
+    earnedPremium: 146250000,
+    incurredClaims: 128700000,
+    loadingPct: 30,
+    recommendation: "PSV High Risk Surcharge +30%"
+  },
+  {
+    model: "Isuzu NQR Bus (33-Seater PSV)",
+    category: "PSV Commercial",
+    activePolicies: 920,
+    earnedPremium: 82800000,
+    incurredClaims: 71200000,
+    loadingPct: 25,
+    recommendation: "Fleet Overload Loading +25%"
+  },
+  {
     model: "Subaru Forester 2.0T",
     category: "SUV",
     activePolicies: 890,
@@ -4363,22 +4381,76 @@ let vehicleModelLossRatios = [
     recommendation: "Fleet Overload Loading +15%"
   },
   {
-    model: "Mitsubishi FH Tipper",
+    model: "Mitsubishi Fuso Super Great Tipper",
     category: "Commercial Truck",
     activePolicies: 640,
     earnedPremium: 64000000,
-    incurredClaims: 49280000,
-    loadingPct: 10,
-    recommendation: "Heavy Cargo Loading +10%"
+    incurredClaims: 51776000,
+    loadingPct: 20,
+    recommendation: "Heavy Cargo Loading +20%"
+  },
+  {
+    model: "Suzuki Alto / Maruti (Ride-Hailing)",
+    category: "Hatchback / Ride-Hailing",
+    activePolicies: 3100,
+    earnedPremium: 24800000,
+    incurredClaims: 18848000,
+    loadingPct: 15,
+    recommendation: "High Mileage App Surcharge +15%"
+  },
+  {
+    model: "Nissan NV200 Commercial Van",
+    category: "Commercial Van",
+    activePolicies: 880,
+    earnedPremium: 21120000,
+    incurredClaims: 16051200,
+    loadingPct: 15,
+    recommendation: "Urban Delivery Surcharge +15%"
+  },
+  {
+    model: "Toyota Hilux Double Cab 4x4",
+    category: "Pickup / Fleet",
+    activePolicies: 1650,
+    earnedPremium: 74250000,
+    incurredClaims: 48188250,
+    loadingPct: 5,
+    recommendation: "Fleet Commercial Loading +5%"
   },
   {
     model: "Toyota Fielder NZE161",
     category: "Station Wagon",
     activePolicies: 2150,
     earnedPremium: 45200000,
-    incurredClaims: 31600000,
+    incurredClaims: 31640000,
     loadingPct: 0,
     recommendation: "Standard Underwriting"
+  },
+  {
+    model: "Toyota Prado J150 (3.0 D4D)",
+    category: "SUV",
+    activePolicies: 1480,
+    earnedPremium: 96200000,
+    incurredClaims: 32708000,
+    loadingPct: 0,
+    recommendation: "Profitable Executive Line"
+  },
+  {
+    model: "Toyota Vitz KSP130",
+    category: "Hatchback / Ride-Hailing",
+    activePolicies: 2840,
+    earnedPremium: 34080000,
+    incurredClaims: 11246400,
+    loadingPct: -5,
+    recommendation: "Low Risk Rebate -5%"
+  },
+  {
+    model: "Honda Fit / Shuttle Hybrid",
+    category: "Station Wagon",
+    activePolicies: 1220,
+    earnedPremium: 21960000,
+    incurredClaims: 8344800,
+    loadingPct: -5,
+    recommendation: "Low Claim Severity Discount -5%"
   },
   {
     model: "Mazda Demio / Axela",
@@ -4394,9 +4466,27 @@ let vehicleModelLossRatios = [
     category: "SUV",
     activePolicies: 940,
     earnedPremium: 28400000,
-    incurredClaims: 11900000,
+    incurredClaims: 11928000,
     loadingPct: 0,
     recommendation: "Profitable Line"
+  },
+  {
+    model: "BYD Atto 3 EV (Electric SUV)",
+    category: "EV Electric",
+    activePolicies: 320,
+    earnedPremium: 14400000,
+    incurredClaims: 3456000,
+    loadingPct: -10,
+    recommendation: "Green EV Preferred Discount -10%"
+  },
+  {
+    model: "Tesla Model Y Dual Motor EV",
+    category: "EV Electric",
+    activePolicies: 140,
+    earnedPremium: 10920000,
+    incurredClaims: 2828280,
+    loadingPct: -10,
+    recommendation: "Green EV Preferred Discount -10%"
   },
   {
     model: "Mercedes-Benz E-Class W213",
@@ -4405,7 +4495,25 @@ let vehicleModelLossRatios = [
     earnedPremium: 41000000,
     incurredClaims: 14350000,
     loadingPct: -10,
-    recommendation: "Preferred Risk Rebate -10%"
+    recommendation: "Preferred Executive Rebate -10%"
+  },
+  {
+    model: "Lexus RX450h Luxury Hybrid",
+    category: "SUV",
+    activePolicies: 560,
+    earnedPremium: 44800000,
+    incurredClaims: 12544000,
+    loadingPct: -8,
+    recommendation: "Hybrid Preferred Rebate -8%"
+  },
+  {
+    model: "BMW X5 xDrive30d",
+    category: "SUV",
+    activePolicies: 390,
+    earnedPremium: 35100000,
+    incurredClaims: 11232000,
+    loadingPct: -5,
+    recommendation: "Preferred Risk Rebate -5%"
   }
 ];
 
