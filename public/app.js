@@ -6998,6 +6998,7 @@ window.runReportQuery = function() {
 window.applyReportPeriodPreset = applyReportPeriodPreset;
 window.exportQueriedReport = exportQueriedReport;
 window.setReportChartType = setReportChartType;
+window.openAIAssistantModal = openAIAssistantModal;
 
 window.activateCertInline = function(certId) {
   const randomNum = Math.floor(1000 + Math.random() * 9000);
