@@ -6438,3 +6438,130 @@ function exportQueriedReport(type) {
 document.addEventListener("DOMContentLoaded", () => {
   setTimeout(runReportQuery, 600);
 });
+
+// ================= REPORT VISUAL CHARTS & EXTENDED MOCK DATASETS =================
+function renderReportCharts(ledger = "underwriting") {
+  renderReportTrendChart();
+  renderReportBranchShareChart();
+}
+
+function renderReportTrendChart() {
+  const chartBox = document.getElementById("report-trend-chart-box");
+  if (!chartBox) return;
+
+  const data = [
+    { month: "Jan", prem: 38.5, claim: 10.9 },
+    { month: "Feb", prem: 42.0, claim: 13.1 },
+    { month: "Mar", prem: 45.2, claim: 11.9 },
+    { month: "Apr", prem: 41.8, claim: 14.6 },
+    { month: "May", prem: 46.5, claim: 13.8 },
+    { month: "Jun", prem: 51.0, claim: 16.8 },
+    { month: "Jul", prem: 47.8, claim: 13.1 },
+    { month: "Aug", prem: 48.5, claim: 14.2 }
+  ];
+
+  const width = chartBox.clientWidth || 550;
+  const height = 210;
+  const paddingX = 40;
+  const paddingY = 30;
+
+  const maxVal = 60;
+  const maxX = data.length - 1;
+
+  const barWidth = Math.max(14, Math.floor((width - paddingX * 2) / data.length - 16));
+
+  let svgBars = "";
+  let splinePoints = [];
+
+  data.forEach((d, idx) => {
+    const xCenter = paddingX + (idx / maxX) * (width - paddingX * 2);
+    const xBar = xCenter - barWidth / 2;
+    const hBar = (d.prem / maxVal) * (height - paddingY * 2);
+    const yBar = height - paddingY - hBar;
+
+    svgBars += `
+      <rect x="${xBar}" y="${yBar}" width="${barWidth}" height="${hBar}" rx="4" fill="url(#premGrad)" opacity="0.85">
+        <title>${d.month}: KSh ${d.prem}M Premium</title>
+      </rect>
+      <text x="${xCenter}" y="${height - 8}" fill="#94a3b8" font-size="11" font-weight="600" text-anchor="middle">${d.month}</text>
+    `;
+
+    const yClaim = height - paddingY - (d.claim / maxVal) * (height - paddingY * 2);
+    splinePoints.push({ x: xCenter, y: yClaim, claim: d.claim, month: d.month });
+  });
+
+  let splineD = `M ${splinePoints[0].x} ${splinePoints[0].y}`;
+  for (let i = 0; i < splinePoints.length - 1; i++) {
+    const p0 = splinePoints[i];
+    const p1 = splinePoints[i + 1];
+    const cp1x = p0.x + (p1.x - p0.x) * 0.45;
+    const cp1y = p0.y;
+    const cp2x = p1.x - (p1.x - p0.x) * 0.45;
+    const cp2y = p1.y;
+    splineD += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p1.x} ${p1.y}`;
+  }
+
+  let splineDots = "";
+  splinePoints.forEach(p => {
+    splineDots += `
+      <circle cx="${p.x}" cy="${p.y}" r="4" fill="#ef4444" stroke="#ffffff" stroke-width="2">
+        <title>${p.month}: KSh ${p.claim}M Claims</title>
+      </circle>
+    `;
+  });
+
+  chartBox.innerHTML = `
+    <svg width="100%" height="100%" viewBox="0 0 ${width} ${height}">
+      <defs>
+        <linearGradient id="premGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ff6b00" stop-opacity="1" />
+          <stop offset="100%" stop-color="#ff8533" stop-opacity="0.4" />
+        </linearGradient>
+      </defs>
+      <line x1="${paddingX}" y1="${paddingY}" x2="${width - paddingX}" y2="${paddingY}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+      <line x1="${paddingX}" y1="${height/2}" x2="${width - paddingX}" y2="${height/2}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+      <line x1="${paddingX}" y1="${height - paddingY}" x2="${width - paddingX}" y2="${height - paddingY}" stroke="rgba(255,255,255,0.15)"/>
+      ${svgBars}
+      <path d="${splineD}" fill="none" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+      ${splineDots}
+    </svg>
+  `;
+}
+
+function renderReportBranchShareChart() {
+  const container = document.getElementById("report-branch-share-box");
+  if (!container) return;
+
+  const branches = [
+    { name: "Nairobi HQ", share: 58.5, val: "KSh 28.4M", color: "#ff6b00" },
+    { name: "Mombasa Branch", share: 22.2, val: "KSh 10.8M", color: "#3b82f6" },
+    { name: "Kisumu Branch", share: 12.6, val: "KSh 6.1M", color: "#10b981" },
+    { name: "Nakuru Branch", share: 6.7, val: "KSh 3.2M", color: "#8b5cf6" }
+  ];
+
+  let html = "";
+  branches.forEach(b => {
+    html += `
+      <div style="margin-bottom:6px;">
+        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+          <span style="font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+            <span style="width:10px; height:10px; background:${b.color}; border-radius:50%; display:inline-block;"></span> ${b.name}
+          </span>
+          <span style="font-weight:700; color:var(--text-primary);">${b.val} (${b.share}%)</span>
+        </div>
+        <div style="width:100%; height:8px; background:rgba(255,255,255,0.08); border-radius:4px; overflow:hidden;">
+          <div style="width:${b.share}%; height:100%; background:${b.color}; border-radius:4px;"></div>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+// Hook renderReportCharts into runReportQuery
+const originalRunReportQuery = runReportQuery;
+runReportQuery = function() {
+  originalRunReportQuery();
+  setTimeout(renderReportCharts, 100);
+};
