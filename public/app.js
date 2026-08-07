@@ -366,7 +366,7 @@ function navigateToView(viewId) {
   } else if (viewId === "policy-registry") {
     renderPolicyRegistry();
   } else if (viewId === "production-reports") {
-    if (typeof runReportQuery === "function") runReportQuery();
+    if (typeof window.runReportQuery === "function") window.runReportQuery();
     else renderProductionReports();
   } else if (viewId === "vehicle-loss-ratios") {
     renderVehicleLossRatios();
@@ -6338,10 +6338,10 @@ function applyReportPeriodPreset() {
     endInput.value = end.toISOString().split('T')[0];
   }
 
-  runReportQuery();
+  window.runReportQuery();
 }
 
-function runReportQuery() {
+function executeReportQuery() {
   const ledger = document.getElementById("report-ledger-type")?.value || "underwriting";
   const branch = document.getElementById("report-branch")?.value || "ALL";
   const lob = document.getElementById("report-lob-filter")?.value || "ALL";
@@ -6360,6 +6360,12 @@ function runReportQuery() {
 
   if (dateLabel) dateLabel.innerText = `Period: ${startDate} to ${endDate} (${branchText} | ${lobText})`;
   if (aiBadge) aiBadge.innerText = `${startDate} to ${endDate}`;
+
+  // Helper setter to set metric text safely
+  const setSafeText = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = text;
+  };
 
   // Underwriting Master Dataset
   const underwritingData = [
@@ -6414,21 +6420,21 @@ function runReportQuery() {
     const totalPaid = paidItems.reduce((acc, item) => acc + item.amount, 0);
     const totalReserve = totalIncurred - totalPaid;
 
-    document.getElementById("kpi-1-label").innerText = "Total Claims Incurred";
-    document.getElementById("kpi-1-val").innerText = `KSh ${totalIncurred.toLocaleString()}`;
-    document.getElementById("kpi-1-sub").innerText = `${filtered.length} Claims Queried`;
+    setSafeText("kpi-1-label", "Total Claims Incurred");
+    setSafeText("kpi-1-val", `KSh ${totalIncurred.toLocaleString()}`);
+    setSafeText("kpi-1-sub", `${filtered.length} Claims Queried`);
 
-    document.getElementById("kpi-2-label").innerText = "Claims Paid / Settled";
-    document.getElementById("kpi-2-val").innerText = `KSh ${totalPaid.toLocaleString()}`;
-    document.getElementById("kpi-2-sub").innerText = `${paidItems.length} Claims Paid`;
+    setSafeText("kpi-2-label", "Claims Paid / Settled");
+    setSafeText("kpi-2-val", `KSh ${totalPaid.toLocaleString()}`);
+    setSafeText("kpi-2-sub", `${paidItems.length} Claims Paid`);
 
-    document.getElementById("kpi-3-label").innerText = "Outstanding Loss Reserve";
-    document.getElementById("kpi-3-val").innerText = `KSh ${totalReserve.toLocaleString()}`;
-    document.getElementById("kpi-3-sub").innerText = `${filtered.length - paidItems.length} Pending Claims`;
+    setSafeText("kpi-3-label", "Outstanding Loss Reserve");
+    setSafeText("kpi-3-val", `KSh ${totalReserve.toLocaleString()}`);
+    setSafeText("kpi-3-sub", `${filtered.length - paidItems.length} Pending Claims`);
 
-    document.getElementById("kpi-4-label").innerText = "Subrogation Recoveries";
-    document.getElementById("kpi-4-val").innerText = `KSh ${(totalPaid * 0.18).toFixed(0).toLocaleString()}`;
-    document.getElementById("kpi-4-sub").innerText = "Third-Party Recoveries";
+    setSafeText("kpi-4-label", "Subrogation Recoveries");
+    setSafeText("kpi-4-val", `KSh ${(totalPaid * 0.18).toFixed(0).toLocaleString()}`);
+    setSafeText("kpi-4-sub", "Third-Party Recoveries");
 
     if (thead) {
       thead.innerHTML = `
@@ -6480,21 +6486,21 @@ function runReportQuery() {
     const totalPremium = filtered.reduce((acc, item) => acc + item.premium, 0);
     const avgPremium = filtered.length > 0 ? Math.round(totalPremium / filtered.length) : 0;
 
-    document.getElementById("kpi-1-label").innerText = "Total Written Premium";
-    document.getElementById("kpi-1-val").innerText = `KSh ${totalPremium.toLocaleString()}`;
-    document.getElementById("kpi-1-sub").innerText = `${filtered.length} Active Policies`;
+    setSafeText("kpi-1-label", "Total Written Premium");
+    setSafeText("kpi-1-val", `KSh ${totalPremium.toLocaleString()}`);
+    setSafeText("kpi-1-sub", `${filtered.length} Active Policies`);
 
-    document.getElementById("kpi-2-label").innerText = "Total Sum Insured";
-    document.getElementById("kpi-2-val").innerText = `KSh ${totalSumInsured.toLocaleString()}`;
-    document.getElementById("kpi-2-sub").innerText = "Portfolio Risk Exposure";
+    setSafeText("kpi-2-label", "Total Sum Insured");
+    setSafeText("kpi-2-val", `KSh ${totalSumInsured.toLocaleString()}`);
+    setSafeText("kpi-2-sub", "Portfolio Risk Exposure");
 
-    document.getElementById("kpi-3-label").innerText = "Average Premium / Risk";
-    document.getElementById("kpi-3-val").innerText = `KSh ${avgPremium.toLocaleString()}`;
-    document.getElementById("kpi-3-sub").innerText = `${lobText} Average`;
+    setSafeText("kpi-3-label", "Average Premium / Risk");
+    setSafeText("kpi-3-val", `KSh ${avgPremium.toLocaleString()}`);
+    setSafeText("kpi-3-sub", `${lobText} Average`);
 
-    document.getElementById("kpi-4-label").innerText = "Active Compliance";
-    document.getElementById("kpi-4-val").innerText = "100% AKI Certs";
-    document.getElementById("kpi-4-sub").innerText = "IRA & KRA Compliant";
+    setSafeText("kpi-4-label", "Active Compliance");
+    setSafeText("kpi-4-val", "100% AKI Certs");
+    setSafeText("kpi-4-sub", "IRA & KRA Compliant");
 
     if (thead) {
       thead.innerHTML = `
@@ -6536,21 +6542,21 @@ function runReportQuery() {
   } else if (ledger === "reinsurance") {
     if (titleLabel) titleLabel.innerText = `Queried Reinsurance & Ceding Share Ledger - ${branchText}`;
 
-    document.getElementById("kpi-1-label").innerText = "Gross Ceded Premium";
-    document.getElementById("kpi-1-val").innerText = "KSh 18,200,000";
-    document.getElementById("kpi-1-sub").innerText = "Quota Share Ceded";
+    setSafeText("kpi-1-label", "Gross Ceded Premium");
+    setSafeText("kpi-1-val", "KSh 18,200,000");
+    setSafeText("kpi-1-sub", "Quota Share Ceded");
 
-    document.getElementById("kpi-2-label").innerText = "Reinsurer Claims Share";
-    document.getElementById("kpi-2-val").innerText = "KSh 8,400,000";
-    document.getElementById("kpi-2-sub").innerText = "Reinsurance Recovery";
+    setSafeText("kpi-2-label", "Reinsurer Claims Share");
+    setSafeText("kpi-2-val", "KSh 8,400,000");
+    setSafeText("kpi-2-sub", "Reinsurance Recovery");
 
-    document.getElementById("kpi-3-label").innerText = "Net Company Retention";
-    document.getElementById("kpi-3-val").innerText = "62.48%";
-    document.getElementById("kpi-3-sub").innerText = "Net Earned Margin";
+    setSafeText("kpi-3-label", "Net Company Retention");
+    setSafeText("kpi-3-val", "62.48%");
+    setSafeText("kpi-3-sub", "Net Earned Margin");
 
-    document.getElementById("kpi-4-label").innerText = "Ceding Commission";
-    document.getElementById("kpi-4-val").innerText = "KSh 2,730,000";
-    document.getElementById("kpi-4-sub").innerText = "15% Reinsurance Comm";
+    setSafeText("kpi-4-label", "Ceding Commission");
+    setSafeText("kpi-4-val", "KSh 2,730,000");
+    setSafeText("kpi-4-sub", "15% Reinsurance Comm");
 
     if (thead) {
       thead.innerHTML = `
@@ -6590,21 +6596,22 @@ function runReportQuery() {
 
   } else if (ledger === "financials") {
     if (titleLabel) titleLabel.innerText = `Queried Executive P&L Loss Ratio Summary - ${branchText}`;
-    document.getElementById("kpi-1-label").innerText = "Gross Earned Premium";
-    document.getElementById("kpi-1-val").innerText = "KSh 48,500,000";
-    document.getElementById("kpi-1-sub").innerText = "YTD Earned Income";
+    
+    setSafeText("kpi-1-label", "Gross Earned Premium");
+    setSafeText("kpi-1-val", "KSh 48,500,000");
+    setSafeText("kpi-1-sub", "YTD Earned Income");
 
-    document.getElementById("kpi-2-label").innerText = "Net Incurred Losses";
-    document.getElementById("kpi-2-val").innerText = "KSh 14,200,000";
-    document.getElementById("kpi-2-sub").innerText = "Paid Claims + Reserves";
+    setSafeText("kpi-2-label", "Net Incurred Losses");
+    setSafeText("kpi-2-val", "KSh 14,200,000");
+    setSafeText("kpi-2-sub", "Paid Claims + Reserves");
 
-    document.getElementById("kpi-3-label").innerText = "Overall Portfolio Loss Ratio";
-    document.getElementById("kpi-3-val").innerText = "29.28%";
-    document.getElementById("kpi-3-sub").innerText = "Benchmark Target <45%";
+    setSafeText("kpi-3-label", "Overall Portfolio Loss Ratio");
+    setSafeText("kpi-3-val", "29.28%");
+    setSafeText("kpi-3-sub", "Benchmark Target <45%");
 
-    document.getElementById("kpi-4-label").innerText = "Net Underwriting Profit";
-    document.getElementById("kpi-4-val").innerText = "+KSh 34,300,000";
-    document.getElementById("kpi-4-sub").innerText = "70.72% Underwriting Margin";
+    setSafeText("kpi-4-label", "Net Underwriting Profit");
+    setSafeText("kpi-4-val", "+KSh 34,300,000");
+    setSafeText("kpi-4-sub", "70.72% Underwriting Margin");
 
     if (thead) {
       thead.innerHTML = `
@@ -6644,6 +6651,23 @@ function runReportQuery() {
   } else {
     // Branch production default
     if (titleLabel) titleLabel.innerText = `Queried Branch Production & Acquisition Ledger - ${branchText}`;
+    
+    setSafeText("kpi-1-label", "Total Acquired Premium");
+    setSafeText("kpi-1-val", "KSh 51,300,000");
+    setSafeText("kpi-1-sub", "219 Active Policies");
+
+    setSafeText("kpi-2-label", "Active Intermediaries");
+    setSafeText("kpi-2-val", "45 Brokers");
+    setSafeText("kpi-2-sub", "Direct & Agency Channels");
+
+    setSafeText("kpi-3-label", "Average Acquisition Cost");
+    setSafeText("kpi-3-val", "12.4%");
+    setSafeText("kpi-3-sub", "Commission & Levies");
+
+    setSafeText("kpi-4-label", "Acquisition Compliance");
+    setSafeText("kpi-4-val", "100% Compliant");
+    setSafeText("kpi-4-sub", "AKI & IRA Guidelines");
+
     if (thead) {
       thead.innerHTML = `
         <tr>
@@ -6704,7 +6728,7 @@ function exportQueriedReport(type) {
 
 // Initial report query on page load
 document.addEventListener("DOMContentLoaded", () => {
-  setTimeout(runReportQuery, 600);
+  setTimeout(window.runReportQuery, 600);
 });
 
 // ================= ULTRA-PREMIUM GLOWING DUAL AREA SPLINE & BAR CHART ENGINE =================
@@ -6908,9 +6932,11 @@ function renderReportBranchShareChart() {
   container.innerHTML = html;
 }
 
-// Hook renderReportCharts into runReportQuery
-const originalRunReportQuery = runReportQuery;
-runReportQuery = function() {
-  originalRunReportQuery();
+// Bind all interactive functions globally to window to prevent event scope errors
+window.runReportQuery = function() {
+  executeReportQuery();
   setTimeout(renderReportCharts, 100);
 };
+window.applyReportPeriodPreset = applyReportPeriodPreset;
+window.exportQueriedReport = exportQueriedReport;
+window.setReportChartType = setReportChartType;
