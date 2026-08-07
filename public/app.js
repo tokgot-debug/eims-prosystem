@@ -2025,7 +2025,7 @@ function setupPolicyRegistry() {
       if (found) {
         resBox.innerHTML = `
           <div style="font-weight:600; color:${found.status === 'Active' ? 'var(--success)' : 'var(--danger)'}; margin-bottom:4px;">
-            ${found.status === 'Active' ? '✓ Certificate Valid & Declared Active' : '✕ Certificate Restricted (' + found.status + ')'}
+            ${found.status === 'Active' ? 'Certificate Valid and Declared Active' : 'Certificate Restricted (' + found.status + ')'}
           </div>
           <div><strong>Policy:</strong> ${found.policyNo}</div>
           <div><strong>Holder:</strong> ${found.clientName} (${found.plate})</div>
@@ -2034,9 +2034,12 @@ function setupPolicyRegistry() {
       } else {
         resBox.innerHTML = `
           <div style="font-weight:600; color:var(--danger); margin-bottom:4px;">
-            ✕ Certificate Unmatched / Unregistered
+            Certificate Unmatched and Unregistered
           </div>
-          <div style="color:var(--text-secondary)">No active AKI certificate record found for ${certId}.</div>
+          <div style="color:var(--text-secondary); margin-bottom:12px;">No active AKI certificate record found for ${certId}.</div>
+          <button class="btn btn-primary" id="activate-cert-btn" style="width:100%; font-size:12px; padding:6px 12px;" onclick="window.activateCertInline('${certId}')">
+            Register and Declare Active
+          </button>
         `;
       }
     });
@@ -6951,3 +6954,40 @@ window.runReportQuery = function() {
 window.applyReportPeriodPreset = applyReportPeriodPreset;
 window.exportQueriedReport = exportQueriedReport;
 window.setReportChartType = setReportChartType;
+
+window.activateCertInline = function(certId) {
+  const randomNum = Math.floor(1000 + Math.random() * 9000);
+  const newPolicy = {
+    policyNo: `POL-MOT-${randomNum}-2026`,
+    clientName: "African Merchant Client",
+    plate: "KDG 123A",
+    line: "Motor",
+    premium: 72000,
+    debited: 72000,
+    status: "Active",
+    certId: certId,
+    isNew: true,
+    branch: "HQ"
+  };
+  policies.unshift(newPolicy);
+  
+  if (typeof renderPolicyRegistry === "function") {
+    renderPolicyRegistry();
+  }
+  
+  const resBox = document.getElementById("cert-status-result");
+  if (resBox) {
+    resBox.innerHTML = `
+      <div style="font-weight:600; color:var(--success); margin-bottom:4px;">
+        Certificate Valid and Declared Active
+      </div>
+      <div><strong>Policy:</strong> ${newPolicy.policyNo}</div>
+      <div><strong>Holder:</strong> ${newPolicy.clientName} (${newPolicy.plate})</div>
+      <div><strong>Line:</strong> ${newPolicy.line}</div>
+    `;
+  }
+  
+  if (typeof showToast === "function") {
+    showToast("Certificate Active", `Certificate ${certId} successfully registered and declared active.`, "success");
+  }
+};
