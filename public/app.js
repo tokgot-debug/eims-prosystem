@@ -366,7 +366,8 @@ function navigateToView(viewId) {
   } else if (viewId === "policy-registry") {
     renderPolicyRegistry();
   } else if (viewId === "production-reports") {
-    renderProductionReports();
+    if (typeof runReportQuery === "function") runReportQuery();
+    else renderProductionReports();
   } else if (viewId === "vehicle-loss-ratios") {
     renderVehicleLossRatios();
   } else if (viewId === "ai-assistant") {
