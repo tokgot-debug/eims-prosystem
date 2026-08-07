@@ -195,7 +195,7 @@
           <div class="accordion-content">
             <a class="accordion-item" data-view="production-reports" id="nav-production-reports">
               <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-              Production Reports
+              📊 Reports & Query Center
             </a>
             <a class="accordion-item" data-view="vehicle-loss-ratios" id="nav-vehicle-loss-ratios">
               <svg viewBox="0 0 24 24"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>
@@ -554,13 +554,18 @@
               <h1>Claims Overview</h1>
               <p>Real-time analytics and telemetry of insurance files across Kenya</p>
             </div>
-            <button class="btn btn-primary" onclick="navigateToView('create-claim')">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              New Notice of Loss
-            </button>
+            <div style="display:flex; gap:10px;">
+              <button class="btn btn-secondary" onclick="navigateToView('production-reports')">
+                📊 Reports & Query Center
+              </button>
+              <button class="btn btn-primary" onclick="navigateToView('create-claim')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                New Notice of Loss
+              </button>
+            </div>
           </div>
           
           <!-- Statistics Widget Block -->
