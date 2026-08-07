@@ -6396,6 +6396,19 @@ function runReportQuery() {
         <tr><td><strong>CLM-2026-002</strong></td><td>Sarah Njeri</td><td>POL-MOT-4412-2026</td><td>2026-08-04</td><td>Mombasa</td><td><strong style="color:var(--warning)">KSh 1,200,000</strong></td><td><span class="status-badge pending">Under Assessment</span></td></tr>
         <tr><td><strong>CLM-2026-003</strong></td><td>County Fleet Direct</td><td>POL-FLEET-0091</td><td>2026-08-05</td><td>Kisumu</td><td><strong style="color:var(--primary)">KSh 2,800,000</strong></td><td><span class="status-badge approved">Paid / Settled</span></td></tr>
         <tr><td><strong>CLM-2026-004</strong></td><td>David Omondi</td><td>POL-MOT-7731-2026</td><td>2026-08-06</td><td>Nakuru</td><td><strong style="color:var(--warning)">KSh 350,000</strong></td><td><span class="status-badge pending">ANPR Verifying</span></td></tr>
+        <tr><td><strong>CLM-2026-005</strong></td><td>Coastal Grain Warehousing</td><td>POL-FIRE-3321</td><td>2026-08-07</td><td>Mombasa</td><td><strong style="color:var(--primary)">KSh 4,500,000</strong></td><td><span class="status-badge approved">Reinsurance Treaty Claim</span></td></tr>
+        <tr><td><strong>CLM-2026-006</strong></td><td>Naivasha Flower Logistics</td><td>POL-MOT-6623</td><td>2026-08-08</td><td>Nakuru</td><td><strong style="color:var(--warning)">KSh 680,000</strong></td><td><span class="status-badge pending">Approved for Pay</span></td></tr>
+        <tr><td><strong>CLM-2026-007</strong></td><td>Peter Kiprop</td><td>POL-MOT-2281</td><td>2026-08-09</td><td>Eldoret</td><td><strong style="color:var(--primary)">KSh 180,000</strong></td><td><span class="status-badge approved">Paid / Settled</span></td></tr>
+        <tr><td><strong>CLM-2026-008</strong></td><td>Rift Valley Exporters</td><td>POL-MAR-7719</td><td>2026-08-10</td><td>Nakuru</td><td><strong style="color:var(--primary)">KSh 1,450,000</strong></td><td><span class="status-badge approved">Subrogation Recovery</span></td></tr>
+        <tr><td><strong>CLM-2026-009</strong></td><td>Kenya Ports Authority</td><td>POL-ENG-1102</td><td>2026-08-11</td><td>Mombasa</td><td><strong style="color:var(--warning)">KSh 3,200,000</strong></td><td><span class="status-badge pending">Loss Adjuster Report</span></td></tr>
+        <tr><td><strong>CLM-2026-010</strong></td><td>Kisumu Shuttle Express</td><td>POL-MOT-1092</td><td>2026-08-12</td><td>Kisumu</td><td><strong style="color:var(--primary)">KSh 520,000</strong></td><td><span class="status-badge approved">Paid / Settled</span></td></tr>
+        <tr><td><strong>CLM-2026-011</strong></td><td>Eldoret Grain Co-op</td><td>POL-MOT-5590</td><td>2026-08-13</td><td>Eldoret</td><td><strong style="color:var(--warning)">KSh 840,000</strong></td><td><span class="status-badge pending">Adjuster Surveying</span></td></tr>
+        <tr><td><strong>CLM-2026-012</strong></td><td>Jane Wanjiku Mutua</td><td>POL-MOT-9912</td><td>2026-08-14</td><td>Nairobi HQ</td><td><strong style="color:var(--primary)">KSh 2,280,000</strong></td><td><span class="status-badge approved">Paid / Settled</span></td></tr>
+        <tr style="background:rgba(255,107,0,0.08); font-weight:800; border-top:2px solid var(--primary);">
+          <td colspan="5" style="text-align:right;">GRAND TOTAL QUERIED CLAIMS:</td>
+          <td><strong style="color:var(--primary); font-size:14px;">KSh 18,450,000</strong></td>
+          <td><span class="status-badge approved">18 Paid | 6 Reserved</span></td>
+        </tr>
       `;
     }
 
@@ -6438,14 +6451,30 @@ function runReportQuery() {
     if (tbody) {
       tbody.innerHTML = `
         <tr><td><strong>POL-MOT-8973-2026</strong></td><td>Boniface Mwangi</td><td>Motor Comprehensive</td><td>2026-08-01</td><td>Nairobi HQ</td><td>KSh 1,850,000</td><td><strong style="color:var(--primary)">KSh 92,500</strong></td></tr>
-        <tr><td><strong>POL-FLEET-0091</strong></td><td>Nairobi County Fleet</td><td>Commercial Fleet</td><td>2026-08-02</td><td>Nairobi HQ</td><td>KSh 45,000,000</td><td><strong style="color:var(--primary)">KSh 2,250,000</strong></td></tr>
+        <tr><td><strong>POL-FLEET-0091</strong></td><td>Nairobi County Fleet</td><td>Commercial Fleet (45 Trucks)</td><td>2026-08-02</td><td>Nairobi HQ</td><td>KSh 45,000,000</td><td><strong style="color:var(--primary)">KSh 2,250,000</strong></td></tr>
         <tr><td><strong>POL-FIRE-3321</strong></td><td>Coastal Warehousing Ltd</td><td>Fire & Perils</td><td>2026-08-03</td><td>Mombasa</td><td>KSh 120,000,000</td><td><strong style="color:var(--primary)">KSh 1,800,000</strong></td></tr>
-        <tr><td><strong>POL-MOT-4412-2026</strong></td><td>Kisumu Logistics Ltd</td><td>Motor Commercial</td><td>2026-08-04</td><td>Kisumu</td><td>KSh 8,500,000</td><td><strong style="color:var(--primary)">KSh 425,000</strong></td></tr>
+        <tr><td><strong>POL-MOT-4412-2026</strong></td><td>Kisumu Cargo Logistics</td><td>Motor Commercial Heavy</td><td>2026-08-04</td><td>Kisumu</td><td>KSh 18,500,000</td><td><strong style="color:var(--primary)">KSh 925,000</strong></td></tr>
+        <tr><td><strong>POL-MAR-7719</strong></td><td>Rift Valley Exporters</td><td>Marine Cargo Import</td><td>2026-08-05</td><td>Nakuru</td><td>KSh 35,000,000</td><td><strong style="color:var(--primary)">KSh 525,000</strong></td></tr>
+        <tr><td><strong>POL-MOT-5590</strong></td><td>Eldoret Farm Co-op</td><td>Motor Tractors & Machinery</td><td>2026-08-06</td><td>Eldoret</td><td>KSh 12,000,000</td><td><strong style="color:var(--primary)">KSh 480,000</strong></td></tr>
+        <tr><td><strong>POL-ENG-1102</strong></td><td>Kenya Ports Authority</td><td>Engineering All Risks</td><td>2026-08-07</td><td>Mombasa</td><td>KSh 250,000,000</td><td><strong style="color:var(--primary)">KSh 3,750,000</strong></td></tr>
+        <tr><td><strong>POL-MOT-9912</strong></td><td>Jane Wanjiku Mutua</td><td>Motor Private (Mazda CX-5)</td><td>2026-08-08</td><td>Nairobi HQ</td><td>KSh 2,400,000</td><td><strong style="color:var(--primary)">KSh 120,000</strong></td></tr>
+        <tr><td><strong>POL-AV-8841</strong></td><td>Airports Ground Handling</td><td>Aviation Ground Liability</td><td>2026-08-09</td><td>Nairobi HQ</td><td>KSh 180,000,000</td><td><strong style="color:var(--primary)">KSh 2,700,000</strong></td></tr>
+        <tr><td><strong>POL-MOT-6623</strong></td><td>Naivasha Flower Logistics</td><td>Refrigerated Trucks Fleet</td><td>2026-08-10</td><td>Nakuru</td><td>KSh 14,000,000</td><td><strong style="color:var(--primary)">KSh 700,000</strong></td></tr>
+        <tr><td><strong>POL-HEALTH-301</strong></td><td>Public Officers Medical</td><td>Group Medical Cover</td><td>2026-08-11</td><td>Nairobi HQ</td><td>KSh 95,000,000</td><td><strong style="color:var(--primary)">KSh 4,750,000</strong></td></tr>
+        <tr><td><strong>POL-MOT-2281</strong></td><td>Peter Kiprop</td><td>Motor Private (Subaru)</td><td>2026-08-12</td><td>Eldoret</td><td>KSh 1,950,000</td><td><strong style="color:var(--primary)">KSh 97,500</strong></td></tr>
+        <tr><td><strong>POL-WIBA-5510</strong></td><td>Mombasa Port Services</td><td>Work Injury Benefits (WIBA)</td><td>2026-08-13</td><td>Mombasa</td><td>KSh 60,000,000</td><td><strong style="color:var(--primary)">KSh 1,200,000</strong></td></tr>
+        <tr><td><strong>POL-MOT-1092</strong></td><td>Kisumu Shuttle Express</td><td>PSV Matatu (14-Seater)</td><td>2026-08-14</td><td>Kisumu</td><td>KSh 9,000,000</td><td><strong style="color:var(--primary)">KSh 630,000</strong></td></tr>
+        <tr><td><strong>POL-BOND-4401</strong></td><td>Great Rift Construction</td><td>Performance Bond</td><td>2026-08-15</td><td>Nakuru</td><td>KSh 75,000,000</td><td><strong style="color:var(--primary)">KSh 1,125,000</strong></td></tr>
+        <tr style="background:rgba(255,107,0,0.08); font-weight:800; border-top:2px solid var(--primary);">
+          <td colspan="5" style="text-align:right;">GRAND TOTAL WRITTEN PREMIUM:</td>
+          <td><strong>KSh 850,000,000</strong></td>
+          <td><strong style="color:var(--primary); font-size:14px;">KSh 48,500,000</strong></td>
+        </tr>
       `;
     }
 
     if (aiSummary) {
-      aiSummary.innerHTML = `<strong>Underwriting Audit Summary (${startDate} to ${endDate}):</strong> 148 policies were issued across Nairobi HQ, Mombasa, Kisumu, and Nakuru. Gross written premium reached KSh 48.5M with 100% automated AKI digital certificate issuance and IRA compliance.`;
+      aiSummary.innerHTML = `<strong>Underwriting Audit Summary (${startDate} to ${endDate}):</strong> 148 policies were issued across Nairobi HQ, Mombasa, Kisumu, Nakuru, and Eldoret. Gross written premium reached KSh 48.5M with 100% automated AKI digital certificate issuance and IRA compliance.`;
     }
 
   } else if (ledger === "reinsurance") {
@@ -6473,6 +6502,7 @@ function runReportQuery() {
           <th>Quota Ceded %</th>
           <th>Ceded Premium</th>
           <th>Recoverable Claims</th>
+          <th>Ceding Commission (15%)</th>
           <th>Net Retention</th>
           <th>Treaty Status</th>
         </tr>
@@ -6481,14 +6511,77 @@ function runReportQuery() {
 
     if (tbody) {
       tbody.innerHTML = `
-        <tr><td><strong>Kenya Reinsurance Corp</strong></td><td>25.0% Quota Share</td><td>KSh 12,125,000</td><td>KSh 3,550,000</td><td>KSh 36,375,000</td><td><span class="status-badge approved">Active Treaty</span></td></tr>
-        <tr><td><strong>ZEP-RE (PTA Re)</strong></td><td>10.0% Surplus Share</td><td>KSh 4,850,000</td><td>KSh 1,420,000</td><td>KSh 43,650,000</td><td><span class="status-badge approved">Active Treaty</span></td></tr>
-        <tr><td><strong>African Reinsurance Corp</strong></td><td>5.0% Obligatory Cession</td><td>KSh 2,425,000</td><td>KSh 710,000</td><td>KSh 46,075,000</td><td><span class="status-badge approved">Active Treaty</span></td></tr>
+        <tr><td><strong>Kenya Reinsurance Corp</strong></td><td>25.0% Quota Share</td><td>KSh 12,125,000</td><td>KSh 3,550,000</td><td>KSh 1,818,750</td><td>KSh 36,375,000</td><td><span class="status-badge approved">Active Treaty</span></td></tr>
+        <tr><td><strong>ZEP-RE (PTA Re)</strong></td><td>10.0% Surplus Share</td><td>KSh 4,850,000</td><td>KSh 1,420,000</td><td>KSh 727,500</td><td>KSh 43,650,000</td><td><span class="status-badge approved">Active Treaty</span></td></tr>
+        <tr><td><strong>African Reinsurance Corp</strong></td><td>5.0% Obligatory Cession</td><td>KSh 2,425,000</td><td>KSh 710,000</td><td>KSh 363,750</td><td>KSh 46,075,000</td><td><span class="status-badge approved">Active Treaty</span></td></tr>
+        <tr><td><strong>Swiss Re (Catastrophe Cover)</strong></td><td>Excess of Loss (XOL)</td><td>KSh 1,800,000</td><td>KSh 2,120,000</td><td>KSh 270,000</td><td>KSh 150,000,000</td><td><span class="status-badge approved">Active Treaty</span></td></tr>
+        <tr><td><strong>Munich Re (Aviation/Marine)</strong></td><td>Facultative Treaty</td><td>KSh 1,250,000</td><td>KSh 600,000</td><td>KSh 187,500</td><td>KSh 75,000,000</td><td><span class="status-badge approved">Active Treaty</span></td></tr>
+        <tr style="background:rgba(255,107,0,0.08); font-weight:800; border-top:2px solid var(--primary);">
+          <td colspan="2" style="text-align:right;">TOTAL REINSURANCE TREATIES:</td>
+          <td><strong style="color:var(--primary); font-size:14px;">KSh 22,450,000</strong></td>
+          <td><strong style="color:var(--warning);">KSh 8,400,000</strong></td>
+          <td><strong>KSh 3,367,500</strong></td>
+          <td><strong>KSh 351,100,000</strong></td>
+          <td><span class="status-badge approved">5 Active Treaties</span></td>
+        </tr>
       `;
     }
 
     if (aiSummary) {
-      aiSummary.innerHTML = `<strong>Reinsurance Ceding Audit (${startDate} to ${endDate}):</strong> Quota share & surplus treaties with Kenya Re, ZEP-RE, and Africa Re ceded KSh 18.2M premium while protecting KSh 8.4M in recoverable claims. Net company retention remains robust at 62.48%.`;
+      aiSummary.innerHTML = `<strong>Reinsurance Ceding Audit (${startDate} to ${endDate}):</strong> Quota share & surplus treaties with Kenya Re, ZEP-RE, Africa Re, Swiss Re, and Munich Re ceded KSh 22.45M premium while protecting KSh 8.4M in recoverable claims. Net company retention remains robust at 62.48%.`;
+    }
+
+  } else if (ledger === "financials") {
+    if (titleLabel) titleLabel.innerText = "Queried Executive P&L Loss Ratio Summary";
+    document.getElementById("kpi-1-label").innerText = "Gross Earned Premium";
+    document.getElementById("kpi-1-val").innerText = "KSh 48,500,000";
+    document.getElementById("kpi-1-sub").innerText = "YTD Earned Income";
+
+    document.getElementById("kpi-2-label").innerText = "Net Incurred Losses";
+    document.getElementById("kpi-2-val").innerText = "KSh 14,200,000";
+    document.getElementById("kpi-2-sub").innerText = "Paid Claims + Reserves";
+
+    document.getElementById("kpi-3-label").innerText = "Overall Portfolio Loss Ratio";
+    document.getElementById("kpi-3-val").innerText = "29.28%";
+    document.getElementById("kpi-3-sub").innerText = "Benchmark Target <45%";
+
+    document.getElementById("kpi-4-label").innerText = "Net Underwriting Profit";
+    document.getElementById("kpi-4-val").innerText = "+KSh 34,300,000";
+    document.getElementById("kpi-4-sub").innerText = "70.72% Underwriting Margin";
+
+    if (thead) {
+      thead.innerHTML = `
+        <tr>
+          <th>Branch Office</th>
+          <th>Gross Written Premium</th>
+          <th>Claims Incurred</th>
+          <th>Net Loss Ratio (%)</th>
+          <th>Underwriting Margin</th>
+          <th>P&L Financial Status</th>
+        </tr>
+      `;
+    }
+
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr><td><strong>Head Office (Nairobi)</strong></td><td>KSh 28,400,000</td><td>KSh 7,952,000</td><td><strong style="color:#10b981;">28.0%</strong></td><td><strong style="color:#10b981;">+KSh 20,448,000</strong></td><td><span class="status-badge approved">Highly Profitable</span></td></tr>
+        <tr><td><strong>Mombasa Branch</strong></td><td>KSh 10,800,000</td><td>KSh 3,456,000</td><td><strong style="color:#10b981;">32.0%</strong></td><td><strong style="color:#10b981;">+KSh 7,344,000</strong></td><td><span class="status-badge approved">Profitable</span></td></tr>
+        <tr><td><strong>Kisumu Branch</strong></td><td>KSh 6,100,000</td><td>KSh 1,769,000</td><td><strong style="color:#10b981;">29.0%</strong></td><td><strong style="color:#10b981;">+KSh 4,331,000</strong></td><td><span class="status-badge approved">Profitable</span></td></tr>
+        <tr><td><strong>Nakuru Branch</strong></td><td>KSh 3,200,000</td><td>KSh 1,024,000</td><td><strong style="color:#10b981;">32.0%</strong></td><td><strong style="color:#10b981;">+KSh 2,176,000</strong></td><td><span class="status-badge approved">Profitable</span></td></tr>
+        <tr><td><strong>Eldoret Branch</strong></td><td>KSh 2,800,000</td><td>KSh 784,000</td><td><strong style="color:#10b981;">28.0%</strong></td><td><strong style="color:#10b981;">+KSh 2,016,000</strong></td><td><span class="status-badge approved">Profitable</span></td></tr>
+        <tr style="background:rgba(255,107,0,0.08); font-weight:800; border-top:2px solid var(--primary);">
+          <td>GRAND TOTAL P&L:</td>
+          <td><strong style="color:var(--primary); font-size:14px;">KSh 51,300,000</strong></td>
+          <td><strong style="color:var(--warning);">KSh 14,985,000</strong></td>
+          <td><strong style="color:#10b981;">29.21%</strong></td>
+          <td><strong style="color:#10b981; font-size:14px;">+KSh 36,315,000</strong></td>
+          <td><span class="status-badge approved">70.79% Margin</span></td>
+        </tr>
+      `;
+    }
+
+    if (aiSummary) {
+      aiSummary.innerHTML = `<strong>Executive P&L Loss Ratio Audit (${startDate} to ${endDate}):</strong> Total portfolio gross premium earned reached KSh 51.3M against KSh 14.98M incurred losses, maintaining an overall loss ratio of 29.21% (well below IRA ceiling of 45.0%). Net underwriting profit stands at KSh +36.31M.`;
     }
 
   } else {
@@ -6502,19 +6595,29 @@ function runReportQuery() {
           <th>Renewed Policies</th>
           <th>Gross Premium Written</th>
           <th>Acquisition Share</th>
+          <th>Performance Status</th>
         </tr>
       `;
     }
     if (tbody) {
       tbody.innerHTML = `
-        <tr><td><strong>Head Office (Nairobi)</strong></td><td><span class="status-badge approved">84 New Policies</span></td><td>32 Renewals</td><td><strong style="color:var(--primary)">KSh 28,400,000</strong></td><td>58.5%</td></tr>
-        <tr><td><strong>Mombasa Branch</strong></td><td><span class="status-badge approved">32 New Policies</span></td><td>14 Renewals</td><td><strong style="color:var(--primary)">KSh 10,800,000</strong></td><td>22.2%</td></tr>
-        <tr><td><strong>Kisumu Branch</strong></td><td><span class="status-badge approved">20 New Policies</span></td><td>8 Renewals</td><td><strong style="color:var(--primary)">KSh 6,100,000</strong></td><td>12.6%</td></tr>
-        <tr><td><strong>Nakuru Branch</strong></td><td><span class="status-badge approved">12 New Policies</span></td><td>4 Renewals</td><td><strong style="color:var(--primary)">KSh 3,200,000</strong></td><td>6.7%</td></tr>
+        <tr><td><strong>Head Office (Nairobi)</strong></td><td><span class="status-badge approved">84 New Policies</span></td><td>32 Renewals</td><td><strong style="color:var(--primary)">KSh 28,400,000</strong></td><td>55.3%</td><td><span class="status-badge approved">Target Exceeded</span></td></tr>
+        <tr><td><strong>Mombasa Branch</strong></td><td><span class="status-badge approved">32 New Policies</span></td><td>14 Renewals</td><td><strong style="color:var(--primary)">KSh 10,800,000</strong></td><td>21.0%</td><td><span class="status-badge approved">On Target</span></td></tr>
+        <tr><td><strong>Kisumu Branch</strong></td><td><span class="status-badge approved">20 New Policies</span></td><td>8 Renewals</td><td><strong style="color:var(--primary)">KSh 6,100,000</strong></td><td>11.9%</td><td><span class="status-badge approved">On Target</span></td></tr>
+        <tr><td><strong>Nakuru Branch</strong></td><td><span class="status-badge approved">12 New Policies</span></td><td>4 Renewals</td><td><strong style="color:var(--primary)">KSh 3,200,000</strong></td><td>6.2%</td><td><span class="status-badge approved">On Target</span></td></tr>
+        <tr><td><strong>Eldoret Branch</strong></td><td><span class="status-badge approved">10 New Policies</span></td><td>3 Renewals</td><td><strong style="color:var(--primary)">KSh 2,800,000</strong></td><td>5.6%</td><td><span class="status-badge approved">On Target</span></td></tr>
+        <tr style="background:rgba(255,107,0,0.08); font-weight:800; border-top:2px solid var(--primary);">
+          <td>TOTAL ACQUISITION:</td>
+          <td><strong>158 New Policies</strong></td>
+          <td><strong>61 Renewals</strong></td>
+          <td><strong style="color:var(--primary); font-size:14px;">KSh 51,300,000</strong></td>
+          <td><strong>100.0%</strong></td>
+          <td><span class="status-badge approved">5 Branches Active</span></td>
+        </tr>
       `;
     }
     if (aiSummary) {
-      aiSummary.innerHTML = `<strong>Branch Acquisition Audit (${startDate} to ${endDate}):</strong> Nairobi HQ led production with KSh 28.4M (58.5% share), followed by Mombasa (KSh 10.8M) and Kisumu (KSh 6.1M). Total new acquisition premium reached KSh 48.5M.`;
+      aiSummary.innerHTML = `<strong>Branch Acquisition Audit (${startDate} to ${endDate}):</strong> Nairobi HQ led production with KSh 28.4M (55.3% share), followed by Mombasa (KSh 10.8M), Kisumu (KSh 6.1M), Nakuru (KSh 3.2M), and Eldoret (KSh 2.8M). Total new acquisition premium reached KSh 51.3M across 219 policies.`;
     }
   }
 }

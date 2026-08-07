@@ -1481,6 +1481,20 @@
                   <option value="Mombasa">Mombasa Branch</option>
                   <option value="Kisumu">Kisumu Branch</option>
                   <option value="Nakuru">Nakuru Branch</option>
+                  <option value="Eldoret">Eldoret Branch</option>
+                </select>
+              </div>
+
+              <!-- Line of Business (LOB) Filter -->
+              <div class="form-group" style="min-width:170px; flex:1;">
+                <label for="report-lob-filter" style="font-weight:700;">Line of Business</label>
+                <select class="form-control" id="report-lob-filter" onchange="runReportQuery()">
+                  <option value="ALL" selected>All Risk Lines</option>
+                  <option value="Motor Comprehensive">🚗 Motor Comprehensive</option>
+                  <option value="Motor Commercial">🚛 Motor Commercial / Fleet</option>
+                  <option value="Fire & Perils">🔥 Fire & Special Perils</option>
+                  <option value="Marine Cargo">🚢 Marine & Freight Import</option>
+                  <option value="Engineering">🏗️ Engineering All Risks</option>
                 </select>
               </div>
 
