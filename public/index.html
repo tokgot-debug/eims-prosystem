@@ -1573,19 +1573,36 @@
           <!-- INTERACTIVE VISUAL ANALYTICS CHARTS & GRAPHS GRID -->
           <div style="display:grid; grid-template-columns: 2fr 1.2fr; gap:20px; margin-bottom:24px;">
             
-            <!-- Chart 1: Monthly Premium vs Claims Trend -->
-            <div class="dashboard-card" style="padding:20px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <!-- Chart 1: Ultra-Premium Glowing Area Spline & Bar Trend Chart -->
+            <div class="dashboard-card" style="padding:22px; background:#0b0f19; border:1px solid #1e2638; border-radius:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
                 <div>
-                  <h3 style="font-size:15px; font-weight:700;">Monthly Written Premium vs Claims Incurred Trend</h3>
-                  <span style="font-size:11px; color:var(--text-secondary);">Comparing Gross Premium (Bars) against Loss Claims (Spline Curve)</span>
+                  <h3 style="font-size:15.5px; font-weight:800; color:#ffffff; display:flex; align-items:center; gap:8px;">
+                    <span>📈</span> Financial Underwriting & Loss Performance Curve
+                  </h3>
+                  <span style="font-size:11.5px; color:#94a3b8;">Real-time comparison of Gross Written Premium vs Incurred Loss Claims</span>
                 </div>
-                <div style="display:flex; gap:12px; font-size:11px; font-weight:600;">
-                  <span style="display:flex; align-items:center; gap:4px; color:var(--primary);"><span style="width:10px; height:10px; background:var(--primary); border-radius:2px;"></span> Premium (KSh M)</span>
-                  <span style="display:flex; align-items:center; gap:4px; color:var(--danger);"><span style="width:10px; height:10px; background:var(--danger); border-radius:50%;"></span> Loss Claims</span>
+                
+                <!-- Chart Type Selector & Legend -->
+                <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                  <div style="display:flex; background:rgba(255,255,255,0.06); border-radius:6px; padding:3px; gap:4px;">
+                    <button id="chart-style-spline-btn" onclick="setReportChartType('spline')" style="padding:4px 10px; font-size:11px; font-weight:700; border-radius:4px; background:#ff6b00; color:#fff; border:none; cursor:pointer;">
+                      📈 Glowing Wave
+                    </button>
+                    <button id="chart-style-bar-btn" onclick="setReportChartType('bar')" style="padding:4px 10px; font-size:11px; font-weight:700; border-radius:4px; background:transparent; color:#94a3b8; border:none; cursor:pointer;">
+                      📊 3D Dual Bars
+                    </button>
+                  </div>
+
+                  <div style="display:flex; gap:12px; font-size:11px; font-weight:700;">
+                    <span style="display:flex; align-items:center; gap:5px; color:#ff8533;"><span style="width:10px; height:10px; background:#ff6b00; border-radius:50%; box-shadow:0 0 8px #ff6b00;"></span> Written Premium</span>
+                    <span style="display:flex; align-items:center; gap:5px; color:#00f2fe;"><span style="width:10px; height:10px; background:#00f2fe; border-radius:50%; box-shadow:0 0 8px #00f2fe;"></span> Loss Claims</span>
+                  </div>
                 </div>
               </div>
-              <div id="report-trend-chart-box" style="width:100%; height:230px; position:relative;">
+
+              <!-- Main SVG Canvas Area -->
+              <div id="report-trend-chart-box" style="width:100%; height:240px; position:relative; overflow:hidden;">
                 <!-- Rendered via JS -->
               </div>
             </div>

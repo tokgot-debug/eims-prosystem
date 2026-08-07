@@ -6439,7 +6439,24 @@ document.addEventListener("DOMContentLoaded", () => {
   setTimeout(runReportQuery, 600);
 });
 
-// ================= REPORT VISUAL CHARTS & EXTENDED MOCK DATASETS =================
+// ================= ULTRA-PREMIUM GLOWING DUAL AREA SPLINE & BAR CHART ENGINE =================
+let currentReportChartType = "spline";
+
+function setReportChartType(type) {
+  currentReportChartType = type;
+  const splineBtn = document.getElementById("chart-style-spline-btn");
+  const barBtn = document.getElementById("chart-style-bar-btn");
+
+  if (type === "spline") {
+    if (splineBtn) { splineBtn.style.background = "#ff6b00"; splineBtn.style.color = "#fff"; }
+    if (barBtn) { barBtn.style.background = "transparent"; barBtn.style.color = "#94a3b8"; }
+  } else {
+    if (splineBtn) { splineBtn.style.background = "transparent"; splineBtn.style.color = "#94a3b8"; }
+    if (barBtn) { barBtn.style.background = "#3b82f6"; barBtn.style.color = "#fff"; }
+  }
+  renderReportTrendChart();
+}
+
 function renderReportCharts(ledger = "underwriting") {
   renderReportTrendChart();
   renderReportBranchShareChart();
@@ -6450,80 +6467,144 @@ function renderReportTrendChart() {
   if (!chartBox) return;
 
   const data = [
-    { month: "Jan", prem: 38.5, claim: 10.9 },
-    { month: "Feb", prem: 42.0, claim: 13.1 },
-    { month: "Mar", prem: 45.2, claim: 11.9 },
-    { month: "Apr", prem: 41.8, claim: 14.6 },
-    { month: "May", prem: 46.5, claim: 13.8 },
-    { month: "Jun", prem: 51.0, claim: 16.8 },
-    { month: "Jul", prem: 47.8, claim: 13.1 },
-    { month: "Aug", prem: 48.5, claim: 14.2 }
+    { month: "Jan", prem: 38.5, claim: 10.9, ratio: "28.3%" },
+    { month: "Feb", prem: 42.0, claim: 13.1, ratio: "31.2%" },
+    { month: "Mar", prem: 45.2, claim: 11.9, ratio: "26.3%" },
+    { month: "Apr", prem: 41.8, claim: 14.6, ratio: "34.9%" },
+    { month: "May", prem: 46.5, claim: 13.8, ratio: "29.7%" },
+    { month: "Jun", prem: 51.0, claim: 16.8, ratio: "32.9%" },
+    { month: "Jul", prem: 47.8, claim: 13.1, ratio: "27.4%" },
+    { month: "Aug", prem: 48.5, claim: 14.2, ratio: "29.3%" }
   ];
 
-  const width = chartBox.clientWidth || 550;
-  const height = 210;
-  const paddingX = 40;
-  const paddingY = 30;
+  const width = chartBox.clientWidth || 580;
+  const height = 240;
+  const paddingX = 42;
+  const paddingY = 32;
 
   const maxVal = 60;
   const maxX = data.length - 1;
 
-  const barWidth = Math.max(14, Math.floor((width - paddingX * 2) / data.length - 16));
-
-  let svgBars = "";
-  let splinePoints = [];
+  const pointsPrem = [];
+  const pointsClaim = [];
 
   data.forEach((d, idx) => {
-    const xCenter = paddingX + (idx / maxX) * (width - paddingX * 2);
-    const xBar = xCenter - barWidth / 2;
-    const hBar = (d.prem / maxVal) * (height - paddingY * 2);
-    const yBar = height - paddingY - hBar;
-
-    svgBars += `
-      <rect x="${xBar}" y="${yBar}" width="${barWidth}" height="${hBar}" rx="4" fill="url(#premGrad)" opacity="0.85">
-        <title>${d.month}: KSh ${d.prem}M Premium</title>
-      </rect>
-      <text x="${xCenter}" y="${height - 8}" fill="#94a3b8" font-size="11" font-weight="600" text-anchor="middle">${d.month}</text>
-    `;
-
+    const x = paddingX + (idx / maxX) * (width - paddingX * 2);
+    const yPrem = height - paddingY - (d.prem / maxVal) * (height - paddingY * 2);
     const yClaim = height - paddingY - (d.claim / maxVal) * (height - paddingY * 2);
-    splinePoints.push({ x: xCenter, y: yClaim, claim: d.claim, month: d.month });
+    pointsPrem.push({ x, y: yPrem, val: d.prem, ...d });
+    pointsClaim.push({ x, y: yClaim, val: d.claim, ...d });
   });
 
-  let splineD = `M ${splinePoints[0].x} ${splinePoints[0].y}`;
-  for (let i = 0; i < splinePoints.length - 1; i++) {
-    const p0 = splinePoints[i];
-    const p1 = splinePoints[i + 1];
-    const cp1x = p0.x + (p1.x - p0.x) * 0.45;
-    const cp1y = p0.y;
-    const cp2x = p1.x - (p1.x - p0.x) * 0.45;
-    const cp2y = p1.y;
-    splineD += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p1.x} ${p1.y}`;
+  // Calculate smooth Spline Curves
+  function getSplinePath(points) {
+    let d = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i];
+      const p1 = points[i + 1];
+      const cp1x = p0.x + (p1.x - p0.x) * 0.45;
+      const cp1y = p0.y;
+      const cp2x = p1.x - (p1.x - p0.x) * 0.45;
+      const cp2y = p1.y;
+      d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p1.x} ${p1.y}`;
+    }
+    return d;
   }
 
-  let splineDots = "";
-  splinePoints.forEach(p => {
-    splineDots += `
-      <circle cx="${p.x}" cy="${p.y}" r="4" fill="#ef4444" stroke="#ffffff" stroke-width="2">
-        <title>${p.month}: KSh ${p.claim}M Claims</title>
-      </circle>
+  const pathPrem = getSplinePath(pointsPrem);
+  const pathClaim = getSplinePath(pointsClaim);
+
+  const areaPrem = `${pathPrem} L ${pointsPrem[pointsPrem.length - 1].x} ${height - paddingY} L ${pointsPrem[0].x} ${height - paddingY} Z`;
+  const areaClaim = `${pathClaim} L ${pointsClaim[pointsClaim.length - 1].x} ${height - paddingY} L ${pointsClaim[0].x} ${height - paddingY} Z`;
+
+  // Grid Lines & Labels
+  let gridLines = "";
+  [0, 15, 30, 45, 60].forEach(val => {
+    const y = height - paddingY - (val / maxVal) * (height - paddingY * 2);
+    gridLines += `
+      <line x1="${paddingX}" y1="${y}" x2="${width - paddingX}" y2="${y}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="4,4"/>
+      <text x="${paddingX - 8}" y="${y + 4}" fill="#64748b" font-size="10" font-weight="600" text-anchor="end">${val}M</text>
     `;
+  });
+
+  // X Axis Labels & Nodes
+  let xLabels = "";
+  let nodes = "";
+  let barElements = "";
+
+  const barGroupWidth = (width - paddingX * 2) / data.length;
+  const singleBarW = Math.max(10, Math.floor(barGroupWidth * 0.32));
+
+  data.forEach((d, idx) => {
+    const pP = pointsPrem[idx];
+    const pC = pointsClaim[idx];
+
+    xLabels += `<text x="${pP.x}" y="${height - 10}" fill="#94a3b8" font-size="11" font-weight="700" text-anchor="middle">${d.month}</text>`;
+
+    if (currentReportChartType === "bar") {
+      const hP = (d.prem / maxVal) * (height - paddingY * 2);
+      const hC = (d.claim / maxVal) * (height - paddingY * 2);
+      const xP = pP.x - singleBarW - 2;
+      const xC = pP.x + 2;
+
+      barElements += `
+        <rect x="${xP}" y="${height - paddingY - hP}" width="${singleBarW}" height="${hP}" rx="3" fill="url(#neonOrangeGrad)">
+          <title>${d.month}: Premium KSh ${d.prem}M</title>
+        </rect>
+        <rect x="${xC}" y="${height - paddingY - hC}" width="${singleBarW}" height="${hC}" rx="3" fill="url(#neonCyanGrad)">
+          <title>${d.month}: Claims KSh ${d.claim}M</title>
+        </rect>
+      `;
+    } else {
+      nodes += `
+        <!-- Glow Circle Premium -->
+        <circle cx="${pP.x}" cy="${pP.y}" r="6" fill="#ff6b00" stroke="#ffffff" stroke-width="2.5" style="filter: drop-shadow(0 0 6px #ff6b00);">
+          <title>${d.month} Premium: KSh ${d.prem}M (Loss Ratio: ${d.ratio})</title>
+        </circle>
+        <!-- Glow Circle Claim -->
+        <circle cx="${pC.x}" cy="${pC.y}" r="5" fill="#00f2fe" stroke="#ffffff" stroke-width="2.5" style="filter: drop-shadow(0 0 6px #00f2fe);">
+          <title>${d.month} Loss Claims: KSh ${d.claim}M</title>
+        </circle>
+      `;
+    }
   });
 
   chartBox.innerHTML = `
     <svg width="100%" height="100%" viewBox="0 0 ${width} ${height}">
       <defs>
-        <linearGradient id="premGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#ff6b00" stop-opacity="1" />
-          <stop offset="100%" stop-color="#ff8533" stop-opacity="0.4" />
+        <!-- Neon Orange Gradient -->
+        <linearGradient id="neonOrangeGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ff6b00" stop-opacity="0.85"/>
+          <stop offset="100%" stop-color="#ff8533" stop-opacity="0.05"/>
+        </linearGradient>
+        <!-- Neon Cyan Gradient -->
+        <linearGradient id="neonCyanGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#00f2fe" stop-opacity="0.85"/>
+          <stop offset="100%" stop-color="#4facfe" stop-opacity="0.05"/>
         </linearGradient>
       </defs>
-      <line x1="${paddingX}" y1="${paddingY}" x2="${width - paddingX}" y2="${paddingY}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
-      <line x1="${paddingX}" y1="${height/2}" x2="${width - paddingX}" y2="${height/2}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
-      <line x1="${paddingX}" y1="${height - paddingY}" x2="${width - paddingX}" y2="${height - paddingY}" stroke="rgba(255,255,255,0.15)"/>
-      ${svgBars}
-      <path d="${splineD}" fill="none" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
-      ${splineDots}
+
+      <!-- Grid Background -->
+      ${gridLines}
+
+      ${currentReportChartType === "spline" ? `
+        <!-- Area Fills -->
+        <path d="${areaPrem}" fill="url(#neonOrangeGrad)"/>
+        <path d="${areaClaim}" fill="url(#neonCyanGrad)"/>
+
+        <!-- Glowing Spline Lines -->
+        <path d="${pathPrem}" fill="none" stroke="#ff6b00" stroke-width="3.5" stroke-linecap="round" style="filter: drop-shadow(0 2px 8px rgba(255,107,0,0.6));"/>
+        <path d="${pathClaim}" fill="none" stroke="#00f2fe" stroke-width="3" stroke-linecap="round" stroke-dasharray="6,3" style="filter: drop-shadow(0 2px 8px rgba(0,242,254,0.6));"/>
+
+        <!-- Glow Nodes -->
+        ${nodes}
+      ` : `
+        <!-- 3D Bar Comparison -->
+        ${barElements}
+      `}
+
+      <!-- X Labels -->
+      ${xLabels}
     </svg>
   `;
 }
