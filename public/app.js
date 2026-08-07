@@ -6344,6 +6344,7 @@ function applyReportPeriodPreset() {
 function runReportQuery() {
   const ledger = document.getElementById("report-ledger-type")?.value || "underwriting";
   const branch = document.getElementById("report-branch")?.value || "ALL";
+  const lob = document.getElementById("report-lob-filter")?.value || "ALL";
   const startDate = document.getElementById("report-start-date")?.value || "2026-08-01";
   const endDate = document.getElementById("report-end-date")?.value || "2026-08-31";
 
@@ -6354,26 +6355,79 @@ function runReportQuery() {
   const thead = document.getElementById("report-table-head");
   const tbody = document.getElementById("report-table-body");
 
-  if (dateLabel) dateLabel.innerText = `Period: ${startDate} to ${endDate} (${branch === 'ALL' ? 'All Offices' : branch})`;
+  const branchText = branch === "ALL" ? "All Offices" : `${branch} Branch`;
+  const lobText = lob === "ALL" ? "All Risk Lines" : lob;
+
+  if (dateLabel) dateLabel.innerText = `Period: ${startDate} to ${endDate} (${branchText} | ${lobText})`;
   if (aiBadge) aiBadge.innerText = `${startDate} to ${endDate}`;
 
-  // Update KPI Cards and Table Headers depending on ledger type
+  // Underwriting Master Dataset
+  const underwritingData = [
+    { ref: "POL-MOT-8973-2026", holder: "Boniface Mwangi", cat: "Motor Comprehensive", lob: "Motor Comprehensive", date: "2026-08-01", branch: "HQ", sumInsured: 1850000, premium: 92500 },
+    { ref: "POL-FLEET-0091", holder: "Nairobi County Fleet", cat: "Commercial Fleet (45 Trucks)", lob: "Motor Commercial", date: "2026-08-02", branch: "HQ", sumInsured: 45000000, premium: 2250000 },
+    { ref: "POL-FIRE-3321", holder: "Coastal Warehousing Ltd", cat: "Fire & Perils", lob: "Fire & Perils", date: "2026-08-03", branch: "Mombasa", sumInsured: 120000000, premium: 1800000 },
+    { ref: "POL-MOT-4412-2026", holder: "Kisumu Cargo Logistics", cat: "Motor Commercial Heavy", lob: "Motor Commercial", date: "2026-08-04", branch: "Kisumu", sumInsured: 18500000, premium: 925000 },
+    { ref: "POL-MAR-7719", holder: "Rift Valley Exporters", cat: "Marine Cargo Import", lob: "Marine Cargo", date: "2026-08-05", branch: "Nakuru", sumInsured: 35000000, premium: 525000 },
+    { ref: "POL-MOT-5590", holder: "Eldoret Farm Co-op", cat: "Motor Tractors & Machinery", lob: "Motor Commercial", date: "2026-08-06", branch: "Eldoret", sumInsured: 12000000, premium: 480000 },
+    { ref: "POL-ENG-1102", holder: "Kenya Ports Authority", cat: "Engineering All Risks", lob: "Engineering", date: "2026-08-07", branch: "Mombasa", sumInsured: 250000000, premium: 3750000 },
+    { ref: "POL-MOT-9912", holder: "Jane Wanjiku Mutua", cat: "Motor Private (Mazda CX-5)", lob: "Motor Comprehensive", date: "2026-08-08", branch: "HQ", sumInsured: 2400000, premium: 120000 },
+    { ref: "POL-AV-8841", holder: "Airports Ground Handling", cat: "Aviation Ground Liability", lob: "Engineering", date: "2026-08-09", branch: "HQ", sumInsured: 180000000, premium: 2700000 },
+    { ref: "POL-MOT-6623", holder: "Naivasha Flower Logistics", cat: "Refrigerated Fleet", lob: "Motor Commercial", date: "2026-08-10", branch: "Nakuru", sumInsured: 14000000, premium: 700000 },
+    { ref: "POL-HEALTH-301", holder: "Public Officers Medical", cat: "Group Medical Cover", lob: "Fire & Perils", date: "2026-08-11", branch: "HQ", sumInsured: 95000000, premium: 4750000 },
+    { ref: "POL-MOT-2281", holder: "Peter Kiprop", cat: "Motor Private (Subaru)", lob: "Motor Comprehensive", date: "2026-08-12", branch: "Eldoret", sumInsured: 1950000, premium: 97500 },
+    { ref: "POL-WIBA-5510", holder: "Mombasa Port Services", cat: "Work Injury Benefits (WIBA)", lob: "Marine Cargo", date: "2026-08-13", branch: "Mombasa", sumInsured: 60000000, premium: 1200000 },
+    { ref: "POL-MOT-1092", holder: "Kisumu Shuttle Express", cat: "PSV Matatu (14-Seater)", lob: "Motor Commercial", date: "2026-08-14", branch: "Kisumu", sumInsured: 9000000, premium: 630000 },
+    { ref: "POL-BOND-4401", holder: "Great Rift Construction", cat: "Performance Bond", lob: "Engineering", date: "2026-08-15", branch: "Nakuru", sumInsured: 75000000, premium: 1125000 },
+    { ref: "POL-MOT-MOM-01", holder: "Salim Said Omar", cat: "Motor Private (Toyota Harrier)", lob: "Motor Comprehensive", date: "2026-08-16", branch: "Mombasa", sumInsured: 3200000, premium: 160000 },
+    { ref: "POL-MOT-MOM-02", holder: "Mombasa Coastal Transporters", cat: "Motor Private (Mercedes C200)", lob: "Motor Comprehensive", date: "2026-08-17", branch: "Mombasa", sumInsured: 4800000, premium: 240000 },
+    { ref: "POL-MOT-MOM-03", holder: "Amina Hassan Mohamed", cat: "Motor Private (Nissan X-Trail)", lob: "Motor Comprehensive", date: "2026-08-18", branch: "Mombasa", sumInsured: 2100000, premium: 105000 }
+  ];
+
+  // Claims Master Dataset
+  const claimsData = [
+    { ref: "CLM-2026-001", claimant: "Boniface Mwangi", polRef: "POL-MOT-8973-2026", lob: "Motor Comprehensive", date: "2026-08-03", branch: "HQ", amount: 450000, status: "Paid / Settled", statusType: "approved" },
+    { ref: "CLM-2026-002", claimant: "Sarah Njeri", polRef: "POL-MOT-4412-2026", lob: "Motor Commercial", date: "2026-08-04", branch: "Mombasa", amount: 1200000, status: "Under Assessment", statusType: "pending" },
+    { ref: "CLM-2026-003", claimant: "County Fleet Direct", polRef: "POL-FLEET-0091", lob: "Motor Commercial", date: "2026-08-05", branch: "Kisumu", amount: 2800000, status: "Paid / Settled", statusType: "approved" },
+    { ref: "CLM-2026-004", claimant: "David Omondi", polRef: "POL-MOT-7731-2026", lob: "Motor Comprehensive", date: "2026-08-06", branch: "Nakuru", amount: 350000, status: "ANPR Verifying", statusType: "pending" },
+    { ref: "CLM-2026-005", claimant: "Coastal Warehousing", polRef: "POL-FIRE-3321", lob: "Fire & Perils", date: "2026-08-07", branch: "Mombasa", amount: 4500000, status: "Reinsurance Claim", statusType: "approved" },
+    { ref: "CLM-2026-006", claimant: "Naivasha Flower Logistics", polRef: "POL-MOT-6623", lob: "Motor Commercial", date: "2026-08-08", branch: "Nakuru", amount: 680000, status: "Approved for Pay", statusType: "pending" },
+    { ref: "CLM-2026-007", claimant: "Peter Kiprop", polRef: "POL-MOT-2281", lob: "Motor Comprehensive", date: "2026-08-09", branch: "Eldoret", amount: 180000, status: "Paid / Settled", statusType: "approved" },
+    { ref: "CLM-2026-008", claimant: "Rift Valley Exporters", polRef: "POL-MAR-7719", lob: "Marine Cargo", date: "2026-08-10", branch: "Nakuru", amount: 1450000, status: "Subrogation Recovery", statusType: "approved" },
+    { ref: "CLM-2026-009", claimant: "Kenya Ports Authority", polRef: "POL-ENG-1102", lob: "Engineering", date: "2026-08-11", branch: "Mombasa", amount: 3200000, status: "Adjuster Report", statusType: "pending" },
+    { ref: "CLM-2026-010", claimant: "Kisumu Shuttle Express", polRef: "POL-MOT-1092", lob: "Motor Commercial", date: "2026-08-12", branch: "Kisumu", amount: 520000, status: "Paid / Settled", statusType: "approved" },
+    { ref: "CLM-2026-011", claimant: "Salim Said Omar", polRef: "POL-MOT-MOM-01", lob: "Motor Comprehensive", date: "2026-08-16", branch: "Mombasa", amount: 380000, status: "Paid / Settled", statusType: "approved" },
+    { ref: "CLM-2026-012", claimant: "Mombasa Coastal Transporters", polRef: "POL-MOT-MOM-02", lob: "Motor Comprehensive", date: "2026-08-17", branch: "Mombasa", amount: 620000, status: "Approved for Pay", statusType: "pending" },
+    { ref: "CLM-2026-013", claimant: "Amina Hassan Mohamed", polRef: "POL-MOT-MOM-03", lob: "Motor Comprehensive", date: "2026-08-18", branch: "Mombasa", amount: 140000, status: "Paid / Settled", statusType: "approved" }
+  ];
+
   if (ledger === "claims") {
-    if (titleLabel) titleLabel.innerText = "Queried Claims & Loss Recovery Ledger";
+    if (titleLabel) titleLabel.innerText = `Queried Claims & Loss Recovery Ledger - ${branchText} (${lobText})`;
+
+    const filtered = claimsData.filter(d => {
+      const matchBranch = branch === "ALL" || d.branch === branch;
+      const matchLob = lob === "ALL" || d.lob === lob;
+      return matchBranch && matchLob;
+    });
+
+    const totalIncurred = filtered.reduce((acc, item) => acc + item.amount, 0);
+    const paidItems = filtered.filter(i => i.statusType === "approved");
+    const totalPaid = paidItems.reduce((acc, item) => acc + item.amount, 0);
+    const totalReserve = totalIncurred - totalPaid;
+
     document.getElementById("kpi-1-label").innerText = "Total Claims Incurred";
-    document.getElementById("kpi-1-val").innerText = "KSh 18,450,000";
-    document.getElementById("kpi-1-sub").innerText = "24 Claims Filed";
+    document.getElementById("kpi-1-val").innerText = `KSh ${totalIncurred.toLocaleString()}`;
+    document.getElementById("kpi-1-sub").innerText = `${filtered.length} Claims Queried`;
 
     document.getElementById("kpi-2-label").innerText = "Claims Paid / Settled";
-    document.getElementById("kpi-2-val").innerText = "KSh 14,200,000";
-    document.getElementById("kpi-2-sub").innerText = "18 Claims Paid";
+    document.getElementById("kpi-2-val").innerText = `KSh ${totalPaid.toLocaleString()}`;
+    document.getElementById("kpi-2-sub").innerText = `${paidItems.length} Claims Paid`;
 
     document.getElementById("kpi-3-label").innerText = "Outstanding Loss Reserve";
-    document.getElementById("kpi-3-val").innerText = "KSh 4,250,000";
-    document.getElementById("kpi-3-sub").innerText = "6 Claims Pending";
+    document.getElementById("kpi-3-val").innerText = `KSh ${totalReserve.toLocaleString()}`;
+    document.getElementById("kpi-3-sub").innerText = `${filtered.length - paidItems.length} Pending Claims`;
 
-    document.getElementById("kpi-4-label").innerText = "Subrogation Recovery";
-    document.getElementById("kpi-4-val").innerText = "KSh 3,120,000";
+    document.getElementById("kpi-4-label").innerText = "Subrogation Recoveries";
+    document.getElementById("kpi-4-val").innerText = `KSh ${(totalPaid * 0.18).toFixed(0).toLocaleString()}`;
     document.getElementById("kpi-4-sub").innerText = "Third-Party Recoveries";
 
     if (thead) {
@@ -6391,44 +6445,52 @@ function runReportQuery() {
     }
 
     if (tbody) {
-      tbody.innerHTML = `
-        <tr><td><strong>CLM-2026-001</strong></td><td>Boniface Mwangi</td><td>POL-MOT-8973-2026</td><td>2026-08-03</td><td>Nairobi HQ</td><td><strong style="color:var(--primary)">KSh 450,000</strong></td><td><span class="status-badge approved">Paid / Settled</span></td></tr>
-        <tr><td><strong>CLM-2026-002</strong></td><td>Sarah Njeri</td><td>POL-MOT-4412-2026</td><td>2026-08-04</td><td>Mombasa</td><td><strong style="color:var(--warning)">KSh 1,200,000</strong></td><td><span class="status-badge pending">Under Assessment</span></td></tr>
-        <tr><td><strong>CLM-2026-003</strong></td><td>County Fleet Direct</td><td>POL-FLEET-0091</td><td>2026-08-05</td><td>Kisumu</td><td><strong style="color:var(--primary)">KSh 2,800,000</strong></td><td><span class="status-badge approved">Paid / Settled</span></td></tr>
-        <tr><td><strong>CLM-2026-004</strong></td><td>David Omondi</td><td>POL-MOT-7731-2026</td><td>2026-08-06</td><td>Nakuru</td><td><strong style="color:var(--warning)">KSh 350,000</strong></td><td><span class="status-badge pending">ANPR Verifying</span></td></tr>
-        <tr><td><strong>CLM-2026-005</strong></td><td>Coastal Grain Warehousing</td><td>POL-FIRE-3321</td><td>2026-08-07</td><td>Mombasa</td><td><strong style="color:var(--primary)">KSh 4,500,000</strong></td><td><span class="status-badge approved">Reinsurance Treaty Claim</span></td></tr>
-        <tr><td><strong>CLM-2026-006</strong></td><td>Naivasha Flower Logistics</td><td>POL-MOT-6623</td><td>2026-08-08</td><td>Nakuru</td><td><strong style="color:var(--warning)">KSh 680,000</strong></td><td><span class="status-badge pending">Approved for Pay</span></td></tr>
-        <tr><td><strong>CLM-2026-007</strong></td><td>Peter Kiprop</td><td>POL-MOT-2281</td><td>2026-08-09</td><td>Eldoret</td><td><strong style="color:var(--primary)">KSh 180,000</strong></td><td><span class="status-badge approved">Paid / Settled</span></td></tr>
-        <tr><td><strong>CLM-2026-008</strong></td><td>Rift Valley Exporters</td><td>POL-MAR-7719</td><td>2026-08-10</td><td>Nakuru</td><td><strong style="color:var(--primary)">KSh 1,450,000</strong></td><td><span class="status-badge approved">Subrogation Recovery</span></td></tr>
-        <tr><td><strong>CLM-2026-009</strong></td><td>Kenya Ports Authority</td><td>POL-ENG-1102</td><td>2026-08-11</td><td>Mombasa</td><td><strong style="color:var(--warning)">KSh 3,200,000</strong></td><td><span class="status-badge pending">Loss Adjuster Report</span></td></tr>
-        <tr><td><strong>CLM-2026-010</strong></td><td>Kisumu Shuttle Express</td><td>POL-MOT-1092</td><td>2026-08-12</td><td>Kisumu</td><td><strong style="color:var(--primary)">KSh 520,000</strong></td><td><span class="status-badge approved">Paid / Settled</span></td></tr>
-        <tr><td><strong>CLM-2026-011</strong></td><td>Eldoret Grain Co-op</td><td>POL-MOT-5590</td><td>2026-08-13</td><td>Eldoret</td><td><strong style="color:var(--warning)">KSh 840,000</strong></td><td><span class="status-badge pending">Adjuster Surveying</span></td></tr>
-        <tr><td><strong>CLM-2026-012</strong></td><td>Jane Wanjiku Mutua</td><td>POL-MOT-9912</td><td>2026-08-14</td><td>Nairobi HQ</td><td><strong style="color:var(--primary)">KSh 2,280,000</strong></td><td><span class="status-badge approved">Paid / Settled</span></td></tr>
-        <tr style="background:rgba(255,107,0,0.08); font-weight:800; border-top:2px solid var(--primary);">
-          <td colspan="5" style="text-align:right;">GRAND TOTAL QUERIED CLAIMS:</td>
-          <td><strong style="color:var(--primary); font-size:14px;">KSh 18,450,000</strong></td>
-          <td><span class="status-badge approved">18 Paid | 6 Reserved</span></td>
-        </tr>
-      `;
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-muted);">No claim records match query parameter (${branchText} | ${lobText}).</td></tr>`;
+      } else {
+        let html = "";
+        filtered.forEach(item => {
+          html += `<tr><td><strong>${item.ref}</strong></td><td>${item.claimant}</td><td>${item.polRef}</td><td>${item.date}</td><td>${item.branch}</td><td><strong style="color:var(--primary)">KSh ${item.amount.toLocaleString()}</strong></td><td><span class="status-badge ${item.statusType}">${item.status}</span></td></tr>`;
+        });
+        html += `
+          <tr style="background:rgba(255,107,0,0.08); font-weight:800; border-top:2px solid var(--primary);">
+            <td colspan="5" style="text-align:right;">QUERIED TOTAL CLAIMS:</td>
+            <td><strong style="color:var(--primary); font-size:14px;">KSh ${totalIncurred.toLocaleString()}</strong></td>
+            <td><span class="status-badge approved">${paidItems.length} Paid | ${filtered.length - paidItems.length} Pending</span></td>
+          </tr>
+        `;
+        tbody.innerHTML = html;
+      }
     }
 
     if (aiSummary) {
-      aiSummary.innerHTML = `<strong>Claims Audit Summary (${startDate} to ${endDate}):</strong> Total claims incurred stood at KSh 18.45M across 24 notices. KSh 14.2M has been settled with zero fraudulent claims detected by ANPR AI cross-checks. Subrogation recoveries recovered KSh 3.12M from third-party insurers.`;
+      aiSummary.innerHTML = `<strong>Claims Audit Query (${branchText} | ${lobText}):</strong> Queried claims incurred stood at KSh ${totalIncurred.toLocaleString()} across ${filtered.length} notices. KSh ${totalPaid.toLocaleString()} has been settled with zero fraudulent claims detected by ANPR AI cross-checks.`;
     }
 
   } else if (ledger === "underwriting") {
-    if (titleLabel) titleLabel.innerText = "Queried Underwriting & Policy Ledger";
+    if (titleLabel) titleLabel.innerText = `Queried Underwriting & Policy Ledger - ${branchText} (${lobText})`;
+
+    const filtered = underwritingData.filter(d => {
+      const matchBranch = branch === "ALL" || d.branch === branch;
+      const matchLob = lob === "ALL" || d.lob === lob;
+      return matchBranch && matchLob;
+    });
+
+    const totalSumInsured = filtered.reduce((acc, item) => acc + item.sumInsured, 0);
+    const totalPremium = filtered.reduce((acc, item) => acc + item.premium, 0);
+    const avgPremium = filtered.length > 0 ? Math.round(totalPremium / filtered.length) : 0;
+
     document.getElementById("kpi-1-label").innerText = "Total Written Premium";
-    document.getElementById("kpi-1-val").innerText = "KSh 48,500,000";
-    document.getElementById("kpi-1-sub").innerText = "148 Active Policies";
+    document.getElementById("kpi-1-val").innerText = `KSh ${totalPremium.toLocaleString()}`;
+    document.getElementById("kpi-1-sub").innerText = `${filtered.length} Active Policies`;
 
     document.getElementById("kpi-2-label").innerText = "Total Sum Insured";
-    document.getElementById("kpi-2-val").innerText = "KSh 850,000,000";
-    document.getElementById("kpi-2-sub").innerText = "Portfolio Liability";
+    document.getElementById("kpi-2-val").innerText = `KSh ${totalSumInsured.toLocaleString()}`;
+    document.getElementById("kpi-2-sub").innerText = "Portfolio Risk Exposure";
 
     document.getElementById("kpi-3-label").innerText = "Average Premium / Risk";
-    document.getElementById("kpi-3-val").innerText = "KSh 327,700";
-    document.getElementById("kpi-3-sub").innerText = "Motor & Non-Motor Avg";
+    document.getElementById("kpi-3-val").innerText = `KSh ${avgPremium.toLocaleString()}`;
+    document.getElementById("kpi-3-sub").innerText = `${lobText} Average`;
 
     document.getElementById("kpi-4-label").innerText = "Active Compliance";
     document.getElementById("kpi-4-val").innerText = "100% AKI Certs";
@@ -6449,36 +6511,31 @@ function runReportQuery() {
     }
 
     if (tbody) {
-      tbody.innerHTML = `
-        <tr><td><strong>POL-MOT-8973-2026</strong></td><td>Boniface Mwangi</td><td>Motor Comprehensive</td><td>2026-08-01</td><td>Nairobi HQ</td><td>KSh 1,850,000</td><td><strong style="color:var(--primary)">KSh 92,500</strong></td></tr>
-        <tr><td><strong>POL-FLEET-0091</strong></td><td>Nairobi County Fleet</td><td>Commercial Fleet (45 Trucks)</td><td>2026-08-02</td><td>Nairobi HQ</td><td>KSh 45,000,000</td><td><strong style="color:var(--primary)">KSh 2,250,000</strong></td></tr>
-        <tr><td><strong>POL-FIRE-3321</strong></td><td>Coastal Warehousing Ltd</td><td>Fire & Perils</td><td>2026-08-03</td><td>Mombasa</td><td>KSh 120,000,000</td><td><strong style="color:var(--primary)">KSh 1,800,000</strong></td></tr>
-        <tr><td><strong>POL-MOT-4412-2026</strong></td><td>Kisumu Cargo Logistics</td><td>Motor Commercial Heavy</td><td>2026-08-04</td><td>Kisumu</td><td>KSh 18,500,000</td><td><strong style="color:var(--primary)">KSh 925,000</strong></td></tr>
-        <tr><td><strong>POL-MAR-7719</strong></td><td>Rift Valley Exporters</td><td>Marine Cargo Import</td><td>2026-08-05</td><td>Nakuru</td><td>KSh 35,000,000</td><td><strong style="color:var(--primary)">KSh 525,000</strong></td></tr>
-        <tr><td><strong>POL-MOT-5590</strong></td><td>Eldoret Farm Co-op</td><td>Motor Tractors & Machinery</td><td>2026-08-06</td><td>Eldoret</td><td>KSh 12,000,000</td><td><strong style="color:var(--primary)">KSh 480,000</strong></td></tr>
-        <tr><td><strong>POL-ENG-1102</strong></td><td>Kenya Ports Authority</td><td>Engineering All Risks</td><td>2026-08-07</td><td>Mombasa</td><td>KSh 250,000,000</td><td><strong style="color:var(--primary)">KSh 3,750,000</strong></td></tr>
-        <tr><td><strong>POL-MOT-9912</strong></td><td>Jane Wanjiku Mutua</td><td>Motor Private (Mazda CX-5)</td><td>2026-08-08</td><td>Nairobi HQ</td><td>KSh 2,400,000</td><td><strong style="color:var(--primary)">KSh 120,000</strong></td></tr>
-        <tr><td><strong>POL-AV-8841</strong></td><td>Airports Ground Handling</td><td>Aviation Ground Liability</td><td>2026-08-09</td><td>Nairobi HQ</td><td>KSh 180,000,000</td><td><strong style="color:var(--primary)">KSh 2,700,000</strong></td></tr>
-        <tr><td><strong>POL-MOT-6623</strong></td><td>Naivasha Flower Logistics</td><td>Refrigerated Trucks Fleet</td><td>2026-08-10</td><td>Nakuru</td><td>KSh 14,000,000</td><td><strong style="color:var(--primary)">KSh 700,000</strong></td></tr>
-        <tr><td><strong>POL-HEALTH-301</strong></td><td>Public Officers Medical</td><td>Group Medical Cover</td><td>2026-08-11</td><td>Nairobi HQ</td><td>KSh 95,000,000</td><td><strong style="color:var(--primary)">KSh 4,750,000</strong></td></tr>
-        <tr><td><strong>POL-MOT-2281</strong></td><td>Peter Kiprop</td><td>Motor Private (Subaru)</td><td>2026-08-12</td><td>Eldoret</td><td>KSh 1,950,000</td><td><strong style="color:var(--primary)">KSh 97,500</strong></td></tr>
-        <tr><td><strong>POL-WIBA-5510</strong></td><td>Mombasa Port Services</td><td>Work Injury Benefits (WIBA)</td><td>2026-08-13</td><td>Mombasa</td><td>KSh 60,000,000</td><td><strong style="color:var(--primary)">KSh 1,200,000</strong></td></tr>
-        <tr><td><strong>POL-MOT-1092</strong></td><td>Kisumu Shuttle Express</td><td>PSV Matatu (14-Seater)</td><td>2026-08-14</td><td>Kisumu</td><td>KSh 9,000,000</td><td><strong style="color:var(--primary)">KSh 630,000</strong></td></tr>
-        <tr><td><strong>POL-BOND-4401</strong></td><td>Great Rift Construction</td><td>Performance Bond</td><td>2026-08-15</td><td>Nakuru</td><td>KSh 75,000,000</td><td><strong style="color:var(--primary)">KSh 1,125,000</strong></td></tr>
-        <tr style="background:rgba(255,107,0,0.08); font-weight:800; border-top:2px solid var(--primary);">
-          <td colspan="5" style="text-align:right;">GRAND TOTAL WRITTEN PREMIUM:</td>
-          <td><strong>KSh 850,000,000</strong></td>
-          <td><strong style="color:var(--primary); font-size:14px;">KSh 48,500,000</strong></td>
-        </tr>
-      `;
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-muted);">No policy records match query parameter (${branchText} | ${lobText}).</td></tr>`;
+      } else {
+        let html = "";
+        filtered.forEach(item => {
+          html += `<tr><td><strong>${item.ref}</strong></td><td>${item.holder}</td><td>${item.cat}</td><td>${item.date}</td><td>${item.branch}</td><td>KSh ${item.sumInsured.toLocaleString()}</td><td><strong style="color:var(--primary)">KSh ${item.premium.toLocaleString()}</strong></td></tr>`;
+        });
+        html += `
+          <tr style="background:rgba(255,107,0,0.08); font-weight:800; border-top:2px solid var(--primary);">
+            <td colspan="5" style="text-align:right;">QUERIED TOTAL WRITTEN PREMIUM:</td>
+            <td><strong>KSh ${totalSumInsured.toLocaleString()}</strong></td>
+            <td><strong style="color:var(--primary); font-size:14px;">KSh ${totalPremium.toLocaleString()}</strong></td>
+          </tr>
+        `;
+        tbody.innerHTML = html;
+      }
     }
 
     if (aiSummary) {
-      aiSummary.innerHTML = `<strong>Underwriting Audit Summary (${startDate} to ${endDate}):</strong> 148 policies were issued across Nairobi HQ, Mombasa, Kisumu, Nakuru, and Eldoret. Gross written premium reached KSh 48.5M with 100% automated AKI digital certificate issuance and IRA compliance.`;
+      aiSummary.innerHTML = `<strong>Underwriting Audit Query (${branchText} | ${lobText}):</strong> ${filtered.length} active policies queried. Total gross written premium reached KSh ${totalPremium.toLocaleString()} against total sum insured of KSh ${totalSumInsured.toLocaleString()} with 100% automated AKI digital certificate verification.`;
     }
 
   } else if (ledger === "reinsurance") {
-    if (titleLabel) titleLabel.innerText = "Queried Reinsurance & Ceding Share Ledger";
+    if (titleLabel) titleLabel.innerText = `Queried Reinsurance & Ceding Share Ledger - ${branchText}`;
+
     document.getElementById("kpi-1-label").innerText = "Gross Ceded Premium";
     document.getElementById("kpi-1-val").innerText = "KSh 18,200,000";
     document.getElementById("kpi-1-sub").innerText = "Quota Share Ceded";
@@ -6532,7 +6589,7 @@ function runReportQuery() {
     }
 
   } else if (ledger === "financials") {
-    if (titleLabel) titleLabel.innerText = "Queried Executive P&L Loss Ratio Summary";
+    if (titleLabel) titleLabel.innerText = `Queried Executive P&L Loss Ratio Summary - ${branchText}`;
     document.getElementById("kpi-1-label").innerText = "Gross Earned Premium";
     document.getElementById("kpi-1-val").innerText = "KSh 48,500,000";
     document.getElementById("kpi-1-sub").innerText = "YTD Earned Income";
@@ -6586,7 +6643,7 @@ function runReportQuery() {
 
   } else {
     // Branch production default
-    if (titleLabel) titleLabel.innerText = "Queried Branch Production & Acquisition Ledger";
+    if (titleLabel) titleLabel.innerText = `Queried Branch Production & Acquisition Ledger - ${branchText}`;
     if (thead) {
       thead.innerHTML = `
         <tr>
