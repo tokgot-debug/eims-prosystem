@@ -244,6 +244,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupPolicyRegistry();
   setupProductionReports();
   setupAIAssistant();
+  setupReportsQueryListeners();
   
   // Launch active Landing Page view by default
   navigateToView("landing-page");
@@ -6930,6 +6931,16 @@ function renderReportBranchShareChart() {
   });
 
   container.innerHTML = html;
+}
+
+function setupReportsQueryListeners() {
+  const queryBtn = document.getElementById("report-query-btn");
+  if (queryBtn) {
+    queryBtn.onclick = function(e) {
+      if (e) e.preventDefault();
+      if (typeof window.runReportQuery === "function") window.runReportQuery();
+    };
+  }
 }
 
 // Bind all interactive functions globally to window to prevent event scope errors
