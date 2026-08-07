@@ -2945,17 +2945,15 @@ function setupAIAssistant() {
   });
   
   if (sendBtn && inputEl) {
-    const handleSend = () => {
-      const text = inputEl.value.trim();
-      if (!text) return;
-      processAIQuery(text);
-      inputEl.value = "";
+    sendBtn.onclick = function(e) {
+      if (e) e.preventDefault();
+      if (typeof window.handleAISend === "function") window.handleAISend();
     };
-    
-    sendBtn.addEventListener("click", handleSend);
-    inputEl.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") handleSend();
-    });
+    inputEl.onkeydown = function(e) {
+      if (e.key === "Enter") {
+        if (typeof window.handleAISend === "function") window.handleAISend();
+      }
+    };
   }
 }
 
@@ -7035,4 +7033,19 @@ window.activateCertInline = function(certId) {
   if (typeof showToast === "function") {
     showToast("Certificate Active", `Certificate ${certId} successfully registered and declared active.`, "success");
   }
+};
+
+window.handleAISend = function() {
+  const inputEl = document.getElementById("ai-assistant-input");
+  if (!inputEl) return;
+  
+  let text = inputEl.value.trim();
+  if (!text) {
+    text = "Synthesize a monthly executive production summary across all offices.";
+  }
+  
+  if (typeof processAIQuery === "function") {
+    processAIQuery(text);
+  }
+  inputEl.value = "";
 };
