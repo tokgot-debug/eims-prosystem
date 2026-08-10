@@ -6494,7 +6494,8 @@ function executeReportQuery() {
     const filtered = claimsData.filter(d => {
       const matchBranch = branch === "ALL" || d.branch === branch;
       const matchLob = lob === "ALL" || d.lob === lob;
-      return matchBranch && matchLob;
+      const matchDate = (!startDate || d.date >= startDate) && (!endDate || d.date <= endDate);
+      return matchBranch && matchLob && matchDate;
     });
 
     const totalIncurred = filtered.reduce((acc, item) => acc + item.amount, 0);
@@ -6561,7 +6562,8 @@ function executeReportQuery() {
     const filtered = underwritingData.filter(d => {
       const matchBranch = branch === "ALL" || d.branch === branch;
       const matchLob = lob === "ALL" || d.lob === lob;
-      return matchBranch && matchLob;
+      const matchDate = (!startDate || d.date >= startDate) && (!endDate || d.date <= endDate);
+      return matchBranch && matchLob && matchDate;
     });
 
     const totalSumInsured = filtered.reduce((acc, item) => acc + item.sumInsured, 0);
@@ -6697,11 +6699,11 @@ function executeReportQuery() {
       if (branch !== "ALL" && branch !== b) return;
       
       const bGWP = underwritingData
-        .filter(d => d.branch === b && (lob === "ALL" || d.lob === lob))
+        .filter(d => d.branch === b && (lob === "ALL" || d.lob === lob) && (!startDate || d.date >= startDate) && (!endDate || d.date <= endDate))
         .reduce((acc, item) => acc + item.premium, 0);
         
       const bClaims = claimsData
-        .filter(d => d.branch === b && (lob === "ALL" || d.lob === lob))
+        .filter(d => d.branch === b && (lob === "ALL" || d.lob === lob) && (!startDate || d.date >= startDate) && (!endDate || d.date <= endDate))
         .reduce((acc, item) => acc + item.amount, 0);
         
       const bRatio = bGWP > 0 ? ((bClaims / bGWP) * 100).toFixed(1) : "0.0";
@@ -6775,6 +6777,18 @@ function executeReportQuery() {
     // Branch production default
     if (titleLabel) titleLabel.innerText = `Queried Branch Production & Acquisition Ledger - ${branchText}`;
     
+    // Calculate date span in days to scale production records proportionally
+    let scaleFactor = 1.0;
+    if (startDate && endDate) {
+      const startMs = new Date(startDate).getTime();
+      const endMs = new Date(endDate).getTime();
+      if (!isNaN(startMs) && !isNaN(endMs) && endMs >= startMs) {
+        const days = (endMs - startMs) / (1000 * 60 * 60 * 24) + 1;
+        // Baseline is August 2026 (31 days)
+        scaleFactor = Math.max(0.01, days / 31.0);
+      }
+    }
+    
     const filteredProd = branchProductionData.filter(b => {
       if (branch === "ALL") return true;
       if (branch === "HQ") return b.branch.includes("Nairobi") || b.branch.includes("Head");
@@ -6796,9 +6810,9 @@ function executeReportQuery() {
         else if (lob.includes("Engineering")) lobFactor = 0.03;
       }
       
-      const bNew = Math.round(b.newCount * lobFactor);
-      const bRenewed = Math.round(b.renewedCount * lobFactor);
-      const bPremium = Math.round(b.newPremium * lobFactor);
+      const bNew = Math.round(b.newCount * lobFactor * scaleFactor);
+      const bRenewed = Math.round(b.renewedCount * lobFactor * scaleFactor);
+      const bPremium = Math.round(b.newPremium * lobFactor * scaleFactor);
       
       totalNew += bNew;
       totalRenewed += bRenewed;
