@@ -3421,10 +3421,12 @@ html, body {
    headers, action buttons, and form filters.
    ========================================================================== */
 @media print {
-  /* Override backgrounds for paper printing */
+  /* Keep the beautiful dark theme for high-end PDF presentation */
   html, body {
-    background: #ffffff !important;
-    color: #000000 !important;
+    background: #09090b !important;
+    color: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   
   /* Hide non-report layout elements */
@@ -3448,24 +3450,24 @@ html, body {
     margin-left: 0 !important;
     padding: 0 !important;
     width: 100% !important;
-    background: #ffffff !important;
-    color: #000000 !important;
+    background: #09090b !important;
+    color: #ffffff !important;
   }
 
   /* Style cards, headers, and text for print readability */
   .dashboard-card {
-    background: #ffffff !important;
-    border: 1px solid #cccccc !important;
-    color: #000000 !important;
+    background: #121215 !important;
+    border: 1px solid rgba(255, 107, 0, 0.18) !important;
+    color: #ffffff !important;
     box-shadow: none !important;
     margin-bottom: 20px !important;
     padding: 16px !important;
     page-break-inside: avoid;
   }
 
-  /* Ensure text elements are pure black on white paper */
+  /* Ensure text elements preserve contrast */
   h1, h2, h3, h4, h5, h6, p, span, td, th, strong, div, label {
-    color: #000000 !important;
+    color: #ffffff !important;
     text-shadow: none !important;
   }
 
@@ -3477,23 +3479,24 @@ html, body {
   }
 
   th, td {
-    border: 1px solid #aaaaaa !important;
+    border: 1px solid rgba(255, 107, 0, 0.1) !important;
     padding: 8px !important;
-    color: #000000 !important;
-    background: #ffffff !important;
+    color: #ffffff !important;
+    background: transparent !important;
     text-align: left !important;
   }
 
   th {
-    background-color: #eeeeee !important;
+    background-color: rgba(255, 107, 0, 0.08) !important;
     font-weight: 700 !important;
+    color: #ff6b00 !important;
   }
 
-  /* Color status badges cleanly in black/white */
+  /* Color status badges cleanly */
   .status-badge {
-    border: 1px solid #777777 !important;
-    background: #ffffff !important;
-    color: #000000 !important;
+    border: 1px solid rgba(255, 107, 0, 0.3) !important;
+    background: rgba(255, 107, 0, 0.05) !important;
+    color: #ff6b00 !important;
     padding: 2px 6px !important;
     font-weight: bold !important;
   }
