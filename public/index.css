@@ -3433,6 +3433,7 @@ html, body {
   }
   
   /* Reset height/overflow limitations for all layout wrappers to prevent table truncation */
+  #app-layout,
   .app-layout,
   .app-container,
   .app-view-container,
