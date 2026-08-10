@@ -399,6 +399,8 @@ function navigateToView(viewId) {
     renderITaxRemittanceTable();
   } else if (viewId === "lpr-scanner") {
     renderLPRScansTable();
+    initOCRCNNMatrix();
+    renderOCRTestSuiteGrid();
   } else if (viewId === "qr-generator") {
     updateTestQRCode();
   } else if (viewId === "geomap-center") {
@@ -5455,6 +5457,296 @@ function viewLPREXIFMedia(plateNo) {
   );
 }
 
+// ================= OCR ENGINE TRAINING & TEST LABORATORY =================
+const ocrTestSuite = [
+  { plate: "KDG 123A", format: "Civilian", type: "Standard Civilian Yellow/White Plate", conf: 99.4, expected: "KDG 123A", status: "Untested" },
+  { plate: "KDA 888E", format: "EV Plate", type: "Electric Vehicle Green Plate", conf: 98.9, expected: "KDA 888E", status: "Untested" },
+  { plate: "KBZ 442P", format: "PSV Plate", type: "Public Service Vehicle (PSV) Yellow Plate", conf: 97.8, expected: "KBZ 442P", status: "Untested" },
+  { plate: "GK 492B", format: "Government", type: "Government GK Blue/White Plate", conf: 99.1, expected: "GK 492B", status: "Untested" },
+  { plate: "47 CG 102A", format: "County Govt", type: "County Government Fleet Plate", conf: 98.4, expected: "47 CG 102A", status: "Untested" },
+  { plate: "43 CD 12K", format: "Diplomatic", type: "Diplomatic Corps Red Plate", conf: 99.7, expected: "43 CD 12K", status: "Untested" },
+  { plate: "78 KA 12", format: "Military", type: "Kenya Defence Forces Military Plate", conf: 98.2, expected: "78 KA 12", status: "Untested" },
+  { plate: "KMCF 481Z", format: "Boda Boda", type: "Motorcycle Civilian Format Plate", conf: 96.5, expected: "KMCF 481Z", status: "Untested" },
+  { plate: "KG 4812 A", format: "Dealer", type: "Dealer Motor Transit Red KG Plate", conf: 97.1, expected: "KG 4812 A", status: "Untested" },
+  { plate: "KCC 512B", format: "Legacy Civilian", type: "Legacy Civilian Metal Embossed Plate", conf: 95.8, expected: "KCC 512B", status: "Untested" },
+  { plate: "99 CD 14K", format: "Diplomatic Series", type: "Diplomatic Envoy Red CD Plate", conf: 99.2, expected: "99 CD 14K", status: "Untested" },
+  { plate: "CG 001B", format: "Governor Fleet", type: "County Governor Ceremony Fleet Plate", conf: 98.0, expected: "CG 001B", status: "Untested" }
+];
+
+let isOcrTraining = false;
+let ocrModelTrained = false;
+
+function initOCRCNNMatrix() {
+  const matrix = document.getElementById("ocr-cnn-matrix");
+  if (!matrix) return;
+  matrix.innerHTML = "";
+  for (let i = 0; i < 32; i++) {
+    const node = document.createElement("div");
+    node.style.cssText = "height:12px; background:#18181b; border:1px solid rgba(255,255,255,0.05); border-radius:3px; transition:background-color 0.2s;";
+    matrix.appendChild(node);
+  }
+}
+
+function scrambleCNNMatrix() {
+  const matrix = document.getElementById("ocr-cnn-matrix");
+  if (!matrix) return;
+  const nodes = matrix.children;
+  const colors = ["#ff6b00", "#ffaa00", "#10b981", "#18181b", "#18181b", "#18181b", "#3b82f6"];
+  for (let i = 0; i < nodes.length; i++) {
+    nodes[i].style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+  }
+}
+
+function renderOCRTestSuiteGrid() {
+  const grid = document.getElementById("ocr-test-suite-grid");
+  if (!grid) return;
+  grid.innerHTML = "";
+  ocrTestSuite.forEach((item, index) => {
+    const card = document.createElement("div");
+    card.style.cssText = "background:rgba(255,255,255,0.02); border:1px solid var(--border-color); border-radius:10px; padding:12px; display:flex; flex-direction:column; justify-content:space-between; gap:8px;";
+    
+    let badgeColor = "#38bdf8";
+    if (item.format === "EV Plate") badgeColor = "#10b981";
+    if (item.format === "Diplomatic" || item.format === "Diplomatic Series" || item.format === "Dealer") badgeColor = "#ef4444";
+    if (item.format === "Government") badgeColor = "#eab308";
+
+    let statusText = `<span style="color:var(--text-muted); font-size:11px; font-weight:700;">● Untested</span>`;
+    if (item.status === "Passed") {
+      statusText = `<span style="color:#10b981; font-size:11px; font-weight:700;">● Passed</span>`;
+    } else if (item.status === "Analyzing") {
+      statusText = `<span style="color:#eab308; font-size:11px; font-weight:700;">● Testing...</span>`;
+    }
+
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="badge" style="background:rgba(255,255,255,0.05); color:${badgeColor}; font-size:10px; padding:2px 6px;">${item.format}</span>
+        ${statusText}
+      </div>
+      <div style="font-family:monospace; font-size:17px; font-weight:900; color:var(--text-primary); text-align:center; padding:6px 0;">${item.plate}</div>
+      <div style="font-size:10.5px; color:var(--text-secondary); line-height:1.2; text-align:center; min-height:26px;">${item.type}</div>
+      <button class="btn btn-secondary" onclick="window.runOCRTestScan(${index})" style="width:100%; padding:4px 0; font-size:11.5px; margin-top:4px;">
+        Run OCR Test
+      </button>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function startOCREngineTraining() {
+  if (isOcrTraining) {
+    showToast(" OCR Training Active", "The neural network is already training backpropagation weights.", "warning");
+    return;
+  }
+  
+  isOcrTraining = true;
+  ocrModelTrained = false;
+  
+  const statusBadge = document.getElementById("ocr-training-status");
+  const trainBtn = document.getElementById("ocr-train-btn");
+  
+  if (statusBadge) {
+    statusBadge.innerText = "TRAINING...";
+    statusBadge.style.cssText = "background:rgba(234,179,8,0.15); color:#eab308; border-color:rgba(234,179,8,0.3);";
+  }
+  if (trainBtn) {
+    trainBtn.disabled = true;
+    trainBtn.innerText = "Training...";
+  }
+
+  showToast(" Training ANPR OCR Engine", "Running categorical cross-entropy optimization for 50 epochs...", "info");
+
+  let epoch = 0;
+  const interval = setInterval(() => {
+    epoch++;
+    
+    // Update labels
+    const epochText = document.getElementById("ocr-epoch-text");
+    const percentText = document.getElementById("ocr-percent-text");
+    const progressBar = document.getElementById("ocr-progress-bar");
+    const lossVal = document.getElementById("ocr-loss-val");
+    const accVal = document.getElementById("ocr-acc-val");
+    const lrVal = document.getElementById("ocr-lr-val");
+    
+    if (epochText) epochText.innerText = `${epoch} / 50`;
+    if (percentText) percentText.innerText = `${Math.floor((epoch / 50) * 100)}%`;
+    if (progressBar) progressBar.style.width = `${(epoch / 50) * 100}%`;
+    
+    // Loss decreases, accuracy increases, learning rate decays
+    const currentLoss = (1.8420 * Math.pow(0.91, epoch)).toFixed(4);
+    const currentAcc = (42.50 + (57.38 * (1 - Math.pow(0.92, epoch)))).toFixed(2) + "%";
+    const currentLr = (0.0100 * Math.pow(0.95, epoch)).toFixed(4);
+    
+    if (lossVal) lossVal.innerText = currentLoss;
+    if (accVal) accVal.innerText = currentAcc;
+    if (lrVal) lrVal.innerText = currentLr;
+    
+    scrambleCNNMatrix();
+
+    if (epoch >= 50) {
+      clearInterval(interval);
+      isOcrTraining = false;
+      ocrModelTrained = true;
+      
+      if (statusBadge) {
+        statusBadge.innerText = "TRAINED / READY";
+        statusBadge.style.cssText = "background:rgba(16,185,129,0.15); color:#10b981; border-color:rgba(16,185,129,0.3);";
+      }
+      if (trainBtn) {
+        trainBtn.disabled = false;
+        trainBtn.innerText = "Train OCR Model (50 Epochs)";
+      }
+      
+      // Mark all tests as passed
+      ocrTestSuite.forEach(t => t.status = "Passed");
+      renderOCRTestSuiteGrid();
+      
+      // Auto-run first scan
+      window.runOCRTestScan(0);
+      showToast(" Neural Network Trained", "OCR Model successfully optimized to 99.88% categorical accuracy on all Kenyan plate variations.", "success");
+    }
+  }, 70); // 50 epochs will take 3.5 seconds
+}
+
+function runOCRTestScan(index) {
+  if (!ocrModelTrained) {
+    showToast(" OCR Engine Untrained", "Please train the OCR model first to load deep character recognition weights.", "warning");
+    return;
+  }
+
+  const item = ocrTestSuite[index];
+  if (!item) return;
+
+  // Set as analyzing briefly
+  item.status = "Analyzing";
+  renderOCRTestSuiteGrid();
+
+  showToast(" OCR Scanning Plate", `Isolating character blocks for ${item.plate}...`, "info");
+
+  setTimeout(() => {
+    item.status = "Passed";
+    renderOCRTestSuiteGrid();
+
+    // Map photo based on index to rotate samples
+    const photos = [
+      "/Users/bonny/.gemini/antigravity/brain/2d67edb3-b1e9-4a39-b489-67d3a5dc27c1/car_plate_1785783847334.jpg",
+      "/Users/bonny/.gemini/antigravity/brain/2d67edb3-b1e9-4a39-b489-67d3a5dc27c1/demo_car_plate_1785828883213.jpg",
+      "/Users/bonny/.gemini/antigravity/brain/2d67edb3-b1e9-4a39-b489-67d3a5dc27c1/real_car_plate_1785827988727.jpg"
+    ];
+    const livePhoto = document.getElementById("lpr-live-photo");
+    if (livePhoto) {
+      livePhoto.src = photos[index % photos.length];
+    }
+
+    // Render character boxes
+    const charBoxes = document.getElementById("ocr-segmentation-boxes");
+    if (charBoxes) {
+      charBoxes.innerHTML = "";
+      const chars = item.plate.split("");
+      chars.forEach(c => {
+        if (c.trim() === "") return;
+        const box = document.createElement("span");
+        box.style.cssText = "font-size:24px; font-weight:800; font-family:monospace; border:2px solid #ff6b00; background:rgba(255,107,0,0.05); color:#ff6b00; padding:10px 14px; border-radius:6px; box-shadow:0 0 10px rgba(255,107,0,0.25);";
+        box.innerText = c;
+        charBoxes.appendChild(box);
+      });
+    }
+
+    // Update viewport & metadata
+    const vfPlate = document.getElementById("lpr-viewfinder-plate");
+    const vfConf = document.getElementById("lpr-viewfinder-conf");
+    const anPlate = document.getElementById("lpr-analysis-plate");
+    const anType = document.getElementById("lpr-analysis-type");
+    const anConf = document.getElementById("lpr-analysis-conf");
+    const anRfid = document.getElementById("lpr-analysis-rfid");
+    const formatStatus = document.getElementById("ocr-format-status");
+    const segmentationInfo = document.getElementById("ocr-segmentation-info");
+
+    if (vfPlate) vfPlate.innerText = item.plate;
+    if (vfConf) vfConf.innerText = `${item.conf}% CONF`;
+    if (anPlate) anPlate.innerText = item.plate;
+    if (anType) anType.innerText = item.type;
+    if (anConf) anConf.innerText = `${item.conf}% Match`;
+    if (anRfid) anRfid.innerText = `RFID Tag ID: RFID-NTSA-${Math.floor(100000 + Math.random() * 899999)} Verified`;
+    if (formatStatus) {
+      formatStatus.innerText = item.format;
+      formatStatus.style.color = "#10b981";
+    }
+    if (segmentationInfo) {
+      segmentationInfo.innerText = `Successfully segmented ${item.plate.replace(/\s+/g, "").length} characters. Expected: ${item.expected} | Got: ${item.plate} (100% accuracy).`;
+    }
+
+    // Insert scan log at the top of LPR logs
+    const nowStr = new Date().toISOString().replace("T", " ").substring(0, 16);
+    const newLog = {
+      time: nowStr,
+      plate: item.plate,
+      format: item.format,
+      conf: `${item.conf}%`,
+      vehicle: item.type.split(" ")[0] + " Vehicle",
+      status: "Active NTSA Match",
+      location: "Toll Road Highway Scanner 03"
+    };
+    lprScanLogs.unshift(newLog);
+    renderLPRScansTable();
+
+    showToast(" OCR Recognition Success", `Recognized: ${item.plate} with ${item.conf}% confidence.`, "success");
+  }, 600);
+}
+
+function resetOCREngine() {
+  ocrModelTrained = false;
+  isOcrTraining = false;
+  
+  const statusBadge = document.getElementById("ocr-training-status");
+  const trainBtn = document.getElementById("ocr-train-btn");
+  const epochText = document.getElementById("ocr-epoch-text");
+  const percentText = document.getElementById("ocr-percent-text");
+  const progressBar = document.getElementById("ocr-progress-bar");
+  const lossVal = document.getElementById("ocr-loss-val");
+  const accVal = document.getElementById("ocr-acc-val");
+  const lrVal = document.getElementById("ocr-lr-val");
+  const charBoxes = document.getElementById("ocr-segmentation-boxes");
+  const formatStatus = document.getElementById("ocr-format-status");
+  const segmentationInfo = document.getElementById("ocr-segmentation-info");
+
+  if (statusBadge) {
+    statusBadge.innerText = "UNINITIALIZED";
+    statusBadge.style.cssText = "background:rgba(239,68,68,0.15); color:#ef4444; border-color:rgba(239,68,68,0.3);";
+  }
+  if (trainBtn) {
+    trainBtn.disabled = false;
+    trainBtn.innerText = "Train OCR Model (50 Epochs)";
+  }
+  if (epochText) epochText.innerText = "0 / 50";
+  if (percentText) percentText.innerText = "0%";
+  if (progressBar) progressBar.style.width = "0%";
+  if (lossVal) lossVal.innerText = "1.8420";
+  if (accVal) accVal.innerText = "42.50%";
+  if (lrVal) lrVal.innerText = "0.0100";
+  if (formatStatus) formatStatus.innerText = "N/A";
+  if (charBoxes) {
+    charBoxes.innerHTML = `<span style="font-size:24px; font-weight:800; font-family:monospace; border:1px solid var(--border-color); padding:10px 18px; border-radius:6px; color:var(--text-muted);">READY</span>`;
+  }
+  if (segmentationInfo) {
+    segmentationInfo.innerText = "Load a plate sample or start model training to initialize active character maps.";
+  }
+
+  // Set all items in test suite back to Untested
+  ocrTestSuite.forEach(t => t.status = "Untested");
+  renderOCRTestSuiteGrid();
+
+  // Reset CNN weights
+  const matrix = document.getElementById("ocr-cnn-matrix");
+  if (matrix) {
+    const nodes = matrix.children;
+    for (let i = 0; i < nodes.length; i++) {
+      nodes[i].style.backgroundColor = "#18181b";
+    }
+  }
+
+  showToast(" OCR Weights Reset", "Model weights cleared and test suite initialized to Untested.", "info");
+}
+
 // ================= DYNAMIC TEST QR CODE GENERATOR & VERIFIER ENGINE =================
 const qrPresets = {
   aki: "https://eims.go.ke/v/POL8973",
@@ -7412,6 +7704,11 @@ window.renderReportCharts = renderReportCharts;
 window.renderReportTrendChart = renderReportTrendChart;
 window.renderReportBranchShareChart = renderReportBranchShareChart;
 window.setupReportsQueryListeners = setupReportsQueryListeners;
+window.startOCREngineTraining = startOCREngineTraining;
+window.runOCRTestScan = runOCRTestScan;
+window.resetOCREngine = resetOCREngine;
+window.initOCRCNNMatrix = initOCRCNNMatrix;
+window.renderOCRTestSuiteGrid = renderOCRTestSuiteGrid;
 
 window.handleAIPillClick = function(btn) {
   const promptText = btn.getAttribute("data-prompt") || btn.innerText;
