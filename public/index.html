@@ -3921,10 +3921,10 @@
       <div class="modal-body" style="flex-grow:1; display:flex; flex-direction:column; overflow:hidden; padding:20px;">
         <!-- Predefined prompt pills -->
         <div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:12px; margin-bottom:12px; border-bottom:1px solid var(--border-color); flex-shrink:0;">
-          <button class="btn btn-secondary ai-prompt-pill" data-prompt="Synthesize a monthly executive production summary across all offices." style="padding:6px 12px; font-size:11.5px; white-space:nowrap;">Executive Summary</button>
-          <button class="btn btn-secondary ai-prompt-pill" data-prompt="Analyze branch performance: which office leads in new policy acquisitions?" style="padding:6px 12px; font-size:11.5px; white-space:nowrap;">Branch Performance</button>
-          <button class="btn btn-secondary ai-prompt-pill" data-prompt="Audit claims velocity vs fraud risk index for this period." style="padding:6px 12px; font-size:11.5px; white-space:nowrap;">Fraud & Risk Audit</button>
-          <button class="btn btn-secondary ai-prompt-pill" data-prompt="Generate KIRA Regulatory Compliance Summary Report." style="padding:6px 12px; font-size:11.5px; white-space:nowrap;">KIRA Brief</button>
+          <button class="btn btn-secondary ai-prompt-pill" data-prompt="Synthesize a monthly executive production summary across all offices." onclick="window.handleAIPillClick(this)" style="padding:6px 12px; font-size:11.5px; white-space:nowrap;">Executive Summary</button>
+          <button class="btn btn-secondary ai-prompt-pill" data-prompt="Analyze branch performance: which office leads in new policy acquisitions?" onclick="window.handleAIPillClick(this)" style="padding:6px 12px; font-size:11.5px; white-space:nowrap;">Branch Performance</button>
+          <button class="btn btn-secondary ai-prompt-pill" data-prompt="Audit claims velocity vs fraud risk index for this period." onclick="window.handleAIPillClick(this)" style="padding:6px 12px; font-size:11.5px; white-space:nowrap;">Fraud & Risk Audit</button>
+          <button class="btn btn-secondary ai-prompt-pill" data-prompt="Generate KIRA Regulatory Compliance Summary Report." onclick="window.handleAIPillClick(this)" style="padding:6px 12px; font-size:11.5px; white-space:nowrap;">KIRA Brief</button>
         </div>
 
         <!-- Chat / Output Container -->

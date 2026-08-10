@@ -7382,3 +7382,13 @@ window.renderReportCharts = renderReportCharts;
 window.renderReportTrendChart = renderReportTrendChart;
 window.renderReportBranchShareChart = renderReportBranchShareChart;
 window.setupReportsQueryListeners = setupReportsQueryListeners;
+
+window.handleAIPillClick = function(btn) {
+  const promptText = btn.getAttribute("data-prompt") || btn.innerText;
+  const inputEl = document.getElementById("ai-assistant-input");
+  if (inputEl) inputEl.value = promptText;
+  if (typeof processAIQuery === "function") {
+    processAIQuery(promptText);
+  }
+};
+
