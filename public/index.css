@@ -3425,10 +3425,28 @@ html, body {
   html, body {
     background: #09090b !important;
     color: #ffffff !important;
+    height: auto !important;
+    min-height: 100% !important;
+    overflow: visible !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
   
+  /* Reset height/overflow limitations for all layout wrappers to prevent table truncation */
+  .app-layout,
+  .app-container,
+  .app-view-container,
+  .app-view,
+  .claims-table-wrapper,
+  #report-display-card {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    overflow-y: visible !important;
+    overflow-x: visible !important;
+  }
+
   /* Hide non-report layout elements */
   .app-sidebar,
   .app-header,
@@ -3471,11 +3489,21 @@ html, body {
     text-shadow: none !important;
   }
 
-  /* Format tables clean and sharp */
+  /* Format tables clean and sharp for print pagination */
   table {
     border-collapse: collapse !important;
     width: 100% !important;
     margin-top: 15px !important;
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+
+  thead {
+    display: table-header-group !important;
   }
 
   th, td {
