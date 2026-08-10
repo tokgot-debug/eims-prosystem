@@ -6383,8 +6383,6 @@ function applyReportPeriodPreset() {
     startInput.value = start.toISOString().split('T')[0];
     endInput.value = end.toISOString().split('T')[0];
   }
-
-  window.runReportQuery();
 }
 
 function executeReportQuery() {

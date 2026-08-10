@@ -1440,7 +1440,7 @@
               <!-- Module Ledger Type -->
               <div class="form-group" style="min-width:200px; flex:1;">
                 <label for="report-ledger-type" style="font-weight:700;">Module Ledger</label>
-                <select class="form-control" id="report-ledger-type" onchange="window.runReportQuery()">
+                <select class="form-control" id="report-ledger-type">
                   <option value="underwriting" selected> Underwriting & Policy Ledger</option>
                   <option value="claims"> Claims & Loss Recovery Ledger</option>
                   <option value="production"> Branch Acquisition & Production</option>
@@ -1464,18 +1464,18 @@
               <!-- Calendar Date Pickers -->
               <div class="form-group" style="width:160px;">
                 <label for="report-start-date" style="font-weight:700;">Start Date</label>
-                <input type="date" class="form-control" id="report-start-date" value="2026-08-01" onchange="window.runReportQuery()">
+                <input type="date" class="form-control" id="report-start-date" value="2026-08-01">
               </div>
 
               <div class="form-group" style="width:160px;">
                 <label for="report-end-date" style="font-weight:700;">End Date</label>
-                <input type="date" class="form-control" id="report-end-date" value="2026-08-31" onchange="window.runReportQuery()">
+                <input type="date" class="form-control" id="report-end-date" value="2026-08-31">
               </div>
 
               <!-- Branch Filter -->
               <div class="form-group" style="width:160px;">
                 <label for="report-branch" style="font-weight:700;">Branch Office</label>
-                <select class="form-control" id="report-branch" onchange="window.runReportQuery()">
+                <select class="form-control" id="report-branch">
                   <option value="ALL">All Offices</option>
                   <option value="HQ">Head Office (Nairobi)</option>
                   <option value="Mombasa">Mombasa Branch</option>
@@ -1488,7 +1488,7 @@
               <!-- Line of Business (LOB) Filter -->
               <div class="form-group" style="min-width:170px; flex:1;">
                 <label for="report-lob-filter" style="font-weight:700;">Line of Business</label>
-                <select class="form-control" id="report-lob-filter" onchange="window.runReportQuery()">
+                <select class="form-control" id="report-lob-filter">
                   <option value="ALL" selected>All Risk Lines</option>
                   <option value="Motor Comprehensive"> Motor Comprehensive</option>
                   <option value="Motor Commercial"> Motor Commercial / Fleet</option>
