@@ -6432,7 +6432,32 @@ function executeReportQuery() {
     { ref: "POL-BOND-4401", holder: "Great Rift Construction", cat: "Performance Bond", lob: "Engineering", date: "2026-08-15", branch: "Nakuru", sumInsured: 75000000, premium: 1125000 },
     { ref: "POL-MOT-MOM-01", holder: "Salim Said Omar", cat: "Motor Private (Toyota Harrier)", lob: "Motor Comprehensive", date: "2026-08-16", branch: "Mombasa", sumInsured: 3200000, premium: 160000 },
     { ref: "POL-MOT-MOM-02", holder: "Mombasa Coastal Transporters", cat: "Motor Private (Mercedes C200)", lob: "Motor Comprehensive", date: "2026-08-17", branch: "Mombasa", sumInsured: 4800000, premium: 240000 },
-    { ref: "POL-MOT-MOM-03", holder: "Amina Hassan Mohamed", cat: "Motor Private (Nissan X-Trail)", lob: "Motor Comprehensive", date: "2026-08-18", branch: "Mombasa", sumInsured: 2100000, premium: 105000 }
+    { ref: "POL-MOT-MOM-03", holder: "Amina Hassan Mohamed", cat: "Motor Private (Nissan X-Trail)", lob: "Motor Comprehensive", date: "2026-08-18", branch: "Mombasa", sumInsured: 2100000, premium: 105000 },
+    { ref: "POL-FLEET-HQ-01", holder: "Nairobi Transport Services", cat: "Motor Commercial Fleet", lob: "Motor Commercial", date: "2026-08-19", branch: "HQ", sumInsured: 15000000, premium: 750000 },
+    { ref: "POL-MOT-HQ-02", holder: "David Mwangi Njuguna", cat: "Motor Private", lob: "Motor Comprehensive", date: "2026-08-20", branch: "HQ", sumInsured: 1500000, premium: 75000 },
+    { ref: "POL-FIRE-HQ-03", holder: "Kenyatta Ave Complex", cat: "Fire & Perils", lob: "Fire & Perils", date: "2026-08-21", branch: "HQ", sumInsured: 80000000, premium: 1200000 },
+    { ref: "POL-MAR-HQ-04", holder: "Import Export Kenya Ltd", cat: "Marine Cargo", lob: "Marine Cargo", date: "2026-08-22", branch: "HQ", sumInsured: 25000000, premium: 375000 },
+    { ref: "POL-ENG-HQ-05", holder: "Nairobi Ring Road Const", cat: "Engineering All Risks", lob: "Engineering", date: "2026-08-23", branch: "HQ", sumInsured: 110000000, premium: 1650000 },
+    { ref: "POL-FLEET-MSA-01", holder: "Mombasa Shipping Hub", cat: "Motor Commercial Fleet", lob: "Motor Commercial", date: "2026-08-19", branch: "Mombasa", sumInsured: 35000000, premium: 1750000 },
+    { ref: "POL-MOT-MSA-02", holder: "Salma Adan", cat: "Motor Private", lob: "Motor Comprehensive", date: "2026-08-20", branch: "Mombasa", sumInsured: 2500000, premium: 125000 },
+    { ref: "POL-FIRE-MSA-03", holder: "Mombasa Port Terminals", cat: "Fire & Perils", lob: "Fire & Perils", date: "2026-08-21", branch: "Mombasa", sumInsured: 150000000, premium: 2250000 },
+    { ref: "POL-MAR-MSA-04", holder: "East Africa Coffee Traders", cat: "Marine Cargo", lob: "Marine Cargo", date: "2026-08-22", branch: "Mombasa", sumInsured: 45000000, premium: 675000 },
+    { ref: "POL-ENG-MSA-05", holder: "Mombasa Port Expansion Project", cat: "Engineering All Risks", lob: "Engineering", date: "2026-08-23", branch: "Mombasa", sumInsured: 300000000, premium: 4500000 },
+    { ref: "POL-FLEET-KSM-01", holder: "Lake Basin Wholesalers", cat: "Motor Commercial Fleet", lob: "Motor Commercial", date: "2026-08-19", branch: "Kisumu", sumInsured: 12000000, premium: 600000 },
+    { ref: "POL-MOT-KSM-02", holder: "George Otieno", cat: "Motor Private", lob: "Motor Comprehensive", date: "2026-08-20", branch: "Kisumu", sumInsured: 1800000, premium: 90000 },
+    { ref: "POL-FIRE-KSM-03", holder: "Kisumu Sugar Miller", cat: "Fire & Perils", lob: "Fire & Perils", date: "2026-08-21", branch: "Kisumu", sumInsured: 60000000, premium: 900000 },
+    { ref: "POL-MAR-KSM-04", holder: "Lake Victoria Fish Exporters", cat: "Marine Cargo", lob: "Marine Cargo", date: "2026-08-22", branch: "Kisumu", sumInsured: 15000000, premium: 22500 },
+    { ref: "POL-ENG-KSM-05", holder: "Kisumu Lakefront Developers", cat: "Engineering All Risks", lob: "Engineering", date: "2026-08-23", branch: "Kisumu", sumInsured: 50000000, premium: 750000 },
+    { ref: "POL-FLEET-NKR-01", holder: "Rift Valley Farmers", cat: "Motor Commercial Fleet", lob: "Motor Commercial", date: "2026-08-19", branch: "Nakuru", sumInsured: 8000000, premium: 400000 },
+    { ref: "POL-MOT-NKR-02", holder: "Lucy Njeri", cat: "Motor Private", lob: "Motor Comprehensive", date: "2026-08-20", branch: "Nakuru", sumInsured: 1200000, premium: 60000 },
+    { ref: "POL-FIRE-NKR-03", holder: "Nakuru Wheat Silos", cat: "Fire & Perils", lob: "Fire & Perils", date: "2026-08-21", branch: "Nakuru", sumInsured: 40000000, premium: 600000 },
+    { ref: "POL-MAR-NKR-04", holder: "Nakuru Flower Transporters", cat: "Marine Cargo", lob: "Marine Cargo", date: "2026-08-22", branch: "Nakuru", sumInsured: 10000000, premium: 150000 },
+    { ref: "POL-ENG-NKR-05", holder: "Nakuru Geothermal Drillers", cat: "Engineering All Risks", lob: "Engineering", date: "2026-08-23", branch: "Nakuru", sumInsured: 90000000, premium: 1350000 },
+    { ref: "POL-FLEET-ELD-01", holder: "Eldoret Maize Millers", cat: "Motor Commercial Fleet", lob: "Motor Commercial", date: "2026-08-19", branch: "Eldoret", sumInsured: 10000000, premium: 500000 },
+    { ref: "POL-MOT-ELD-02", holder: "Kipchumba Rono", cat: "Motor Private", lob: "Motor Comprehensive", date: "2026-08-20", branch: "Eldoret", sumInsured: 2200000, premium: 110000 },
+    { ref: "POL-FIRE-ELD-03", holder: "Eldoret Agricultural Depot", cat: "Fire & Perils", lob: "Fire & Perils", date: "2026-08-21", branch: "Eldoret", sumInsured: 30000000, premium: 450000 },
+    { ref: "POL-MAR-ELD-04", holder: "North Rift Grain Importers", cat: "Marine Cargo", lob: "Marine Cargo", date: "2026-08-22", branch: "Eldoret", sumInsured: 8000000, premium: 120000 },
+    { ref: "POL-ENG-ELD-05", holder: "Eldoret Airport Road Extension", cat: "Engineering All Risks", lob: "Engineering", date: "2026-08-23", branch: "Eldoret", sumInsured: 40000000, premium: 600000 }
   ];
 
   // Claims Master Dataset
@@ -6449,7 +6474,18 @@ function executeReportQuery() {
     { ref: "CLM-2026-010", claimant: "Kisumu Shuttle Express", polRef: "POL-MOT-1092", lob: "Motor Commercial", date: "2026-08-12", branch: "Kisumu", amount: 520000, status: "Paid / Settled", statusType: "approved" },
     { ref: "CLM-2026-011", claimant: "Salim Said Omar", polRef: "POL-MOT-MOM-01", lob: "Motor Comprehensive", date: "2026-08-16", branch: "Mombasa", amount: 380000, status: "Paid / Settled", statusType: "approved" },
     { ref: "CLM-2026-012", claimant: "Mombasa Coastal Transporters", polRef: "POL-MOT-MOM-02", lob: "Motor Comprehensive", date: "2026-08-17", branch: "Mombasa", amount: 620000, status: "Approved for Pay", statusType: "pending" },
-    { ref: "CLM-2026-013", claimant: "Amina Hassan Mohamed", polRef: "POL-MOT-MOM-03", lob: "Motor Comprehensive", date: "2026-08-18", branch: "Mombasa", amount: 140000, status: "Paid / Settled", statusType: "approved" }
+    { ref: "CLM-2026-013", claimant: "Amina Hassan Mohamed", polRef: "POL-MOT-MOM-03", lob: "Motor Comprehensive", date: "2026-08-18", branch: "Mombasa", amount: 140000, status: "Paid / Settled", statusType: "approved" },
+    { ref: "CLM-2026-014", claimant: "Nairobi Transport Services", polRef: "POL-FLEET-HQ-01", lob: "Motor Commercial", date: "2026-08-24", branch: "HQ", amount: 180000, status: "Approved for Pay", statusType: "pending" },
+    { ref: "CLM-2026-015", claimant: "Kenyatta Ave Complex", polRef: "POL-FIRE-HQ-03", lob: "Fire & Perils", date: "2026-08-25", branch: "HQ", amount: 650000, status: "Paid / Settled", statusType: "approved" },
+    { ref: "CLM-2026-016", claimant: "Mombasa Shipping Hub", polRef: "POL-FLEET-MSA-01", lob: "Motor Commercial", date: "2026-08-24", branch: "Mombasa", amount: 350000, status: "Paid / Settled", statusType: "approved" },
+    { ref: "CLM-2026-017", claimant: "Mombasa Port Terminals", polRef: "POL-FIRE-MSA-03", lob: "Fire & Perils", date: "2026-08-25", branch: "Mombasa", amount: 1200000, status: "Under Assessment", statusType: "pending" },
+    { ref: "CLM-2026-018", claimant: "East Africa Coffee Traders", polRef: "POL-MAR-MSA-04", lob: "Marine Cargo", date: "2026-08-26", branch: "Mombasa", amount: 220000, status: "Paid / Settled", statusType: "approved" },
+    { ref: "CLM-2026-019", claimant: "Lake Basin Wholesalers", polRef: "POL-FLEET-KSM-01", lob: "Motor Commercial", date: "2026-08-24", branch: "Kisumu", amount: 150000, status: "Paid / Settled", statusType: "approved" },
+    { ref: "CLM-2026-020", claimant: "Kisumu Sugar Miller", polRef: "POL-FIRE-KSM-03", lob: "Fire & Perils", date: "2026-08-25", branch: "Kisumu", amount: 480000, status: "Under Assessment", statusType: "pending" },
+    { ref: "CLM-2026-021", claimant: "Lucy Njeri", polRef: "POL-MOT-NKR-02", lob: "Motor Comprehensive", date: "2026-08-25", branch: "Nakuru", amount: 45000, status: "Paid / Settled", statusType: "approved" },
+    { ref: "CLM-2026-022", claimant: "Nakuru Wheat Silos", polRef: "POL-FIRE-NKR-03", lob: "Fire & Perils", date: "2026-08-26", branch: "Nakuru", amount: 300000, status: "Paid / Settled", statusType: "approved" },
+    { ref: "CLM-2026-023", claimant: "Eldoret Maize Millers", polRef: "POL-FLEET-ELD-01", lob: "Motor Commercial", date: "2026-08-24", branch: "Eldoret", amount: 95000, status: "Paid / Settled", statusType: "approved" },
+    { ref: "CLM-2026-024", claimant: "Kipchumba Rono", polRef: "POL-MOT-ELD-02", lob: "Motor Comprehensive", date: "2026-08-25", branch: "Eldoret", amount: 65000, status: "Approved for Pay", statusType: "pending" }
   ];
 
   if (ledger === "claims") {
