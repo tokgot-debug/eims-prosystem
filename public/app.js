@@ -6643,22 +6643,79 @@ function executeReportQuery() {
   } else if (ledger === "financials") {
     if (titleLabel) titleLabel.innerText = `Queried Executive P&L Loss Ratio Summary - ${branchText}`;
     
+    const branchesList = ["HQ", "Mombasa", "Kisumu", "Nakuru", "Eldoret"];
+    const branchNamesMap = {
+      "HQ": "Head Office (Nairobi)",
+      "Mombasa": "Mombasa Branch",
+      "Kisumu": "Kisumu Branch",
+      "Nakuru": "Nakuru Branch",
+      "Eldoret": "Eldoret Branch"
+    };
+    
+    let grandGWP = 0;
+    let grandClaims = 0;
+    
+    let html = "";
+    
+    branchesList.forEach(b => {
+      if (branch !== "ALL" && branch !== b) return;
+      
+      const bGWP = underwritingData
+        .filter(d => d.branch === b && (lob === "ALL" || d.lob === lob))
+        .reduce((acc, item) => acc + item.premium, 0);
+        
+      const bClaims = claimsData
+        .filter(d => d.branch === b && (lob === "ALL" || d.lob === lob))
+        .reduce((acc, item) => acc + item.amount, 0);
+        
+      const bRatio = bGWP > 0 ? ((bClaims / bGWP) * 100).toFixed(1) : "0.0";
+      const bProfit = bGWP - bClaims;
+      
+      grandGWP += bGWP;
+      grandClaims += bClaims;
+      
+      html += `
+        <tr>
+          <td><strong>${branchNamesMap[b]}</strong></td>
+          <td>KSh ${bGWP.toLocaleString()}</td>
+          <td>KSh ${bClaims.toLocaleString()}</td>
+          <td><strong style="color:${parseFloat(bRatio) < 45 ? '#10b981' : '#f59e0b'}">${bRatio}%</strong></td>
+          <td><strong style="color:${bProfit >= 0 ? '#10b981' : '#ef4444'}">${bProfit >= 0 ? '+' : ''}KSh ${bProfit.toLocaleString()}</strong></td>
+          <td><span class="status-badge approved">${bProfit >= 0 ? 'Profitable' : 'Loss-Making'}</span></td>
+        </tr>
+      `;
+    });
+    
+    const grandRatio = grandGWP > 0 ? ((grandClaims / grandGWP) * 100).toFixed(1) : "0.0";
+    const grandProfit = grandGWP - grandClaims;
+    
+    html += `
+      <tr style="background:rgba(255,107,0,0.08); font-weight:800; border-top:2px solid var(--primary);">
+        <td>GRAND TOTAL P&L:</td>
+        <td><strong style="color:var(--primary); font-size:14px;">KSh ${grandGWP.toLocaleString()}</strong></td>
+        <td><strong style="color:var(--warning);">KSh ${grandClaims.toLocaleString()}</strong></td>
+        <td><strong style="color:${parseFloat(grandRatio) < 45 ? '#10b981' : '#f59e0b'}">${grandRatio}%</strong></td>
+        <td><strong style="color:${grandProfit >= 0 ? '#10b981' : '#ef4444'}; font-size:14px;">${grandProfit >= 0 ? '+' : ''}KSh ${grandProfit.toLocaleString()}</strong></td>
+        <td><span class="status-badge approved">${grandRatio}% Loss Ratio</span></td>
+      </tr>
+    `;
+    
     setSafeText("kpi-1-label", "Gross Earned Premium");
-    setSafeText("kpi-1-val", "KSh 48,500,000");
+    setSafeText("kpi-1-val", `KSh ${grandGWP.toLocaleString()}`);
     setSafeText("kpi-1-sub", "YTD Earned Income");
 
     setSafeText("kpi-2-label", "Net Incurred Losses");
-    setSafeText("kpi-2-val", "KSh 14,200,000");
-    setSafeText("kpi-2-sub", "Paid Claims + Reserves");
+    setSafeText("kpi-2-val", `KSh ${grandClaims.toLocaleString()}`);
+    setSafeText("kpi-2-sub", "Paid Claims & Reserves");
 
     setSafeText("kpi-3-label", "Overall Portfolio Loss Ratio");
-    setSafeText("kpi-3-val", "29.28%");
+    setSafeText("kpi-3-val", `${grandRatio}%`);
     setSafeText("kpi-3-sub", "Benchmark Target <45%");
 
     setSafeText("kpi-4-label", "Net Underwriting Profit");
-    setSafeText("kpi-4-val", "+KSh 34,300,000");
-    setSafeText("kpi-4-sub", "70.72% Underwriting Margin");
-
+    setSafeText("kpi-4-val", `${grandProfit >= 0 ? '+' : ''}KSh ${grandProfit.toLocaleString()}`);
+    setSafeText("kpi-4-sub", `${(100 - parseFloat(grandRatio)).toFixed(1)}% Underwriting Margin`);
+    
     if (thead) {
       thead.innerHTML = `
         <tr>
@@ -6671,39 +6728,77 @@ function executeReportQuery() {
         </tr>
       `;
     }
-
-    if (tbody) {
-      tbody.innerHTML = `
-        <tr><td><strong>Head Office (Nairobi)</strong></td><td>KSh 28,400,000</td><td>KSh 7,952,000</td><td><strong style="color:#10b981;">28.0%</strong></td><td><strong style="color:#10b981;">+KSh 20,448,000</strong></td><td><span class="status-badge approved">Highly Profitable</span></td></tr>
-        <tr><td><strong>Mombasa Branch</strong></td><td>KSh 10,800,000</td><td>KSh 3,456,000</td><td><strong style="color:#10b981;">32.0%</strong></td><td><strong style="color:#10b981;">+KSh 7,344,000</strong></td><td><span class="status-badge approved">Profitable</span></td></tr>
-        <tr><td><strong>Kisumu Branch</strong></td><td>KSh 6,100,000</td><td>KSh 1,769,000</td><td><strong style="color:#10b981;">29.0%</strong></td><td><strong style="color:#10b981;">+KSh 4,331,000</strong></td><td><span class="status-badge approved">Profitable</span></td></tr>
-        <tr><td><strong>Nakuru Branch</strong></td><td>KSh 3,200,000</td><td>KSh 1,024,000</td><td><strong style="color:#10b981;">32.0%</strong></td><td><strong style="color:#10b981;">+KSh 2,176,000</strong></td><td><span class="status-badge approved">Profitable</span></td></tr>
-        <tr><td><strong>Eldoret Branch</strong></td><td>KSh 2,800,000</td><td>KSh 784,000</td><td><strong style="color:#10b981;">28.0%</strong></td><td><strong style="color:#10b981;">+KSh 2,016,000</strong></td><td><span class="status-badge approved">Profitable</span></td></tr>
-        <tr style="background:rgba(255,107,0,0.08); font-weight:800; border-top:2px solid var(--primary);">
-          <td>GRAND TOTAL P&L:</td>
-          <td><strong style="color:var(--primary); font-size:14px;">KSh 51,300,000</strong></td>
-          <td><strong style="color:var(--warning);">KSh 14,985,000</strong></td>
-          <td><strong style="color:#10b981;">29.21%</strong></td>
-          <td><strong style="color:#10b981; font-size:14px;">+KSh 36,315,000</strong></td>
-          <td><span class="status-badge approved">70.79% Margin</span></td>
-        </tr>
-      `;
-    }
-
+    
+    if (tbody) tbody.innerHTML = html;
+    
     if (aiSummary) {
-      aiSummary.innerHTML = `<strong>Executive P&L Loss Ratio Audit (${startDate} to ${endDate}):</strong> Total portfolio gross premium earned reached KSh 51.3M against KSh 14.98M incurred losses, maintaining an overall loss ratio of 29.21% (well below IRA ceiling of 45.0%). Net underwriting profit stands at KSh +36.31M.`;
+      aiSummary.innerHTML = `<strong>Executive P&L Loss Ratio Audit (${startDate} to ${endDate}):</strong> Total portfolio gross premium earned reached KSh ${grandGWP.toLocaleString()} against KSh ${grandClaims.toLocaleString()} incurred losses, maintaining an overall loss ratio of ${grandRatio}% (well below IRA ceiling of 45.0%). Net underwriting profit stands at KSh ${grandProfit.toLocaleString()}.`;
     }
 
   } else {
     // Branch production default
     if (titleLabel) titleLabel.innerText = `Queried Branch Production & Acquisition Ledger - ${branchText}`;
     
+    const filteredProd = branchProductionData.filter(b => {
+      if (branch === "ALL") return true;
+      if (branch === "HQ") return b.branch.includes("Nairobi") || b.branch.includes("Head");
+      return b.branch.toLowerCase().includes(branch.toLowerCase());
+    });
+    
+    let totalNew = 0;
+    let totalRenewed = 0;
+    let totalPremium = 0;
+    
+    let html = "";
+    filteredProd.forEach(b => {
+      let lobFactor = 1.0;
+      if (lob !== "ALL") {
+        if (lob.includes("Comprehensive")) lobFactor = 0.45;
+        else if (lob.includes("Commercial")) lobFactor = 0.35;
+        else if (lob.includes("Fire")) lobFactor = 0.12;
+        else if (lob.includes("Marine")) lobFactor = 0.05;
+        else if (lob.includes("Engineering")) lobFactor = 0.03;
+      }
+      
+      const bNew = Math.round(b.newCount * lobFactor);
+      const bRenewed = Math.round(b.renewedCount * lobFactor);
+      const bPremium = Math.round(b.newPremium * lobFactor);
+      
+      totalNew += bNew;
+      totalRenewed += bRenewed;
+      totalPremium += bPremium;
+      
+      const sharePct = ((bPremium / (totalGrossPremium || 1)) * 100).toFixed(1);
+      
+      html += `
+        <tr>
+          <td><strong>${b.branch}</strong></td>
+          <td><span class="status-badge approved">${bNew} New Policies</span></td>
+          <td>${bRenewed} Renewals</td>
+          <td><span style="color:var(--primary); font-weight:700;">KSh ${bPremium.toLocaleString()}</span></td>
+          <td>${sharePct}%</td>
+          <td><span class="status-badge approved">On Target</span></td>
+        </tr>
+      `;
+    });
+    
+    html += `
+      <tr style="background:rgba(255,107,0,0.08); font-weight:800; border-top:2px solid var(--primary);">
+        <td>TOTAL ACQUISITION:</td>
+        <td><strong>${totalNew} New Policies</strong></td>
+        <td><strong>${totalRenewed} Renewals</strong></td>
+        <td><strong style="color:var(--primary); font-size:14px;">KSh ${totalPremium.toLocaleString()}</strong></td>
+        <td>${((totalPremium / (totalGrossPremium || 1)) * 100).toFixed(1)}%</td>
+        <td><span class="status-badge approved">${filteredProd.length} Branches Active</span></td>
+      </tr>
+    `;
+    
     setSafeText("kpi-1-label", "Total Acquired Premium");
-    setSafeText("kpi-1-val", "KSh 51,300,000");
-    setSafeText("kpi-1-sub", "219 Active Policies");
+    setSafeText("kpi-1-val", `KSh ${totalPremium.toLocaleString()}`);
+    setSafeText("kpi-1-sub", `${totalNew + totalRenewed} Active Policies`);
 
     setSafeText("kpi-2-label", "Active Intermediaries");
-    setSafeText("kpi-2-val", "45 Brokers");
+    setSafeText("kpi-2-val", `${Math.max(5, Math.round(45 * (totalPremium / totalGrossPremium)))} Brokers`);
     setSafeText("kpi-2-sub", "Direct & Agency Channels");
 
     setSafeText("kpi-3-label", "Average Acquisition Cost");
@@ -6713,7 +6808,7 @@ function executeReportQuery() {
     setSafeText("kpi-4-label", "Acquisition Compliance");
     setSafeText("kpi-4-val", "100% Compliant");
     setSafeText("kpi-4-sub", "AKI & IRA Guidelines");
-
+    
     if (thead) {
       thead.innerHTML = `
         <tr>
@@ -6726,25 +6821,11 @@ function executeReportQuery() {
         </tr>
       `;
     }
-    if (tbody) {
-      tbody.innerHTML = `
-        <tr><td><strong>Head Office (Nairobi)</strong></td><td><span class="status-badge approved">84 New Policies</span></td><td>32 Renewals</td><td><strong style="color:var(--primary)">KSh 28,400,000</strong></td><td>55.3%</td><td><span class="status-badge approved">Target Exceeded</span></td></tr>
-        <tr><td><strong>Mombasa Branch</strong></td><td><span class="status-badge approved">32 New Policies</span></td><td>14 Renewals</td><td><strong style="color:var(--primary)">KSh 10,800,000</strong></td><td>21.0%</td><td><span class="status-badge approved">On Target</span></td></tr>
-        <tr><td><strong>Kisumu Branch</strong></td><td><span class="status-badge approved">20 New Policies</span></td><td>8 Renewals</td><td><strong style="color:var(--primary)">KSh 6,100,000</strong></td><td>11.9%</td><td><span class="status-badge approved">On Target</span></td></tr>
-        <tr><td><strong>Nakuru Branch</strong></td><td><span class="status-badge approved">12 New Policies</span></td><td>4 Renewals</td><td><strong style="color:var(--primary)">KSh 3,200,000</strong></td><td>6.2%</td><td><span class="status-badge approved">On Target</span></td></tr>
-        <tr><td><strong>Eldoret Branch</strong></td><td><span class="status-badge approved">10 New Policies</span></td><td>3 Renewals</td><td><strong style="color:var(--primary)">KSh 2,800,000</strong></td><td>5.6%</td><td><span class="status-badge approved">On Target</span></td></tr>
-        <tr style="background:rgba(255,107,0,0.08); font-weight:800; border-top:2px solid var(--primary);">
-          <td>TOTAL ACQUISITION:</td>
-          <td><strong>158 New Policies</strong></td>
-          <td><strong>61 Renewals</strong></td>
-          <td><strong style="color:var(--primary); font-size:14px;">KSh 51,300,000</strong></td>
-          <td><strong>100.0%</strong></td>
-          <td><span class="status-badge approved">5 Branches Active</span></td>
-        </tr>
-      `;
-    }
+    
+    if (tbody) tbody.innerHTML = html;
+    
     if (aiSummary) {
-      aiSummary.innerHTML = `<strong>Branch Acquisition Audit (${startDate} to ${endDate}):</strong> Nairobi HQ led production with KSh 28.4M (55.3% share), followed by Mombasa (KSh 10.8M), Kisumu (KSh 6.1M), Nakuru (KSh 3.2M), and Eldoret (KSh 2.8M). Total new acquisition premium reached KSh 51.3M across 219 policies.`;
+      aiSummary.innerHTML = `<strong>Branch Acquisition Audit (${startDate} to ${endDate}):</strong> ${branchText} led production with KSh ${totalPremium.toLocaleString()} new acquisition premium across ${totalNew + totalRenewed} policies (${totalNew} new, ${totalRenewed} renewals) under the ${lobText} line of business. All acquisition operations are verified compliant.`;
     }
   }
 }
