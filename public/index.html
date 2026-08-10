@@ -1118,10 +1118,10 @@
           <div class="dashboard-card" style="padding: 20px; margin-bottom: 24px;">
             <div style="display:flex; gap:16px; flex-wrap:wrap;">
               <div style="flex-grow:1; min-width:200px;">
-                <input type="text" class="form-control" id="directory-search-input" placeholder="Search claimant or plate...">
+                <input type="text" class="form-control" id="directory-search-input" placeholder="Search claimant or plate..." oninput="window.renderClaimsDirectory()">
               </div>
               <div style="width:160px;">
-                <select class="form-control" id="directory-status-select">
+                <select class="form-control" id="directory-status-select" onchange="window.renderClaimsDirectory()">
                   <option value="ALL">All Statuses</option>
                   <option value="Pending">Pending Review</option>
                   <option value="Approved">Approved</option>
@@ -1130,7 +1130,7 @@
                 </select>
               </div>
               <div style="width:160px;">
-                <select class="form-control" id="directory-triage-select">
+                <select class="form-control" id="directory-triage-select" onchange="window.renderClaimsDirectory()">
                   <option value="ALL">All Triage Routes</option>
                   <option value="Green">Green Path</option>
                   <option value="Yellow">Yellow Path</option>

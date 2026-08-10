@@ -1335,13 +1335,15 @@ function setupClaimsDirectory() {
   const statusSelect = document.getElementById("directory-status-select");
   const triageSelect = document.getElementById("directory-triage-select");
   
-  searchInput.addEventListener("input", renderClaimsDirectory);
-  statusSelect.addEventListener("change", renderClaimsDirectory);
-  triageSelect.addEventListener("change", renderClaimsDirectory);
+  if (searchInput) searchInput.addEventListener("input", renderClaimsDirectory);
+  if (statusSelect) statusSelect.addEventListener("change", renderClaimsDirectory);
+  if (triageSelect) triageSelect.addEventListener("change", renderClaimsDirectory);
   
   // Exporters
-  document.getElementById("directory-export-csv").addEventListener("click", exportClaimsCSV);
-  document.getElementById("directory-export-json").addEventListener("click", exportClaimsJSON);
+  const csvBtn = document.getElementById("directory-export-csv");
+  const jsonBtn = document.getElementById("directory-export-json");
+  if (csvBtn) csvBtn.addEventListener("click", exportClaimsCSV);
+  if (jsonBtn) jsonBtn.addEventListener("click", exportClaimsJSON);
 }
 
 function renderClaimsDirectory() {
