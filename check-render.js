@@ -3,6 +3,7 @@
 // Run: node check-render.js   (needs the emulator: npm run dev)
 const fs = require("fs");
 const puppeteer = require("puppeteer-core");
+const probeIdleCost = require("./perf-probe");
 
 const URL = process.env.EIMS_URL || "http://127.0.0.1:8282/";
 const EDGE = "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe";
@@ -115,6 +116,18 @@ const need = (cond, msg) => { if (!cond) fail.push(msg); };
     "login card overflows the mobile viewport");
   need(!(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)),
     "public site scrolls horizontally on mobile");
+
+  // --- 8. Idle rendering cost ----------------------------------------------
+  await page.setViewport({ width: 1440, height: 900 });
+  await page.goto(URL, { waitUntil: "networkidle2" });
+  await new Promise((r) => setTimeout(r, 800));
+  const perf = await probeIdleCost(page);
+  console.log(`  idle scroll: ${perf.styleRecalcs} style recalcs, ${perf.styleSeconds}s style, ` +
+    `${perf.layouts} layouts, ${perf.taskSeconds}s cpu over ${perf.frames} frames`);
+  need(perf.styleRecalcs < 30,
+    `landing page recalculates style ${perf.styleRecalcs} times while idle -> something animates a non-composited property again`);
+  need(perf.styleSeconds < 0.05, `${perf.styleSeconds}s of style recalculation while idle`);
+  need(perf.layouts < 30, `${perf.layouts} layouts while idle -> an animation is moving a layout property`);
 
   need(errors.length === 0, `console errors: ${errors.slice(0, 3).join(" | ")}`);
   await browser.close();

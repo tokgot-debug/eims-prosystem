@@ -3,6 +3,7 @@
 // routes and screenshots every one. Run: node check-render.js (needs npm run dev)
 const fs = require("fs");
 const puppeteer = require("puppeteer-core");
+const probeIdleCost = require("../perf-probe");
 
 const BASE = process.env.EIMS_URL || "http://localhost:3000";
 const EDGE = "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe";
@@ -129,6 +130,21 @@ const need = (cond, msg) => { if (!cond) fail.push(msg); };
   await shot("7-login-mobile");
   const m = await box(".login-card");
   need(m && m.x >= 0 && m.x + m.w <= 390, "login card overflows the mobile viewport");
+
+  // --- Idle rendering cost --------------------------------------------------
+  // An idle page should recalculate style ~never. See perf-probe.js.
+  for (const route of ["/", "/portal/dashboard"]) {
+    await page.setViewport({ width: 1440, height: 900 });
+    await page.goto(`${BASE}${route}`, { waitUntil: "networkidle2" });
+    await wait(900);
+    const perf = await probeIdleCost(page);
+    console.log(`  ${route} idle: ${perf.styleRecalcs} recalcs, ${perf.styleSeconds}s style, ` +
+      `${perf.layouts} layouts, ${perf.taskSeconds}s cpu / ${perf.frames} frames`);
+    need(perf.styleRecalcs < 30,
+      `${route} recalculates style ${perf.styleRecalcs} times while idle -> a non-composited property is animating`);
+    need(perf.styleSeconds < 0.05, `${route}: ${perf.styleSeconds}s of idle style recalculation`);
+    need(perf.layouts < 30, `${route}: ${perf.layouts} layouts while idle`);
+  }
 
   need(errors.length === 0, `console/network errors: ${[...new Set(errors)].slice(0, 4).join(" | ")}`);
   await browser.close();

@@ -1784,17 +1784,22 @@ body {
 
 /* Micro animations */
 .pulse-circle {
+  /* Most usages are bare <span>s, where width never applied -- the dot was
+     only ever visible through its box-shadow ring. */
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
   width: 10px;
   height: 10px;
   background-color: var(--success);
   border-radius: 50%;
-  animation: pulse 1.8s infinite;
+  position: relative;
 }
 
 @keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-  70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  0% { transform: scale(1); opacity: 0.55; }
+  70% { transform: scale(2.6); opacity: 0; }
+  100% { transform: scale(2.6); opacity: 0; }
 }
 
 .landing-hero {
@@ -1853,9 +1858,7 @@ body {
   gap: 8px;
   padding: 8px 18px;
   border-radius: 30px;
-  background: rgba(9, 9, 11, 0.7);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  background: rgba(9, 9, 11, 0.7);
   border: 1px solid rgba(255, 133, 51, 0.6);
   color: var(--primary);
   font-size: 12px;
@@ -1925,9 +1928,7 @@ body {
   border-radius: 12px;
   font-weight: 600;
   font-size: 14px;
-  cursor: pointer;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
@@ -1951,9 +1952,7 @@ body {
   background: rgba(17, 24, 39, 0.7);
   border: 1px solid var(--border-color);
   border-radius: 16px;
-  padding: 20px;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  padding: 20px;
   text-align: center;
   transition: all 0.3s ease;
 }
@@ -1987,9 +1986,7 @@ body {
   background: rgba(17, 24, 39, 0.6);
   border: 1px solid var(--border-color);
   border-radius: 16px;
-  padding: 24px;
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  padding: 24px;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
@@ -2080,9 +2077,7 @@ body {
   width: 100%;
   overflow: hidden;
   position: relative;
-  background: rgba(18, 18, 21, 0.85);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
+  background: rgba(18, 18, 21, 0.85);
   border-top: 1px solid rgba(255, 107, 0, 0.3);
   border-bottom: 1px solid rgba(255, 107, 0, 0.3);
   padding: 12px 0;
@@ -3696,4 +3691,53 @@ html, body {
 @media (max-width: 768px) {
   #public-shell { padding: 12px; }
   .login-card { padding: 20px; }
+}
+
+/* ===================== RENDERING PERFORMANCE =====================
+   Measured 2026-08-17: the landing page was forcing a full style recalc on
+   every single frame while idle (358 recalcs / 0.34s of style in 2.5s).
+   Three causes, fixed below. The dashboard, which has none of this, measured
+   zero recalcs -- that is the target for every view. */
+
+/* 1. The pulse dot animated box-shadow, which repaints every frame and cannot
+      be composited. Same expanding ring, now on a pseudo-element using only
+      transform + opacity, which the compositor handles without repainting. */
+.pulse-circle::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background-color: var(--success);
+  animation: pulse 1.8s ease-out infinite;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+/* 2. Long-running transform animations get their own layer, so moving them
+      never repaints the elements underneath. */
+.keyword-marquee-track,
+.cyber-orb-1,
+.cyber-orb-2 {
+  will-change: transform;
+}
+
+/* 3. Every view ships in the DOM at once, so animations inside the 23 views
+      you are NOT looking at kept painting forever. Nothing hidden animates. */
+.app-view:not(.active) *,
+[hidden] * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Respect users who ask the OS to stop motion; also an instant escape hatch
+   from the marquee if it ever gets blamed for jank again. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

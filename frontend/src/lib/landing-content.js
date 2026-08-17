@@ -63,13 +63,3 @@ export const CAPABILITIES = [
   },
 ];
 
-export const TELEMETRY = [
-  { time: "23:29:40", tag: "NTSA ANPR", tone: "ok",
-    body: "License Plate KDG 123A verified against National Registry. Owner: County Health Dept." },
-  { time: "23:29:41", tag: "AI ENGINE", tone: "info",
-    body: "Incident photos processed. EXIF GPS: -1.286389, 36.817222 (Nairobi CBD). Fraud Score: 14% [Green Path]." },
-  { time: "23:29:42", tag: "AKI CERT", tone: "warn",
-    body: "Certificate AKI-2026-90823 issued with encrypted QR verification badge." },
-  { time: "23:29:43", tag: "SETTLEMENT", tone: "ok",
-    body: "M-PESA B2C Disbursement: KSh 142,500 sent to 254712345678 (Ref: QK89X201L9). Status: SUCCESS." },
-];

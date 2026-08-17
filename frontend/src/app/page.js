@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CAPABILITIES, KPIS, MARQUEE, TELEMETRY } from "@/lib/landing-content";
+import { CAPABILITIES, KPIS, MARQUEE } from "@/lib/landing-content";
 
 // Public marketing site. Renders no portal chrome and links nowhere except
 // /login -- the capability cards are copy, not navigation.
@@ -71,18 +71,6 @@ export default function LandingPage() {
             <p>{c.body}</p>
             <span className="cyber-card-tag">{c.tag}</span>
           </article>
-        ))}
-      </div>
-
-      <div className="terminal-box">
-        <div className="terminal-box-head">
-          <span>EIMS LIVE TELEMETRY LOG STREAM (KENYA NATIONAL BUS)</span>
-          <span className="pulse-circle" />
-        </div>
-        {TELEMETRY.map((t) => (
-          <div key={t.time}>
-            [{t.time}] <span className={`log-tag ${t.tone}`}>[{t.tag}]</span> {t.body}
-          </div>
         ))}
       </div>
 
