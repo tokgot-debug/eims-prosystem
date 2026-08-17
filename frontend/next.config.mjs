@@ -1,10 +1,14 @@
 import path from "node:path";
 
+const here = path.dirname(new URL(import.meta.url).pathname.slice(1));
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // The repo root also has a lockfile (the legacy firebase app), so Turbopack
-  // guesses the wrong workspace root without this.
-  turbopack: { root: path.dirname(new URL(import.meta.url).pathname.slice(1)) },
+  // Root is the repo, not frontend/, so seed.js at the top level resolves.
+  // Both the app (at runtime) and seed-firestore.mjs read that one file.
+  turbopack: {
+    root: path.resolve(here, ".."),
+  },
   // The dev indicator sits bottom-left, right on top of the sidebar user card.
   devIndicators: false,
 };

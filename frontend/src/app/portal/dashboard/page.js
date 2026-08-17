@@ -2,7 +2,8 @@
 import { useRouter } from "next/navigation";
 import Icon from "@/components/Icon";
 import VelocityChart from "@/components/charts/VelocityChart";
-import { CLAIMS, VELOCITY, dashboardStats, fraudClass, money, triageSplit } from "@/lib/claims";
+import { useCollection } from "@/lib/db";
+import { VELOCITY, dashboardStats, fraudClass, money, triageSplit } from "@/lib/claims";
 
 const STATS = (s) => [
   { key: "total", label: "Total Active Claims", value: s.total, trend: "up", delta: "12.4%", tone: "blue", icon: "file" },
@@ -13,9 +14,10 @@ const STATS = (s) => [
 
 export default function DashboardPage() {
   const router = useRouter();
-  const stats = dashboardStats();
-  const triage = triageSplit();
-  const recent = CLAIMS.slice(-3).reverse();
+  const claims = useCollection("claims");
+  const stats = dashboardStats(claims);
+  const triage = triageSplit(claims);
+  const recent = claims.slice(-3).reverse();
 
   return (
     <section className="app-view active">

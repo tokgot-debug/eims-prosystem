@@ -1,20 +1,9 @@
-import { CLAIMS } from "./claims-data";
+// Claim analytics derived from whatever is currently in the store.
+import { SETTLED_STATUSES } from "./models";
 
-export { CLAIMS };
+export { fraudClass, statusClass, money, compactMoney, triageFor } from "./models";
 
-export const SETTLED_STATUSES = ["Approved", "Disbursed"];
-
-export function fraudClass(score) {
-  if (score < 25) return "low";
-  if (score < 60) return "medium";
-  return "high";
-}
-
-export function money(n) {
-  return `KSh ${n.toLocaleString("en-KE")}`;
-}
-
-export function dashboardStats(claims = CLAIMS) {
+export function dashboardStats(claims) {
   const settled = claims
     .filter((c) => SETTLED_STATUSES.includes(c.status))
     .reduce((sum, c) => sum + c.cost, 0);
@@ -23,18 +12,19 @@ export function dashboardStats(claims = CLAIMS) {
     settled,
     settledLabel: `KSh ${(settled / 1_000_000).toFixed(1)}M`,
     investigating: claims.filter((c) => c.status === "Under Investigation").length,
-    avgFraud: Math.round(claims.reduce((s, c) => s + c.fraudScore, 0) / claims.length),
+    avgFraud: claims.length
+      ? Math.round(claims.reduce((s, c) => s + c.fraudScore, 0) / claims.length)
+      : 0,
   };
 }
 
-export function triageSplit(claims = CLAIMS) {
-  const total = claims.length;
-  const pct = (tone) =>
-    Math.round((claims.filter((c) => c.triage === tone).length / total) * 100);
+export function triageSplit(claims) {
+  const total = claims.length || 1;
+  const pct = (tone) => Math.round((claims.filter((c) => c.triage === tone).length / total) * 100);
   return { green: pct("Green"), yellow: pct("Yellow"), red: pct("Red") };
 }
 
-// Claims velocity, six months. Kept as fixture data like the legacy chart.
+// Claims velocity, six months. Fixture data -- the seed has no time series.
 export const VELOCITY = [
   { month: "Mar", claims: 12, cost: "1.8M", mom: "+0%" },
   { month: "Apr", claims: 19, cost: "2.9M", mom: "+58%" },

@@ -9,7 +9,9 @@
     "deploy": "npx -y firebase-tools@latest deploy",
     "deploy:hosting": "npx -y firebase-tools@latest deploy --only hosting",
     "deploy:firestore": "npx -y firebase-tools@latest deploy --only firestore",
-    "check": "node check-ui.js && node check-render.js"
+    "check": "node check-ui.js && node check-render.js",
+    "seed": "node seed-firestore.mjs",
+    "check:rules": "node functions/check-rules.js"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",
@@ -19,6 +21,7 @@
   },
   "devDependencies": {
     "firebase-tools": "^13.12.0",
-    "puppeteer-core": "^25.8.0"
+    "puppeteer-core": "^25.8.0",
+    "firebase-admin": "^12.6.0"
   }
 }
