@@ -1,11 +1,16 @@
 // Guards the one duplication in this repo: functions/rules.js restates a few
 // rules from frontend/src/lib/models.js because Firebase deploys functions/
 // in isolation. If the two drift, money and fraud scoring disagree.
-const assert = require("node:assert");
-const fs = require("node:fs");
-const rules = require("./rules");
+// ESM here (backend/package.json is type:module) importing the CommonJS
+// functions/rules.js, which stays CJS because that is what Firebase deploys.
+import assert from "node:assert";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import rules from "./functions/rules.js";
 
-const models = fs.readFileSync(`${__dirname}/../frontend/src/lib/models.js`, "utf8");
+const here = path.dirname(fileURLToPath(import.meta.url));
+const models = fs.readFileSync(path.join(here, "..", "frontend", "src", "lib", "models.js"), "utf8");
 
 // IRA rates must match the frontend literally.
 const m = models.match(/IRA_RATES = \{ phcf: ([\d.]+), training: ([\d.]+), stampDuty: (\d+) \}/);

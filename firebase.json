@@ -61,8 +61,8 @@
     ]
   },
   "firestore": {
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
+    "rules": "backend/firestore/firestore.rules",
+    "indexes": "backend/firestore/firestore.indexes.json"
   },
   "emulators": {
     "hosting": {
@@ -82,7 +82,7 @@
   },
   "functions": [
     {
-      "source": "functions",
+      "source": "backend/functions",
       "codebase": "default",
       "ignore": [
         "node_modules",

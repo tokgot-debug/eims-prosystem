@@ -1,4 +1,9 @@
+import { Inter } from "next/font/google";
 import "./globals.css";
+
+// Self-hosted at build time: no request to fonts.googleapis.com at runtime,
+// which was timing out and leaving every page in a fallback face.
+const inter = Inter({ subsets: ["latin"], weight: ["300","400","500","600","700"], variable: "--font-inter", display: "swap" });
 
 export const metadata = {
   title: "AMACO EIMS ProSystem",
@@ -22,7 +27,7 @@ const THEME_BOOT = `{
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
       </head>

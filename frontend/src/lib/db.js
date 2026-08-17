@@ -10,7 +10,7 @@
 // server, so a client store is the honest shape. functions/ already implements
 // the server-side rules for when it does.
 import { useCallback, useSyncExternalStore } from "react";
-import * as SEED from "../../../seed.js";
+import * as SEED from "../../../backend/seed/seed.js";
 import { COLLECTIONS, validate } from "./models";
 
 const STORAGE_KEY = "eims-data-v1";

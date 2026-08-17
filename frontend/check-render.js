@@ -3,7 +3,7 @@
 // routes and screenshots every one. Run: node check-render.js (needs npm run dev)
 const fs = require("fs");
 const puppeteer = require("puppeteer-core");
-const probeIdleCost = require("../perf-probe");
+const probeIdleCost = require("../tools/perf-probe");
 
 const BASE = process.env.EIMS_URL || "http://localhost:3000";
 const EDGE = "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe";

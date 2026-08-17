@@ -2,9 +2,11 @@
   "name": "eims-functions",
   "description": "EIMS Cloud Functions: claim scoring, settlement, statutory filing",
   "main": "index.js",
-  "engines": { "node": "20" },
+  "engines": {
+    "node": "20"
+  },
   "scripts": {
-    "check": "node check-rules.js",
+    "check": "node ../check-rules.js",
     "serve": "npx -y firebase-tools@latest emulators:start --only functions,firestore",
     "deploy": "npx -y firebase-tools@latest deploy --only functions"
   },

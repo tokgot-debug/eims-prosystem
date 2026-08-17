@@ -1,0 +1,17 @@
+{
+  "name": "eims-backend",
+  "version": "1.0.0",
+  "description": "EIMS server side: Cloud Functions, Firestore rules and indexes, and the seed data both the functions and the app read.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed": "node seed/seed-firestore.mjs",
+    "check": "node check-rules.js",
+    "emulators": "npx -y firebase-tools@latest emulators:start --only functions,firestore --project eims-prosystem",
+    "deploy": "npx -y firebase-tools@latest deploy --only functions,firestore",
+    "deploy:rules": "npx -y firebase-tools@latest deploy --only firestore:rules"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.6.0"
+  }
+}
