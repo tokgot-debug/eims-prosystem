@@ -108,7 +108,12 @@ const need = (cond, msg) => { if (!cond) fail.push(msg); };
     (el) => el.getBoundingClientRect().height)) > 0,
     "expanding an accordion group did not reveal its items");
   await page.$eval('a[href^="/portal/claims-directory"]', (el) => el.click());
-  await wait(900);
+  // Wait on the actual condition, not a guessed duration -- a deployed host is
+  // far slower than localhost and a fixed sleep fails there for no real reason.
+  await page.waitForFunction(
+    () => location.pathname.startsWith("/portal/claims-directory"), { timeout: 15000 },
+  ).catch(() => {});
+  await wait(400);
   await shot("4-nav-claims");
   need(page.url().includes("/portal/claims-directory"),
     `sidebar navigation did not route (still on ${page.url()})`);
