@@ -1,15 +1,17 @@
 {
   "hosting": {
-    "public": "public",
+    "public": "deploy",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
+    "cleanUrls": true,
+    "trailingSlash": true,
     "rewrites": [
       {
-        "source": "**",
-        "destination": "/index.html"
+        "source": "/legacy/**",
+        "destination": "/legacy/index.html"
       }
     ],
     "headers": [

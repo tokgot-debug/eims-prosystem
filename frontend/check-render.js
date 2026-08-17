@@ -50,13 +50,17 @@ const need = (cond, msg) => { if (!cond) fail.push(msg); };
   const cards = await page.$$eval(".cyber-card", (e) => e.length);
   need(cards === 8, `expected 8 capability cards, found ${cards}`);
   const links = await page.$$eval("#public-shell a", (a) => a.map((x) => x.getAttribute("href")));
-  need(links.every((h) => h === "/login"), `public site links outside /login: ${links.join(", ")}`);
+  // trailingSlash:true renders /login/ in the export and /login in dev.
+  need(links.every((h) => h.replace(/\/$/, "") === "/login"),
+    `public site links outside /login: ${links.join(", ")}`);
   need(!(await overflows()), "landing page scrolls horizontally");
 
   // --- Portal is gated ------------------------------------------------------
   await page.goto(`${BASE}/portal/dashboard`, { waitUntil: "networkidle2" });
   await wait(600);
-  need(page.url().endsWith("/login"), `direct /portal access was not redirected (landed on ${page.url()})`);
+  // trailingSlash:true means the export lands on /login/ and dev on /login.
+  need(/\/login\/?$/.test(page.url()),
+    `direct /portal access was not redirected (landed on ${page.url()})`);
 
   // --- Login ----------------------------------------------------------------
   await shot("2-login");
@@ -100,15 +104,15 @@ const need = (cond, msg) => { if (!cond) fail.push(msg); };
   await page.$$eval(".accordion-header", (hs) =>
     hs.find((h) => h.textContent.includes("Claims & Recovery")).click());
   await wait(400);
-  need((await page.$eval('a[href="/portal/claims-directory"]',
+  need((await page.$eval('a[href^="/portal/claims-directory"]',
     (el) => el.getBoundingClientRect().height)) > 0,
     "expanding an accordion group did not reveal its items");
-  await page.$eval('a[href="/portal/claims-directory"]', (el) => el.click());
+  await page.$eval('a[href^="/portal/claims-directory"]', (el) => el.click());
   await wait(900);
   await shot("4-nav-claims");
   need(page.url().includes("/portal/claims-directory"),
     `sidebar navigation did not route (still on ${page.url()})`);
-  need(await page.$eval('a[href="/portal/claims-directory"]',
+  need(await page.$eval('a[href^="/portal/claims-directory"]',
     (el) => el.classList.contains("active")), "active nav item is not highlighted");
 
   // --- Sign out -------------------------------------------------------------
@@ -119,7 +123,7 @@ const need = (cond, msg) => { if (!cond) fail.push(msg); };
   need(!(await box("#app-layout")), "portal chrome survived sign out");
   await page.goto(`${BASE}/portal/dashboard`, { waitUntil: "networkidle2" });
   await wait(600);
-  need(page.url().endsWith("/login"), "portal reachable after sign out");
+  need(/\/login\/?$/.test(page.url()), `portal reachable after sign out (landed on ${page.url()})`);
 
   // --- Mobile ---------------------------------------------------------------
   await page.setViewport({ width: 390, height: 844 });

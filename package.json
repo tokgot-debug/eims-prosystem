@@ -7,11 +7,12 @@
     "serve": "npx -y firebase-tools@latest serve --port 8282",
     "dev": "npx -y firebase-tools@latest emulators:start",
     "deploy": "npx -y firebase-tools@latest deploy",
-    "deploy:hosting": "npx -y firebase-tools@latest deploy --only hosting",
+    "deploy:hosting": "npm run build:deploy && npx -y firebase-tools@latest deploy --only hosting",
     "deploy:firestore": "npx -y firebase-tools@latest deploy --only firestore",
     "check": "node tools/check-ui.js && node tools/check-render.js",
     "seed": "node backend/seed/seed-firestore.mjs",
-    "check:rules": "node backend/check-rules.js"
+    "check:rules": "node backend/check-rules.js",
+    "build:deploy": "npm --prefix frontend run build && node tools/build-deploy.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",
