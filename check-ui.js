@@ -106,8 +106,31 @@ const jsCss = (fb.hosting.headers || []).find((h) => /js\|css|css\|js/.test(h.so
 need(jsCss && jsCss.headers.some((h) => /no-cache|max-age=0/.test(h.value)),
   "js/css are long-cached without content hashes -> fixes will not reach viewers");
 
+// --- Public site / login gate ----------------------------------------------
+
+// The landing page lives outside #app-layout; the app only opens after login.
+need(html.indexOf('id="public-shell"') < html.indexOf('id="app-layout"'),
+  "#public-shell must precede #app-layout -> landing page is back inside the app");
+need(/id="app-layout" hidden/.test(html), "#app-layout ships visible -> app leaks before login");
+need(/#app-layout\[hidden\]\s*\{\s*display:\s*none/.test(strip),
+  "display:flex on #app-layout beats the hidden attribute -> app shows behind the landing page");
+
+// Feature cards and marquee are marketing copy, not navigation.
+const landing = html.slice(html.indexOf('id="public-shell"'), html.indexOf('id="app-layout"'));
+need(!/navigateToView|openAIAssistantModal/.test(landing),
+  "landing page deep-links into the system again -> feature cards must not navigate");
+need(!/cyber-card-btn/.test(landing), "landing page still renders clickable capability buttons");
+
+// Login must reach the dashboard and sign-out must reach back.
+for (const fn of ["openLogin", "closeLogin", "submitLogin", "signOut", "restoreSession"])
+  need(new RegExp(`function ${fn}\\b`).test(js), `app.js is missing ${fn}()`);
+need(/enterApp\(session\)/.test(js) && /navigateToView\("dashboard"\)/.test(js),
+  "login no longer lands on the dashboard");
+for (const id of ["login-email", "login-password", "login-role", "login-error", "user-role"])
+  need(html.includes(`id="${id}"`), `index.html is missing #${id} that app.js reads`);
+
 if (fail.length) {
   console.error(`FAIL (${fail.length}):\n  ` + fail.join("\n  "));
   process.exit(1);
 }
-console.log(`ok: ${18} UI invariants hold (sidebar, header, tables, buttons, spacing, emoji, caching)`);
+console.log(`ok: ${26} UI invariants hold (sidebar, header, tables, buttons, spacing, emoji, caching, login gate)`);

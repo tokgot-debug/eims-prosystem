@@ -234,21 +234,20 @@ let canvasCircles = [];
 
 // ================= APP INITIALIZATION =================
 document.addEventListener("DOMContentLoaded", () => {
-  setupViewNavigation();
-  initThemeControl();
-  renderDashboard();
-  setupFNOLStepper();
-  setupClaimsDirectory();
-  setupAlertsSimulator();
-  setupModalHandlers();
-  setupPolicyRegistry();
-  setupProductionReports();
-  setupAIAssistant();
-  setupReportsQueryListeners();
-  
-  // Launch active Landing Page view by default
-  navigateToView("landing-page");
-  
+  // One setup throwing used to abort the whole chain, so every later module
+  // (search, session restore, directory filters) silently never bound.
+  for (const setup of [
+    setupViewNavigation, initThemeControl, renderDashboard, setupFNOLStepper,
+    setupClaimsDirectory, setupAlertsSimulator, setupModalHandlers,
+    setupPolicyRegistry, setupProductionReports, setupAIAssistant,
+    setupReportsQueryListeners,
+  ]) {
+    try { setup(); } catch (err) { console.error(`init: ${setup.name} failed`, err); }
+  }
+
+  navigateToView("dashboard");
+  restoreSession();
+
   // Set up Global Search
   const globalSearch = document.getElementById("global-search");
   globalSearch.addEventListener("input", (e) => {
@@ -262,8 +261,70 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
   
-  showToast("System Online", "EIMS Claims & Policy portal loaded successfully.", "success");
 });
+
+// ================= PUBLIC SITE / STAFF LOGIN =================
+// ponytail: session is client-side only; swap checkCredentials for Firebase Auth
+// (firebase-config.js is already loaded) once real staff accounts exist.
+const SESSION_KEY = "eims-session";
+
+function openLogin() {
+  document.getElementById("login-overlay").classList.add("open");
+  document.getElementById("login-email").focus();
+}
+
+function closeLogin() {
+  document.getElementById("login-overlay").classList.remove("open");
+  document.getElementById("login-error").hidden = true;
+}
+
+function submitLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById("login-email").value.trim();
+  const password = document.getElementById("login-password").value;
+  const role = document.getElementById("login-role").value;
+  const err = document.getElementById("login-error");
+
+  if (!email.includes("@") || password.length < 4) {
+    err.textContent = "Enter a valid work email and a password of at least 4 characters.";
+    err.hidden = false;
+    return;
+  }
+
+  const session = { email, role, name: emailToName(email) };
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  closeLogin();
+  enterApp(session);
+  showToast("Signed In", `Welcome back, ${session.name}. EIMS portal loaded.`, "success");
+}
+
+function restoreSession() {
+  const raw = sessionStorage.getItem(SESSION_KEY);
+  if (raw) enterApp(JSON.parse(raw));
+}
+
+function enterApp(session) {
+  document.getElementById("public-shell").hidden = true;
+  document.getElementById("app-layout").hidden = false;
+  document.getElementById("user-name").textContent = session.name;
+  document.getElementById("user-role").textContent = session.role;
+  document.getElementById("user-initials").textContent = session.name
+    .split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+  navigateToView("dashboard");
+}
+
+function signOut() {
+  sessionStorage.removeItem(SESSION_KEY);
+  document.getElementById("app-layout").hidden = true;
+  document.getElementById("public-shell").hidden = false;
+  window.scrollTo(0, 0);
+  showToast("Signed Out", "Your staff portal session has ended.", "info");
+}
+
+function emailToName(email) {
+  return email.split("@")[0].split(/[._-]+/).filter(Boolean)
+    .map(w => w[0].toUpperCase() + w.slice(1)).join(" ") || "EIMS User";
+}
 
 // ================= THEME & UI CONTROLS =================
 function initThemeControl() {
@@ -355,8 +416,6 @@ function navigateToView(viewId) {
   // View specific setups
   if (viewId === "dashboard") {
     renderDashboard();
-  } else if (viewId === "landing-page") {
-    // Futuristic Landing Page
   } else if (viewId === "create-claim") {
     // Lazy map init
     setTimeout(initFNOLMap, 300);
@@ -1126,7 +1185,7 @@ function setupCanvasAnnotator() {
   document.getElementById("tool-scratch").addEventListener("click", () => setDrawTool("scratch"));
   document.getElementById("tool-crack").addEventListener("click", () => setDrawTool("crack"));
   
-  document.getElementById("annotation-clear-btn").addEventListener("click", () => {
+  document.getElementById("annotate-clear-btn").addEventListener("click", () => {
     canvasCircles = [];
     redrawCanvas();
     showToast("Annotations Cleared", "Red damage indicators reset.", "info");
@@ -5224,7 +5283,7 @@ const lprSampleFormats = {
     model: "Toyota Fielder • Boniface Mwangi",
     status: "Active Policy Match (POL-MOT-8973)",
     loc: "Nairobi Expressway Highway Toll Gate 04",
-    photo: "/Users/bonny/.gemini/antigravity/brain/2d67edb3-b1e9-4a39-b489-67d3a5dc27c1/car_plate_1785783847334.jpg"
+    photo: "car_plate.jpg"
   },
   ev: {
     plate: "KDA 888E",
@@ -5234,7 +5293,7 @@ const lprSampleFormats = {
     model: "BYD Atto 3 EV • Green Mobility Kenya",
     status: "Active EV Policy (POL-EV-2026-990)",
     loc: "Westlands Mall EV Charging Station Gate",
-    photo: "/Users/bonny/.gemini/antigravity/brain/2d67edb3-b1e9-4a39-b489-67d3a5dc27c1/car_plate_1785783847334.jpg"
+    photo: "car_plate.jpg"
   },
   psv: {
     plate: "KBZ 442P",
@@ -5244,7 +5303,7 @@ const lprSampleFormats = {
     model: "Isuzu NQR Bus • Super Metro Sacco",
     status: "Active Fleet Policy (POL-FLT-2026-401)",
     loc: "Thika Superhighway Exit 7 ANPR Camera",
-    photo: "/Users/bonny/.gemini/antigravity/brain/2d67edb3-b1e9-4a39-b489-67d3a5dc27c1/car_plate_1785783847334.jpg"
+    photo: "car_plate.jpg"
   },
   gk: {
     plate: "GK 492B",
@@ -5254,7 +5313,7 @@ const lprSampleFormats = {
     model: "Toyota Land Cruiser Prado • Min. of Transport",
     status: "Exempt Statutory County Fleet",
     loc: "Harambee Avenue State House Plaza Camera",
-    photo: "/Users/bonny/.gemini/antigravity/brain/2d67edb3-b1e9-4a39-b489-67d3a5dc27c1/car_plate_1785783847334.jpg"
+    photo: "car_plate.jpg"
   },
   county: {
     plate: "47 CG 102A",
@@ -5264,7 +5323,7 @@ const lprSampleFormats = {
     model: "Isuzu FRR Tipper • Nairobi City County",
     status: "Active Bulk Fleet (POL-CTY-2026-001)",
     loc: "City Hall Way ANPR Camera 02",
-    photo: "/Users/bonny/.gemini/antigravity/brain/2d67edb3-b1e9-4a39-b489-67d3a5dc27c1/car_plate_1785783847334.jpg"
+    photo: "car_plate.jpg"
   },
   cd: {
     plate: "43 CD 12K",
@@ -5274,7 +5333,7 @@ const lprSampleFormats = {
     model: "Chevrolet Suburban • Diplomatic Mission",
     status: "International Diplomatic Immunity Cover",
     loc: "UN Avenue Gigiri Embassy Guard Post",
-    photo: "/Users/bonny/.gemini/antigravity/brain/2d67edb3-b1e9-4a39-b489-67d3a5dc27c1/car_plate_1785783847334.jpg"
+    photo: "car_plate.jpg"
   },
   kdf: {
     plate: "78 KA 12",
@@ -5284,7 +5343,7 @@ const lprSampleFormats = {
     model: "Land Rover Defender • Kenya Army HQ",
     status: "Military Defence Forces Protocol",
     loc: "Kahawa Barracks Gate 01 ANPR Scanner",
-    photo: "/Users/bonny/.gemini/antigravity/brain/2d67edb3-b1e9-4a39-b489-67d3a5dc27c1/car_plate_1785783847334.jpg"
+    photo: "car_plate.jpg"
   },
   boda: {
     plate: "KMCF 481Z",
@@ -5294,7 +5353,7 @@ const lprSampleFormats = {
     model: "Boxer BM 150 • Peter Omondi",
     status: "Active Micro-Motorcycle Comprehensive",
     loc: "Mombasa Road Inland Depot Gate",
-    photo: "/Users/bonny/.gemini/antigravity/brain/2d67edb3-b1e9-4a39-b489-67d3a5dc27c1/car_plate_1785783847334.jpg"
+    photo: "car_plate.jpg"
   },
   dealer: {
     plate: "KG 4812 A",
@@ -5304,7 +5363,7 @@ const lprSampleFormats = {
     model: "Subaru Outback • CMC Motors Dealer Transit",
     status: "Active Motor Trade Transit Floater",
     loc: "Mombasa Port Kilindini Gate 03",
-    photo: "/Users/bonny/.gemini/antigravity/brain/2d67edb3-b1e9-4a39-b489-67d3a5dc27c1/car_plate_1785783847334.jpg"
+    photo: "car_plate.jpg"
   }
 };
 
@@ -5630,9 +5689,9 @@ function runOCRTestScan(index) {
 
     // Map photo based on index to rotate samples
     const photos = [
-      "/Users/bonny/.gemini/antigravity/brain/2d67edb3-b1e9-4a39-b489-67d3a5dc27c1/car_plate_1785783847334.jpg",
-      "/Users/bonny/.gemini/antigravity/brain/2d67edb3-b1e9-4a39-b489-67d3a5dc27c1/demo_car_plate_1785828883213.jpg",
-      "/Users/bonny/.gemini/antigravity/brain/2d67edb3-b1e9-4a39-b489-67d3a5dc27c1/real_car_plate_1785827988727.jpg"
+      "car_plate.jpg",
+      "demo_car_plate.jpg",
+      "real_car_plate.jpg"
     ];
     const livePhoto = document.getElementById("lpr-live-photo");
     if (livePhoto) {

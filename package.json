@@ -8,7 +8,8 @@
     "dev": "npx -y firebase-tools@latest emulators:start",
     "deploy": "npx -y firebase-tools@latest deploy",
     "deploy:hosting": "npx -y firebase-tools@latest deploy --only hosting",
-    "deploy:firestore": "npx -y firebase-tools@latest deploy --only firestore"
+    "deploy:firestore": "npx -y firebase-tools@latest deploy --only firestore",
+    "check": "node check-ui.js && node check-render.js"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",
@@ -17,6 +18,7 @@
     "firebase": "^10.12.0"
   },
   "devDependencies": {
-    "firebase-tools": "^13.12.0"
+    "firebase-tools": "^13.12.0",
+    "puppeteer-core": "^25.8.0"
   }
 }

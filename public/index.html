@@ -22,7 +22,7 @@
   </script>
   
   <!-- Modern CSS styling -->
-  <link rel="stylesheet" href="index.css?v=20260806b">
+  <link rel="stylesheet" href="index.css?v=20260817a">
   
   <!-- Leaflet CSS for Map integration -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
@@ -42,7 +42,231 @@
 </head>
 <body>
 
-  <div id="app-layout">
+  <!-- ================= PUBLIC MARKETING SITE (outside the app) ================= -->
+  <div id="public-shell">
+    <!-- ================= FUTURISTIC LANDING PAGE VIEW ================= -->
+    <section id="public-landing">
+      
+      <!-- Landing Page Top Left Brand Header Bar -->
+      <div class="landing-top-bar" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:14px 20px; margin-bottom:16px; border:1px solid rgba(236,72,153,0.3); background:rgba(15, 23, 42, 0.7); backdrop-filter:blur(12px); border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+        <div style="display:flex; align-items:center; gap:16px;">
+          <img src="amaco_logo.png" alt="AMACO Insurance Logo" style="height:54px; width:auto; border-radius:10px; background:#ffffff; padding:6px 12px; box-shadow:0 4px 16px rgba(236,72,153,0.4);">
+          <div>
+            <h2 style="margin:0; font-size:20px; font-weight:900; color:#ffffff; letter-spacing:0.8px;">AMACO INSURANCE</h2>
+            <p style="margin:0; font-size:12px; color:#f472b6; font-weight:700;">African Merchant Assurance Company Ltd • Enterprise EIMS Portal</p>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button class="btn" onclick="openLogin()" style="background:linear-gradient(135deg, #ec4899, #be185d); color:#ffffff; border:none; padding:9px 18px; font-weight:700; border-radius:8px; gap:6px; box-shadow:0 4px 14px rgba(236,72,153,0.4);">
+            Staff Login
+          </button>
+        </div>
+      </div>
+
+      <!-- Cyber Hero Section -->
+      <div class="landing-hero">
+        <div class="cyber-orb-1"></div>
+        <div class="cyber-orb-2"></div>
+        
+        <div class="cyber-badge">
+          AMACO INSURANCE PROSYSTEM 2026 • AI-POWERED ENTERPRISE EIMS
+        </div>
+        
+        <h1 class="hero-title-text">
+          Next-Gen Autonomous Fleet Insurance & Telemetry Infrastructure
+        </h1>
+        
+        <p class="hero-sub-text">
+          Transforming Kenya fleet underwriting and claims processing with real-time NTSA ANPR verification, computer vision incident triage, AKI digital motor certificates, and instant M-PESA / Airtel / Bank settlements.
+        </p>
+        
+        <div class="hero-btn-group">
+          <button class="btn-glow-primary" onclick="openLogin()">
+             Launch Enterprise Portal
+          </button>
+          </div>
+      </div>
+
+      <!-- Animated Cyber Keyword Marquee Scroll Bar -->
+      <div class="keyword-marquee-container">
+        <div class="keyword-marquee-track">
+          <!-- Set 1 -->
+          <span class="marquee-item">AI Fraud Audit Engine</span>
+          <span class="marquee-divider">•</span>
+          <span class="marquee-item">NTSA ANPR Plate Telemetry</span>
+          <span class="marquee-divider">•</span>
+          <span class="marquee-item">M-PESA & Airtel B2C Instant Payouts</span>
+          <span class="marquee-divider">•</span>
+          <span class="marquee-item">AKI Digital Motor Certificates</span>
+          <span class="marquee-divider">•</span>
+          <span class="marquee-item">National Kenya GIS Incident Mapping</span>
+          <span class="marquee-divider">•</span>
+          <span class="marquee-item">County Government Fleet Underwriting</span>
+          <span class="marquee-divider">•</span>
+          <span class="marquee-item">IRA Statutory Tax & Levy Remittance</span>
+          <span class="marquee-divider">•</span>
+          <span class="marquee-item">EXIF Camera Scene Media Telemetry</span>
+          <span class="marquee-divider">•</span>
+          <span class="marquee-item">Accredited Garage SLA Network</span>
+          <span class="marquee-divider">•</span>
+          <span class="marquee-item">KIRA Form 104 Electronic Filing</span>
+          <span class="marquee-divider">•</span>
+
+          <!-- Duplicate Set for Seamless Infinite Loop -->
+          <span class="marquee-item">AI Fraud Audit Engine</span>
+          <span class="marquee-divider">•</span>
+          <span class="marquee-item">NTSA ANPR Plate Telemetry</span>
+          <span class="marquee-divider">•</span>
+          <span class="marquee-item">M-PESA & Airtel B2C Instant Payouts</span>
+          <span class="marquee-divider">•</span>
+          <span class="marquee-item">AKI Digital Motor Certificates</span>
+          <span class="marquee-divider">•</span>
+          <span class="marquee-item">National Kenya GIS Incident Mapping</span>
+          <span class="marquee-divider">•</span>
+          <span class="marquee-item">County Government Fleet Underwriting</span>
+          <span class="marquee-divider">•</span>
+          <span class="marquee-item">IRA Statutory Tax & Levy Remittance</span>
+          <span class="marquee-divider">•</span>
+          <span class="marquee-item">EXIF Camera Scene Media Telemetry</span>
+          <span class="marquee-divider">•</span>
+          <span class="marquee-item">Accredited Garage SLA Network</span>
+          <span class="marquee-divider">•</span>
+          <span class="marquee-item">KIRA Form 104 Electronic Filing</span>
+          <span class="marquee-divider">•</span>
+        </div>
+      </div>
+
+      <!-- Live Telemetry KPI Ticker Row -->
+      <div class="kpi-ticker-row">
+        <div class="kpi-ticker-card">
+          <div class="kpi-ticker-val">KSh 37.28M</div>
+          <div class="kpi-ticker-lbl"> Gross Underwritten Premium</div>
+        </div>
+        <div class="kpi-ticker-card">
+          <div class="kpi-ticker-val">92%</div>
+          <div class="kpi-ticker-lbl"> Auto-Pass AI Triage Accuracy</div>
+        </div>
+        <div class="kpi-ticker-card">
+          <div class="kpi-ticker-val">429</div>
+          <div class="kpi-ticker-lbl"> Active County Policies Issued</div>
+        </div>
+        <div class="kpi-ticker-card">
+          <div class="kpi-ticker-val">&lt; 30s</div>
+          <div class="kpi-ticker-lbl"> Instant Multi-Channel Payout SLA</div>
+        </div>
+      </div>
+
+      <!-- 3D Feature Grid -->
+      <div style="margin-bottom:20px; text-align:center;">
+        <h2 style="font-size:22px; font-weight:800; color:var(--text-primary); margin-bottom:8px;">Enterprise Capability Matrix</h2>
+        <p style="font-size:13px; color:var(--text-secondary);">Everything the licensed staff portal ships with</p>
+      </div>
+
+      <div class="feature-grid-3d">
+        <!-- Feature 1: Mobile Camera Incident Intake -->
+        <div class="cyber-card">
+          <div class="cyber-card-icon"></div>
+          <h3>Incident Scene Photo Intake</h3>
+          <p>Direct photo & video accident scene capture with EXIF GPS location verification and automated damage highlight painting.</p>
+          <span class="cyber-card-tag">EXIF Geo-Verified Capture</span>
+        </div>
+
+        <!-- Feature 2: NTSA ANPR Registry Verification -->
+        <div class="cyber-card">
+          <div class="cyber-card-icon"></div>
+          <h3>NTSA ANPR Plate Telemetry</h3>
+          <p>Automated OCR optical license plate scanning cross-referenced against the NTSA national motor vehicle database.</p>
+          <span class="cyber-card-tag">NTSA Registry Cross-Check</span>
+        </div>
+
+        <!-- Feature 3: AKI Digital Motor Certificates -->
+        <div class="cyber-card">
+          <div class="cyber-card-icon"></div>
+          <h3>AKI Digital Motor Certificates</h3>
+          <p>Instant issuance of Association of Kenya Insurers digital motor certificates featuring encrypted QR validation badges.</p>
+          <span class="cyber-card-tag">Encrypted QR Validation</span>
+        </div>
+
+        <!-- Feature 4: Accredited Garage Network -->
+        <div class="cyber-card">
+          <div class="cyber-card-icon"></div>
+          <h3>Accredited Garage & Assessors</h3>
+          <p>5-stage repair milestone tracker (*Intake ➔ Parts ➔ Paint ➔ Quality*) and digital repair release vouchers.</p>
+          <span class="cyber-card-tag">5-Stage SLA Tracking</span>
+        </div>
+
+        <!-- Feature 5: Multi-Channel Settlement Gateway -->
+        <div class="cyber-card">
+          <div class="cyber-card-icon"></div>
+          <h3>Multi-Channel Settlement Gateway</h3>
+          <p>Instant 1-click B2C claim disbursement supporting Safaricom M-PESA, Airtel Money, and PesaLink Bank Transfers.</p>
+          <span class="cyber-card-tag">Sub-30s B2C Payouts</span>
+        </div>
+
+        <!-- Feature 6: IRA & KRA Regulatory Compliance -->
+        <div class="cyber-card">
+          <div class="cyber-card-icon"></div>
+          <h3>IRA & KRA Statutory Compliance</h3>
+          <p>Automatic statutory tax calculations under Insurance Act Cap 487 (PHCF 0.25%, Training Levy 0.20%, Stamp Duty).</p>
+          <span class="cyber-card-tag">Cap 487 Auto-Computation</span>
+        </div>
+
+        <!-- Feature 7: National GIS GeoMap Center -->
+        <div class="cyber-card">
+          <div class="cyber-card-icon"></div>
+          <h3>National GIS Command Center</h3>
+          <p>Full-screen interactive geospatial command map rendering 14 live telemetry markers for claims, garages, and tow units.</p>
+          <span class="cyber-card-tag">14 Live Telemetry Layers</span>
+        </div>
+
+        <!-- Feature 8: AI Report Assistant -->
+        <div class="cyber-card">
+          <div class="cyber-card-icon"></div>
+          <h3>AI Report Assistant</h3>
+          <p>Natural language AI analytics engine synthesizing executive production summaries, branch audits, and fraud briefs.</p>
+          <span class="cyber-card-tag">Natural Language Analytics</span>
+        </div>
+      </div>
+
+      <!-- Live Terminal Event Stream Preview -->
+      <div class="terminal-box">
+        <div style="display:flex; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid rgba(56,189,248,0.2); padding-bottom:8px;">
+          <span style="font-weight:700; color:#fff;"> EIMS LIVE TELEMETRY LOG STREAM (KENYA NATIONAL BUS)</span>
+          <span class="pulse-circle" style="display:inline-block;"></span>
+        </div>
+        <div>[23:29:40] <span style="color:#10b981;">[NTSA ANPR]</span> License Plate <span style="color:#fff;">KDG 123A</span> verified against National Registry. Owner: County Health Dept.</div>
+        <div>[23:29:41] <span style="color:#38bdf8;">[AI ENGINE]</span> Incident photos processed. EXIF GPS: -1.286389, 36.817222 (Nairobi CBD). Fraud Score: 14% [Green Path].</div>
+        <div>[23:29:42] <span style="color:#f59e0b;">[AKI CERT]</span> Certificate <span style="color:#fff;">AKI-2026-90823</span> issued with encrypted QR verification badge.</div>
+        <div>[23:29:43] <span style="color:#10b981;">[SETTLEMENT]</span> M-PESA B2C Disbursement: <span style="color:#fff;">KSh 142,500</span> sent to 254712345678 (Ref: QK89X201L9). Status: SUCCESS.</div>
+      </div>
+    </section>
+
+      <!-- ================= LOGIN OVERLAY ================= -->
+      <div id="login-overlay" class="login-overlay" onclick="if(event.target===this) closeLogin()">
+        <form class="login-card" onsubmit="submitLogin(event)">
+          <img src="amaco_logo.png" alt="AMACO Insurance Logo" class="login-logo">
+          <h2>Staff Portal Sign In</h2>
+          <p class="login-sub">AMACO EIMS ProSystem &bull; authorized personnel only</p>
+          <label for="login-email">Work Email</label>
+          <input id="login-email" type="email" required placeholder="agent.davis@amaco.co.ke" autocomplete="username">
+          <label for="login-password">Password</label>
+          <input id="login-password" type="password" required minlength="4" placeholder="••••••••" autocomplete="current-password">
+          <label for="login-role">Role</label>
+          <select id="login-role">
+            <option>Claims Administrator</option>
+            <option>Underwriting Officer</option>
+            <option>Finance &amp; Settlements</option>
+            <option>Branch Manager</option>
+          </select>
+          <div id="login-error" class="login-error" hidden></div>
+          <button type="submit" class="btn-glow-primary login-submit">Sign In to Dashboard</button>
+          <button type="button" class="login-cancel" onclick="closeLogin()">Back to site</button>
+          <p class="login-demo">Demo build: any valid email + 4&plus; character password.</p>
+        </form>
+      </div>
+  </div>
+
+  <div id="app-layout" hidden>
     
     <!-- Sidebar Navigation Drawer -->
     <aside class="app-sidebar" id="main-sidebar">
@@ -73,11 +297,7 @@
             <span class="accordion-chevron" aria-hidden="true"></span>
           </button>
           <div class="accordion-content">
-            <a class="accordion-item active" data-view="landing-page" id="nav-landing-page">
-              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-              Portal Home
-            </a>
-            <a class="accordion-item" data-view="dashboard" id="nav-dashboard">
+            <a class="accordion-item active" data-view="dashboard" id="nav-dashboard">
               <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
               Executive Dashboard
             </a>
@@ -269,8 +489,11 @@
           <div class="user-avatar" id="user-initials">AD</div>
           <div class="user-info">
             <h4 id="user-name">Agent Davis</h4>
-            <p>Claims Administrator</p>
+            <p id="user-role">Claims Administrator</p>
           </div>
+          <button class="sidebar-signout" onclick="signOut()" title="Sign out of the staff portal">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          </button>
         </div>
       </div>
     </aside>
@@ -344,209 +567,6 @@
       <!-- Primary Viewport -->
       <div class="app-view-container">
         
-        <!-- ================= FUTURISTIC LANDING PAGE VIEW ================= -->
-        <section class="app-view active" id="view-landing-page">
-          
-          <!-- Landing Page Top Left Brand Header Bar -->
-          <div class="landing-top-bar" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:14px 20px; margin-bottom:16px; border:1px solid rgba(236,72,153,0.3); background:rgba(15, 23, 42, 0.7); backdrop-filter:blur(12px); border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.4);">
-            <div style="display:flex; align-items:center; gap:16px;">
-              <img src="amaco_logo.png" alt="AMACO Insurance Logo" style="height:54px; width:auto; border-radius:10px; background:#ffffff; padding:6px 12px; box-shadow:0 4px 16px rgba(236,72,153,0.4);">
-              <div>
-                <h2 style="margin:0; font-size:20px; font-weight:900; color:#ffffff; letter-spacing:0.8px;">AMACO INSURANCE</h2>
-                <p style="margin:0; font-size:12px; color:#f472b6; font-weight:700;">African Merchant Assurance Company Ltd • Enterprise EIMS Portal</p>
-              </div>
-            </div>
-            <div style="display:flex; align-items:center; gap:10px;">
-              <button class="btn" onclick="navigateToView('dashboard')" style="background:linear-gradient(135deg, #ec4899, #be185d); color:#ffffff; border:none; padding:9px 18px; font-weight:700; border-radius:8px; gap:6px; box-shadow:0 4px 14px rgba(236,72,153,0.4);">
-                Launch Staff Portal
-              </button>
-            </div>
-          </div>
-
-          <!-- Cyber Hero Section -->
-          <div class="landing-hero">
-            <div class="cyber-orb-1"></div>
-            <div class="cyber-orb-2"></div>
-            
-            <div class="cyber-badge">
-              AMACO INSURANCE PROSYSTEM 2026 • AI-POWERED ENTERPRISE EIMS
-            </div>
-            
-            <h1 class="hero-title-text">
-              Next-Gen Autonomous Fleet Insurance & Telemetry Infrastructure
-            </h1>
-            
-            <p class="hero-sub-text">
-              Transforming Kenya fleet underwriting and claims processing with real-time NTSA ANPR verification, computer vision incident triage, AKI digital motor certificates, and instant M-PESA / Airtel / Bank settlements.
-            </p>
-            
-            <div class="hero-btn-group">
-              <button class="btn-glow-primary" onclick="navigateToView('dashboard')">
-                 Launch Enterprise Portal
-              </button>
-              <button class="btn-glow-secondary" onclick="navigateToView('mobile-app')">
-                 Mobile App Portal
-              </button>
-              <button class="btn-glow-secondary" onclick="navigateToView('geomap-center')">
-                 National GIS Map
-              </button>
-            </div>
-          </div>
-
-          <!-- Animated Cyber Keyword Marquee Scroll Bar -->
-          <div class="keyword-marquee-container">
-            <div class="keyword-marquee-track">
-              <!-- Set 1 -->
-              <span class="marquee-item" onclick="navigateToView('create-claim')">AI Fraud Audit Engine</span>
-              <span class="marquee-divider">•</span>
-              <span class="marquee-item" onclick="navigateToView('create-claim')">NTSA ANPR Plate Telemetry</span>
-              <span class="marquee-divider">•</span>
-              <span class="marquee-item" onclick="navigateToView('mpesa-gateway')">M-PESA & Airtel B2C Instant Payouts</span>
-              <span class="marquee-divider">•</span>
-              <span class="marquee-item" onclick="navigateToView('policy-registry')">AKI Digital Motor Certificates</span>
-              <span class="marquee-divider">•</span>
-              <span class="marquee-item" onclick="navigateToView('geomap-center')">National Kenya GIS Incident Mapping</span>
-              <span class="marquee-divider">•</span>
-              <span class="marquee-item" onclick="navigateToView('policy-registry')">County Government Fleet Underwriting</span>
-              <span class="marquee-divider">•</span>
-              <span class="marquee-item" onclick="navigateToView('policy-registry')">IRA Statutory Tax & Levy Remittance</span>
-              <span class="marquee-divider">•</span>
-              <span class="marquee-item" onclick="navigateToView('create-claim')">EXIF Camera Scene Media Telemetry</span>
-              <span class="marquee-divider">•</span>
-              <span class="marquee-item" onclick="navigateToView('garage-network')">Accredited Garage SLA Network</span>
-              <span class="marquee-divider">•</span>
-              <span class="marquee-item" onclick="navigateToView('create-claim')">KIRA Form 104 Electronic Filing</span>
-              <span class="marquee-divider">•</span>
-
-              <!-- Duplicate Set for Seamless Infinite Loop -->
-              <span class="marquee-item" onclick="navigateToView('create-claim')">AI Fraud Audit Engine</span>
-              <span class="marquee-divider">•</span>
-              <span class="marquee-item" onclick="navigateToView('create-claim')">NTSA ANPR Plate Telemetry</span>
-              <span class="marquee-divider">•</span>
-              <span class="marquee-item" onclick="navigateToView('mpesa-gateway')">M-PESA & Airtel B2C Instant Payouts</span>
-              <span class="marquee-divider">•</span>
-              <span class="marquee-item" onclick="navigateToView('policy-registry')">AKI Digital Motor Certificates</span>
-              <span class="marquee-divider">•</span>
-              <span class="marquee-item" onclick="navigateToView('geomap-center')">National Kenya GIS Incident Mapping</span>
-              <span class="marquee-divider">•</span>
-              <span class="marquee-item" onclick="navigateToView('policy-registry')">County Government Fleet Underwriting</span>
-              <span class="marquee-divider">•</span>
-              <span class="marquee-item" onclick="navigateToView('policy-registry')">IRA Statutory Tax & Levy Remittance</span>
-              <span class="marquee-divider">•</span>
-              <span class="marquee-item" onclick="navigateToView('create-claim')">EXIF Camera Scene Media Telemetry</span>
-              <span class="marquee-divider">•</span>
-              <span class="marquee-item" onclick="navigateToView('garage-network')">Accredited Garage SLA Network</span>
-              <span class="marquee-divider">•</span>
-              <span class="marquee-item" onclick="navigateToView('create-claim')">KIRA Form 104 Electronic Filing</span>
-              <span class="marquee-divider">•</span>
-            </div>
-          </div>
-
-          <!-- Live Telemetry KPI Ticker Row -->
-          <div class="kpi-ticker-row">
-            <div class="kpi-ticker-card">
-              <div class="kpi-ticker-val">KSh 37.28M</div>
-              <div class="kpi-ticker-lbl"> Gross Underwritten Premium</div>
-            </div>
-            <div class="kpi-ticker-card">
-              <div class="kpi-ticker-val">92%</div>
-              <div class="kpi-ticker-lbl"> Auto-Pass AI Triage Accuracy</div>
-            </div>
-            <div class="kpi-ticker-card">
-              <div class="kpi-ticker-val">429</div>
-              <div class="kpi-ticker-lbl"> Active County Policies Issued</div>
-            </div>
-            <div class="kpi-ticker-card">
-              <div class="kpi-ticker-val">&lt; 30s</div>
-              <div class="kpi-ticker-lbl"> Instant Multi-Channel Payout SLA</div>
-            </div>
-          </div>
-
-          <!-- 3D Feature Grid -->
-          <div style="margin-bottom:20px; text-align:center;">
-            <h2 style="font-size:22px; font-weight:800; color:var(--text-primary); margin-bottom:8px;">Enterprise Capability Matrix</h2>
-            <p style="font-size:13px; color:var(--text-secondary);">Click any capability to launch the live module</p>
-          </div>
-
-          <div class="feature-grid-3d">
-            <!-- Feature 1: Mobile Camera Incident Intake -->
-            <div class="cyber-card">
-              <div class="cyber-card-icon"></div>
-              <h3>Incident Scene Photo Intake</h3>
-              <p>Direct photo & video accident scene capture with EXIF GPS location verification and automated damage highlight painting.</p>
-              <button class="cyber-card-btn" onclick="navigateToView('create-claim')">Launch Incident Intake →</button>
-            </div>
-
-            <!-- Feature 2: NTSA ANPR Registry Verification -->
-            <div class="cyber-card">
-              <div class="cyber-card-icon"></div>
-              <h3>NTSA ANPR Plate Telemetry</h3>
-              <p>Automated OCR optical license plate scanning cross-referenced against the NTSA national motor vehicle database.</p>
-              <button class="cyber-card-btn" onclick="navigateToView('create-claim')">Test ANPR Scan →</button>
-            </div>
-
-            <!-- Feature 3: AKI Digital Motor Certificates -->
-            <div class="cyber-card">
-              <div class="cyber-card-icon"></div>
-              <h3>AKI Digital Motor Certificates</h3>
-              <p>Instant issuance of Association of Kenya Insurers digital motor certificates featuring encrypted QR validation badges.</p>
-              <button class="cyber-card-btn" onclick="navigateToView('policy-registry')">View Certificates →</button>
-            </div>
-
-            <!-- Feature 4: Accredited Garage Network -->
-            <div class="cyber-card">
-              <div class="cyber-card-icon"></div>
-              <h3>Accredited Garage & Assessors</h3>
-              <p>5-stage repair milestone tracker (*Intake ➔ Parts ➔ Paint ➔ Quality*) and digital repair release vouchers.</p>
-              <button class="cyber-card-btn" onclick="navigateToView('garage-network')">Open Garage Network →</button>
-            </div>
-
-            <!-- Feature 5: Multi-Channel Settlement Gateway -->
-            <div class="cyber-card">
-              <div class="cyber-card-icon"></div>
-              <h3>Multi-Channel Settlement Gateway</h3>
-              <p>Instant 1-click B2C claim disbursement supporting Safaricom M-PESA, Airtel Money, and PesaLink Bank Transfers.</p>
-              <button class="cyber-card-btn" onclick="navigateToView('mpesa-gateway')">Launch Settlement →</button>
-            </div>
-
-            <!-- Feature 6: IRA & KRA Regulatory Compliance -->
-            <div class="cyber-card">
-              <div class="cyber-card-icon"></div>
-              <h3>IRA & KRA Statutory Compliance</h3>
-              <p>Automatic statutory tax calculations under Insurance Act Cap 487 (PHCF 0.25%, Training Levy 0.20%, Stamp Duty).</p>
-              <button class="cyber-card-btn" onclick="navigateToView('ira-compliance')">View IRA Returns →</button>
-            </div>
-
-            <!-- Feature 7: National GIS GeoMap Center -->
-            <div class="cyber-card">
-              <div class="cyber-card-icon"></div>
-              <h3>National GIS Command Center</h3>
-              <p>Full-screen interactive geospatial command map rendering 14 live telemetry markers for claims, garages, and tow units.</p>
-              <button class="cyber-card-btn" onclick="navigateToView('geomap-center')">Open GIS Command Center →</button>
-            </div>
-
-            <!-- Feature 8: AI Report Assistant -->
-            <div class="cyber-card">
-              <div class="cyber-card-icon"></div>
-              <h3>AI Report Assistant</h3>
-              <p>Natural language AI analytics engine synthesizing executive production summaries, branch audits, and fraud briefs.</p>
-              <button class="cyber-card-btn" onclick="openAIAssistantModal()">Ask AI Assistant →</button>
-            </div>
-          </div>
-
-          <!-- Live Terminal Event Stream Preview -->
-          <div class="terminal-box">
-            <div style="display:flex; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid rgba(56,189,248,0.2); padding-bottom:8px;">
-              <span style="font-weight:700; color:#fff;"> EIMS LIVE TELEMETRY LOG STREAM (KENYA NATIONAL BUS)</span>
-              <span class="pulse-circle" style="display:inline-block;"></span>
-            </div>
-            <div>[23:29:40] <span style="color:#10b981;">[NTSA ANPR]</span> License Plate <span style="color:#fff;">KDG 123A</span> verified against National Registry. Owner: County Health Dept.</div>
-            <div>[23:29:41] <span style="color:#38bdf8;">[AI ENGINE]</span> Incident photos processed. EXIF GPS: -1.286389, 36.817222 (Nairobi CBD). Fraud Score: 14% [Green Path].</div>
-            <div>[23:29:42] <span style="color:#f59e0b;">[AKI CERT]</span> Certificate <span style="color:#fff;">AKI-2026-90823</span> issued with encrypted QR verification badge.</div>
-            <div>[23:29:43] <span style="color:#10b981;">[SETTLEMENT]</span> M-PESA B2C Disbursement: <span style="color:#fff;">KSh 142,500</span> sent to 254712345678 (Ref: QK89X201L9). Status: SUCCESS.</div>
-          </div>
-        </section>
-
         <!-- ================= DASHBOARD VIEW ================= -->
         <section class="app-view" id="view-dashboard">
           <div class="view-title-block">
@@ -2622,7 +2642,7 @@
 
               <!-- Camera Viewfinder Box -->
               <div style="position:relative; width:100%; height:220px; background:#000; border-radius:12px; overflow:hidden; display:flex; align-items:center; justify-content:center; border:2px solid var(--primary); box-shadow:0 10px 25px rgba(0,0,0,0.5);">
-                <img id="lpr-live-photo" src="/Users/bonny/.gemini/antigravity/brain/2d67edb3-b1e9-4a39-b489-67d3a5dc27c1/car_plate_1785783847334.jpg" style="width:100%; height:100%; object-fit:cover; opacity:0.85;">
+                <img id="lpr-live-photo" src="car_plate.jpg" style="width:100%; height:100%; object-fit:cover; opacity:0.85;">
                 
                 <!-- Bounding Box Target Reticle -->
                 <div style="position:absolute; top:25%; left:15%; width:70%; height:50%; border:2px dashed #10b981; border-radius:8px; box-shadow:0 0 20px rgba(16,185,129,0.5); display:flex; flex-direction:column; justify-content:space-between; padding:6px;">
@@ -4769,10 +4789,10 @@
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   
   <!-- Standard ISO/IEC 18004 Compliant QR Code Library -->
-  <script src="qrcode.min.js?v=20260806b"></script>
+  <script src="qrcode.min.js?v=20260817a"></script>
 
   <!-- EIMS application logic -->
-  <script src="app.js?v=20260806b"></script>
+  <script src="app.js?v=20260817a"></script>
 </body>
 </html>
 
