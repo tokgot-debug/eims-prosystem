@@ -38,7 +38,6 @@ export const NAV = [
     icon: "card",
     items: [
       { slug: "mpesa-gateway", label: "M-PESA B2C & STK Push", icon: "phone" },
-      { slug: "ecitizen-pesaflow", label: "e-Citizen & PesaFlow", icon: "shield" },
       { slug: "itax-compliance", label: "KRA iTax & eTIMS", icon: "receipt" },
       { slug: "ira-compliance", label: "IRA Solvency Returns", icon: "check" },
     ],
@@ -58,10 +57,6 @@ export const NAV = [
     label: "AI Tools & OCR",
     icon: "camera",
     items: [
-      { slug: "lpr-scanner", label: "ANPR License Plate Reader", icon: "camera" },
-      { slug: "qr-generator", label: "Test QR Code Engine", icon: "qr" },
-      { slug: "alerts-simulator", label: "Notification Simulator", icon: "bell" },
-      { slug: "mobile-app", label: "Mobile App Portal Sim", icon: "phone" },
       { slug: "ai-assistant", label: "EIMS Neural AI Copilot", icon: "spark" },
     ],
   },
@@ -71,6 +66,9 @@ export const NAV = [
     icon: "gear",
     items: [
       { slug: "subscription-pricing", label: "Subscriptions & Licenses", icon: "gear" },
+      { slug: "ecitizen-pesaflow", label: "e-Citizen & PesaFlow", icon: "shield" },
+      { slug: "alerts-simulator", label: "Notification Simulator", icon: "bell" },
+      { slug: "mobile-app", label: "Mobile App Portal Sim", icon: "phone" },
     ],
   },
 ];

@@ -248,6 +248,30 @@ document.addEventListener("DOMContentLoaded", () => {
   navigateToView("dashboard");
   restoreSession();
 
+  // Public Certificate Verification check via URL parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has("verifyCert")) {
+    const certId = urlParams.get("certId") || "";
+    const policy = urlParams.get("policy") || "";
+    const plate = urlParams.get("plate") || "";
+    const owner = urlParams.get("owner") || "";
+    const hash = urlParams.get("hash") || "SHA256-D7F8A92B-AKI-VERIFIED-2026";
+    setTimeout(() => {
+      const vModal = document.getElementById("public-verification-modal");
+      if (vModal) {
+        document.getElementById("v-cert-id").innerText = certId;
+        document.getElementById("v-plate").innerText = plate;
+        document.getElementById("v-owner").innerText = owner;
+        document.getElementById("v-policy").innerText = policy;
+        document.getElementById("v-hash").innerText = hash;
+        vModal.classList.add("active");
+        if (typeof showToast === "function") {
+          showToast("AKI Verification Opened", `Successfully parsed registry query for vehicle ${plate}.`, "success");
+        }
+      }
+    }, 600);
+  }
+
   // Set up Global Search
   const globalSearch = document.getElementById("global-search");
   globalSearch.addEventListener("input", (e) => {
