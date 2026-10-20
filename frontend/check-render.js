@@ -8,7 +8,7 @@ const probeIdleCost = require("../tools/perf-probe");
 const BASE = process.env.EIMS_URL || "http://localhost:3000";
 const EDGE = "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe";
 const OUT = "screenshots";
-const CREDS = { email: "agent.davis@amaco.co.ke", password: "demo1234" };
+const CREDS = { email: "agent.davis@eims.co.ke", password: "demo1234" };
 
 const fail = [];
 const need = (cond, msg) => { if (!cond) fail.push(msg); };

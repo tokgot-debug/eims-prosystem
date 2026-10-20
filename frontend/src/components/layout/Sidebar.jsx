@@ -27,9 +27,9 @@ export default function Sidebar({ session, mobileOpen, onNavigate }) {
     >
       <div className="sidebar-header">
         <div className="sidebar-brand">
-          <Image src="/amaco_logo.png" alt="AMACO Insurance" width={74} height={36} priority />
+          <Image src="/eims_logo.png" alt="EIMS Insurance" width={74} height={36} priority />
           <div className="sidebar-title">
-            <h2>AMACO Insurance</h2>
+            <h2>EIMS Insurance</h2>
             <p>EIMS ProSystem</p>
           </div>
         </div>

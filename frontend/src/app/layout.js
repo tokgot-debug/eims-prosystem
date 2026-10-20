@@ -6,7 +6,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], weight: ["300","400","500","600","700"], variable: "--font-inter", display: "swap" });
 
 export const metadata = {
-  title: "AMACO EIMS ProSystem",
+  title: "EIMS ProSystem",
   description:
     "Claims-centric digital insurance management platform for Motor & General Insurance in the Kenyan market. Built to international standards.",
   manifest: "/manifest.json",

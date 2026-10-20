@@ -2199,7 +2199,7 @@ function confirmCreateNewPolicy() {
   const clientName = document.getElementById("modal-policy-client")?.value.trim() || "Jane Njeri";
   const plate = document.getElementById("modal-policy-plate")?.value.trim().toUpperCase() || "KDD 908Z";
   const line = document.getElementById("modal-policy-class")?.value || "Motor";
-  const broker = document.getElementById("modal-policy-broker")?.value || "AMACO Insurance";
+  const broker = document.getElementById("modal-policy-broker")?.value || "EIMS Insurance";
   const branch = document.getElementById("modal-policy-branch")?.value || "HQ";
   const sumInsured = parseFloat(document.getElementById("modal-policy-suminsured")?.value) || 3500000;
   const issueCert = document.getElementById("modal-policy-issue-cert")?.checked;
@@ -2260,21 +2260,79 @@ function openAKICertModal(policyNo) {
   
   if (!modal) return;
   
-  document.getElementById("cert-plate").innerText = policy.plate || "KDG 123A";
-  document.getElementById("cert-owner").innerText = policy.clientName || "Boniface Mwangi";
-  document.getElementById("cert-model").innerText = policy.plate.startsWith("KDG") ? "Toyota Fielder (2018)" : (policy.plate.startsWith("KBA") ? "Isuzu NPR Truck (2020)" : "Nissan X-Trail (2019)");
-  document.getElementById("cert-chassis").innerText = "NZE161G-" + Math.floor(1000000 + Math.random() * 8999999);
+  const plateVal = policy.plate || "KDG 123A";
+  const ownerVal = policy.clientName || "Boniface Mwangi";
+  const modelVal = plateVal.startsWith("KDG") ? "Fielder (2018)" : (plateVal.startsWith("KBA") ? "NPR Truck (2020)" : "X-Trail (2019)");
+  const makeVal = plateVal.startsWith("KDG") ? "Toyota" : (plateVal.startsWith("KBA") ? "Isuzu" : "Nissan");
+  const chassisVal = "NZE161G-" + Math.floor(1000000 + Math.random() * 8999999);
+  const refVal = policy.certId || "CERT-AKI-2026-9842";
+  const startVal = "2026-01-01";
+  const expiryVal = "2026-12-31";
+  const sumInsuredVal = "KSh " + (policy.premium * 25).toLocaleString();
+  const statusVal = policy.status === "Active" ? "VALID & ACTIVE" : policy.status.toUpperCase();
+
+  // Populate Sticker 3 (Original Certificate)
+  document.getElementById("cert-plate").innerText = plateVal;
+  document.getElementById("cert-owner").innerText = ownerVal;
   document.getElementById("cert-pol-no").innerText = policy.policyNo;
-  document.getElementById("cert-sum-insured").innerText = "KSh " + (policy.premium * 25).toLocaleString();
-  document.getElementById("cert-ref-no").innerText = "REF: " + (policy.certId || "CERT-AKI-2026-9842");
+  document.getElementById("cert-start-date").innerText = startVal;
+  document.getElementById("cert-expiry-date").innerText = expiryVal;
+  document.getElementById("cert-chassis").innerText = chassisVal;
+  document.getElementById("cert-ref-no").innerText = refVal;
   
-  document.getElementById("cert-display-status").innerText = policy.status === "Active" ? "VALID & ACTIVE" : policy.status.toUpperCase();
-  document.getElementById("cert-display-status").style.backgroundColor = policy.status === "Active" ? "#0266cc" : "#dc2626";
+  const statusEl = document.getElementById("cert-display-status");
+  if (statusEl) {
+    statusEl.innerText = statusVal;
+    statusEl.style.backgroundColor = policy.status === "Active" ? "#16a34a" : "#dc2626";
+  }
+
+  // Populate Middle Metadata Table
+  const makeValEl = document.getElementById("cert-make-val");
+  if (makeValEl) makeValEl.innerText = makeVal;
+  
+  const modelEls = document.querySelectorAll("#cert-model");
+  modelEls.forEach(el => { el.innerText = modelVal; });
+  
+  const sumInsuredEls = document.querySelectorAll("#cert-sum-insured");
+  sumInsuredEls.forEach(el => { el.innerText = sumInsuredVal; });
+
+  // Populate Sticker 1 & 2 (File Copy & Duplicate)
+  const fileRef = document.getElementById("cert-ref-no-file");
+  if (fileRef) fileRef.innerText = refVal;
+  const dupRef = document.getElementById("cert-ref-no-dup");
+  if (dupRef) dupRef.innerText = refVal;
+
+  const mapping = {
+    "v-owner-lbl": ownerVal, "v-owner-lbl2": ownerVal,
+    "v-policy-lbl": policy.policyNo, "v-policy-lbl2": policy.policyNo,
+    "v-start-lbl": startVal, "v-start-lbl2": startVal,
+    "v-expiry-lbl": expiryVal, "v-expiry-lbl2": expiryVal,
+    "v-plate-lbl": plateVal, "v-plate-lbl2": plateVal,
+    "v-chassis-lbl": chassisVal, "v-chassis-lbl2": chassisVal
+  };
+
+  for (const [id, val] of Object.entries(mapping)) {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  }
   
   // Set Cryptographic SHA-256 Hash Signature Seal
   const hashSeal = generateCertSHA256Hash(policy);
   const hashEl = document.getElementById("cert-sha256-hash");
   if (hashEl) hashEl.innerText = hashSeal;
+
+  // Render a real, dynamic, scannable QR code pointing to the dynamic verification link (65px size for sticker)
+  const qrContainer = document.getElementById("aki-cert-qr-container");
+  if (qrContainer) {
+    const certURL = `${window.location.origin}/?verifyCert=true&certId=${refVal}&policy=${policy.policyNo}&plate=${plateVal}&owner=${encodeURIComponent(ownerVal)}&hash=${hashSeal}`;
+    renderStandardQRCodeContainer(qrContainer, certURL, {
+      fgColor: "#0f172a",
+      bgColor: "#ffffff",
+      size: 77,
+      padding: "4px",
+      logoType: "none"
+    });
+  }
 
   modal.classList.add("active");
   showToast("Digital QR Certificate Loaded", "Digital QR insurance certificate active for " + policy.plate + ". Cryptographically signed.", "success");
@@ -2300,7 +2358,25 @@ function closeAKICertModal() {
 
 function simulatePoliceQRScan() {
   const plate = document.getElementById("cert-plate").innerText;
-  const ref = document.getElementById("cert-ref-no").innerText;
+  const ref = document.getElementById("cert-ref-no").innerText.replace("REF: ", "");
+  const owner = document.getElementById("cert-owner").innerText;
+  const polNo = document.getElementById("cert-pol-no").innerText;
+  const hash = document.getElementById("cert-sha256-hash").innerText;
+  
+  // Close certificate modal
+  closeAKICertModal();
+  
+  // Populate and open public verification modal
+  const vModal = document.getElementById("public-verification-modal");
+  if (vModal) {
+    document.getElementById("v-cert-id").innerText = ref;
+    document.getElementById("v-plate").innerText = plate;
+    document.getElementById("v-owner").innerText = owner;
+    document.getElementById("v-policy").innerText = polNo;
+    document.getElementById("v-hash").innerText = hash;
+    vModal.classList.add("active");
+  }
+  
   showToast(" Police QR Verification Match", `Traffic Officer Scan Verified: Vehicle ${plate} holds valid active AKI Motor Coverage (${ref}).`, "success");
 }
 
@@ -2956,6 +3032,19 @@ function dispatchRenewalNotices() {
 function openAIAssistantModal() {
   const modal = document.getElementById("ai-assistant-modal");
   const inputEl = document.getElementById("ai-assistant-input");
+  const messagesContainer = document.getElementById("ai-assistant-messages");
+  
+  if (messagesContainer) {
+    messagesContainer.innerHTML = `
+      <div style="display:flex; gap:12px; align-items:flex-start;">
+        <div style="width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg, #1e40af, #3b82f6); color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; flex-shrink:0;">G</div>
+        <div style="background-color:var(--bg-surface); border:1px solid var(--border-color); padding:14px 16px; border-radius:14px; font-size:13px; line-height:1.5; color:var(--text-primary); max-width:90%;">
+          <strong>Jambo! I am your dedicated Google Gemini Assistant.</strong><br>
+          I can analyze all system data including monthly branch production, claims telemetry, fraud indexes, and underwriting ledgers. Click a quick prompt above or type your question below to generate a report.
+        </div>
+      </div>
+    `;
+  }
   
   if (modal) {
     modal.classList.add("active");
@@ -3055,12 +3144,15 @@ function processAIQuery(queryText) {
     aiDiv.style.alignItems = "flex-start";
     
     aiDiv.innerHTML = `
-      <div style="width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg, #0266cc, #38bdf8); color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;"></div>
+      <div style="width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg, #1e40af, #3b82f6); color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; flex-shrink:0;">G</div>
       <div style="background-color:var(--bg-surface); border:1px solid var(--border-color); padding:16px; border-radius:14px; font-size:13px; line-height:1.6; color:var(--text-primary); max-width:90%;">
+        <div style="font-size:11px; text-transform:uppercase; color:var(--primary); font-weight:800; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+          <span class="status-dot green"></span> Google Gemini 2.5 Flash Response
+        </div>
         ${responseHTML}
         <div style="margin-top:12px; padding-top:10px; border-top:1px solid var(--border-color); display:flex; gap:10px;">
-          <button class="btn btn-secondary" onclick="exportAIBriefPDF()" style="padding:4px 10px; font-size:11px;"> Print AI Executive Brief</button>
-          <button class="btn btn-secondary" onclick="showToast('Copied', 'AI Report copied to clipboard.', 'info')" style="padding:4px 10px; font-size:11px;"> Copy Text</button>
+          <button class="btn btn-secondary" onclick="exportAIBriefPDF()" style="padding:4px 10px; font-size:11px;"> Print Gemini Executive Brief</button>
+          <button class="btn btn-secondary" onclick="showToast('Copied', 'Gemini Report copied to clipboard.', 'info')" style="padding:4px 10px; font-size:11px;"> Copy Text</button>
         </div>
       </div>
     `;
@@ -3081,6 +3173,37 @@ function generateAIReportSynthesis(query) {
   const totalNewPolicies = branchProductionData.reduce((acc, b) => acc + b.newCount, 0);
   const totalRenewalsExcluded = branchProductionData.reduce((acc, b) => acc + b.renewedCount, 0);
   const totalGrossPremium = branchProductionData.reduce((acc, b) => acc + b.newPremium, 0);
+
+  // A. Claims & Recovery
+  if (lower.includes("recovery") || lower.includes("salvage") || lower.includes("subrogation")) {
+    return `
+      <strong style="color:var(--primary); font-size:14px;">Claims Settlement and Subrogation Recovery Ledger</strong><br><br>
+      Deep-dive audit of subrogation, recovery, and salvage asset registers:<br><br>
+      • <strong>Subrogation Claims Outstanding:</strong> 12 files actively pursued against third-party insurers (Estimated Recovery: <strong>KSh 4,850,000</strong>).<br>
+      • <strong>Settled Recoveries (August 2026):</strong> KSh 1,240,000 successfully recovered from historical collisions.<br>
+      • <strong>Salvage Assets Disposed:</strong> 3 total-loss vehicle salvages auctioned off, yielding KSh 890,000 in salvage recoveries.<br>
+      • <strong>Automated Recovery Tracking:</strong> SIU location cross-matching speeds up liability assignment by an average of 18 days.<br><br>
+      <div style="background-color:var(--bg-primary); padding:10px; border-radius:8px; font-size:12px;">
+         <strong>SIU Recovery Target:</strong> Maintain recovery ratio above 22% of total paid indemnity.
+      </div>
+    `;
+  }
+
+  // B. Certificates
+  if (lower.includes("certificate") || lower.includes("certificates") || lower.includes("aki digital") || lower.includes("seal")) {
+    const activeCount = policies.filter(p => p.status === "Active").length;
+    return `
+      <strong style="color:var(--success); font-size:14px;">AKI Digital Certificate Synchronization Report</strong><br><br>
+      Official status audit of digital insurance certificate generation and ledger sync:<br><br>
+      • <strong>Total Certificates Syncing:</strong> <strong>${policies.length} records</strong> registered to AKI database.<br>
+      • <strong>Scannable QR Verification Seals:</strong> ${activeCount} active certificates configured with dynamic browser-scanning links.<br>
+      • <strong>Signature Integrity Check:</strong> 100% of SHA-256 signatures match the local verification keys. Zero security tampering detected.<br>
+      • <strong>Real-world QR Scans Tracked:</strong> 47 successful verification scans logged from traffic police checkpoints this week.<br><br>
+      <div style="background-color:var(--bg-primary); padding:10px; border-radius:8px; font-size:12px;">
+         <strong>AKI Sync Status:</strong> Active and synchronized. All certificates cryptographically signed.
+      </div>
+    `;
+  }
 
   // 1. KIRA Compliance Brief
   if (lower.includes("kira") || lower.includes("compliance") || lower.includes("regulatory")) {
@@ -5938,7 +6061,7 @@ function renderStandardQRCodeContainer(container, text, options = {}) {
     });
 
     // Ensure Quiet Zone & High-Contrast styling for mobile phone cameras
-    container.style.padding = "12px";
+    container.style.padding = options.padding !== undefined ? options.padding : "12px";
     container.style.background = bgColor;
     container.style.borderRadius = "12px";
 
@@ -5948,7 +6071,7 @@ function renderStandardQRCodeContainer(container, text, options = {}) {
         const logoSize = Math.floor(size * 0.20);
         // Text acronyms rather than emoji: they scale cleanly and render the
         // same on every device, which pictographs did not.
-        let badgeIcon = "AMACO";
+        let badgeIcon = "EIMS";
 
         if (logoType === "aki") { badgeIcon = "AKI"; }
         else if (logoType === "kra") { badgeIcon = "KRA"; }
@@ -7617,7 +7740,7 @@ window.activateCertInline = function(certId) {
   const randomNum = Math.floor(1000 + Math.random() * 9000);
   const newPolicy = {
     policyNo: `POL-MOT-${randomNum}-2026`,
-    clientName: "African Merchant Client",
+    clientName: "Enterprise Fleet Client",
     plate: "KDG 123A",
     line: "Motor",
     premium: 72000,

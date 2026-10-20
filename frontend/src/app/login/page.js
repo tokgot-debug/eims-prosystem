@@ -36,13 +36,13 @@ export default function LoginPage() {
   return (
     <div className="login-page">
       <form className="login-card" onSubmit={onSubmit} noValidate>
-        <Image src="/amaco_logo.png" alt="AMACO Insurance" width={96} height={46} className="login-logo" priority />
+        <Image src="/eims_logo.png" alt="EIMS Insurance" width={96} height={46} className="login-logo" priority />
         <h2>Staff Portal Sign In</h2>
-        <p className="login-sub">AMACO EIMS ProSystem &bull; authorized personnel only</p>
+        <p className="login-sub">EIMS ProSystem &bull; authorized personnel only</p>
 
         <label htmlFor="email">Work Email</label>
         <input id="email" name="email" type="email" autoComplete="username"
-               placeholder="agent.davis@amaco.co.ke" required />
+               placeholder="agent.davis@eims.co.ke" required />
 
         <label htmlFor="password">Password</label>
         <input id="password" name="password" type="password" autoComplete="current-password"

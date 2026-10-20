@@ -80,7 +80,7 @@ const need = (cond, msg) => { if (!cond) fail.push(msg); };
 
   // --- 4. Sign in reaches the dashboard ------------------------------------
   await page.$eval("#login-email", (el) => (el.value = ""));
-  await page.type("#login-email", "agent.davis@amaco.co.ke");
+  await page.type("#login-email", "agent.davis@eims.co.ke");
   await page.$eval("#login-password", (el) => (el.value = ""));
   await page.type("#login-password", "demo1234");
   await page.click(".login-submit");

@@ -9,10 +9,10 @@ export default function LandingPage() {
     <div id="public-shell">
       <header className="landing-top-bar">
         <div className="landing-brand">
-          <Image src="/amaco_logo.png" alt="AMACO Insurance" width={112} height={54} priority />
+          <Image src="/eims_logo.png" alt="EIMS Insurance" width={112} height={54} priority />
           <div>
-            <h2>AMACO INSURANCE</h2>
-            <p>African Merchant Assurance Company Ltd &bull; Enterprise EIMS Portal</p>
+            <h2>EIMS PROSYSTEM</h2>
+            <p>Enterprise Insurance Management System &bull; Enterprise EIMS Portal</p>
           </div>
         </div>
         <Link href="/login" className="landing-login-btn">Staff Login</Link>
@@ -22,7 +22,7 @@ export default function LandingPage() {
         <div className="cyber-orb-1" />
         <div className="cyber-orb-2" />
         <div className="cyber-badge">
-          AMACO INSURANCE PROSYSTEM 2026 &bull; AI-POWERED ENTERPRISE EIMS
+          EIMS PROSYSTEM 2026 &bull; AI-POWERED ENTERPRISE EIMS
         </div>
         <h1 className="hero-title-text">
           Next-Gen Autonomous Fleet Insurance &amp; Telemetry Infrastructure
@@ -75,7 +75,7 @@ export default function LandingPage() {
       </div>
 
       <footer className="landing-footer">
-        AMACO &mdash; African Merchant Assurance Company Ltd &bull; Regulated by the Insurance
+        EIMS ProSystem &mdash; Enterprise Insurance Management System &bull; Regulated by the Insurance
         Regulatory Authority of Kenya
       </footer>
     </div>

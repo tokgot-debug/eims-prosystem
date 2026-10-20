@@ -50,10 +50,10 @@
       <!-- Landing Page Top Left Brand Header Bar -->
       <div class="landing-top-bar" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:14px 20px; margin-bottom:16px; border:1px solid rgba(236,72,153,0.3); background:rgba(15, 23, 42, 0.7); backdrop-filter:blur(12px); border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.4);">
         <div style="display:flex; align-items:center; gap:16px;">
-          <img src="amaco_logo.png" alt="AMACO Insurance Logo" style="height:54px; width:auto; border-radius:10px; background:#ffffff; padding:6px 12px; box-shadow:0 4px 16px rgba(236,72,153,0.4);">
+          <img src="eims_logo.png" alt="EIMS ProSystem Logo" style="height:54px; width:auto; border-radius:10px; background:#ffffff; padding:6px 12px; box-shadow:0 4px 16px rgba(236,72,153,0.4);">
           <div>
-            <h2 style="margin:0; font-size:20px; font-weight:900; color:#ffffff; letter-spacing:0.8px;">AMACO INSURANCE</h2>
-            <p style="margin:0; font-size:12px; color:#f472b6; font-weight:700;">African Merchant Assurance Company Ltd • Enterprise EIMS Portal</p>
+            <h2 style="margin:0; font-size:20px; font-weight:900; color:#ffffff; letter-spacing:0.8px;">EIMS PROSYSTEM</h2>
+            <p style="margin:0; font-size:12px; color:#f472b6; font-weight:700;">Enterprise Insurance Management System • Enterprise Portal</p>
           </div>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
@@ -69,7 +69,7 @@
         <div class="cyber-orb-2"></div>
         
         <div class="cyber-badge">
-          AMACO INSURANCE PROSYSTEM 2026 • AI-POWERED ENTERPRISE EIMS
+          EIMS PROSYSTEM 2026 • AI-POWERED ENTERPRISE EIMS
         </div>
         
         <h1 class="hero-title-text">
@@ -233,11 +233,11 @@
       <!-- ================= LOGIN OVERLAY ================= -->
       <div id="login-overlay" class="login-overlay" onclick="if(event.target===this) closeLogin()">
         <form class="login-card" onsubmit="submitLogin(event)">
-          <img src="amaco_logo.png" alt="AMACO Insurance Logo" class="login-logo">
+          <img src="eims_logo.png" alt="EIMS ProSystem Logo" class="login-logo">
           <h2>Staff Portal Sign In</h2>
-          <p class="login-sub">AMACO EIMS ProSystem &bull; authorized personnel only</p>
+          <p class="login-sub">EIMS ProSystem &bull; authorized personnel only</p>
           <label for="login-email">Work Email</label>
-          <input id="login-email" type="email" required placeholder="agent.davis@amaco.co.ke" autocomplete="username">
+          <input id="login-email" type="email" required placeholder="agent.davis@eims.co.ke" autocomplete="username">
           <label for="login-password">Password</label>
           <input id="login-password" type="password" required minlength="4" placeholder="••••••••" autocomplete="current-password">
           <label for="login-role">Role</label>
@@ -255,15 +255,40 @@
       </div>
   </div>
 
+  <!-- ================= PUBLIC AKI CERTIFICATE VERIFICATION DIALOG ================= -->
+  <div class="modal-overlay" id="public-verification-modal">
+    <div class="modal-window" style="max-width:500px; padding:24px; text-align:center;">
+      <div style="width:60px; height:60px; border-radius:50%; background:rgba(16,185,129,0.15); color:#10b981; display:flex; align-items:center; justify-content:center; font-size:30px; margin:0 auto 16px;">✓</div>
+      <h2 style="font-size:18px; color:var(--text-primary);">AKI Digital Registry Verified</h2>
+      <p style="font-size:12px; color:var(--text-secondary); margin-top:4px; margin-bottom:20px;">
+        This certificate was officially issued by the Association of Kenya Insurers (AKI) and is cryptographically matched with the NTSA database.
+      </p>
+      
+      <div style="background:var(--bg-primary); border:1px solid var(--border-color); border-radius:10px; padding:16px; text-align:left; font-size:12.5px; display:flex; flex-direction:column; gap:8px; margin-bottom:20px;">
+        <div><strong>Certificate Ref:</strong> <span id="v-cert-id"></span></div>
+        <div><strong>Vehicle Plate:</strong> <span id="v-plate"></span></div>
+        <div><strong>Policyholder:</strong> <span id="v-owner"></span></div>
+        <div><strong>Policy Number:</strong> <span id="v-policy"></span></div>
+        <div><strong>Status:</strong> <span class="status-badge green" style="padding:2px 8px; font-size:11px;">VALID & ACTIVE</span></div>
+        <div style="font-size:10px; color:var(--text-muted); border-top:1px dashed var(--border-color); padding-top:8px; margin-top:4px;">
+          <strong>SHA-256 Digital Hash Seal:</strong><br>
+          <code id="v-hash" style="font-family:monospace; color:#3b82f6;"></code>
+        </div>
+      </div>
+      
+      <button class="btn btn-primary" onclick="document.getElementById('public-verification-modal').classList.remove('active')" style="width:100%;">Close Verification</button>
+    </div>
+  </div>
+
   <div id="app-layout" hidden>
     
     <!-- Sidebar Navigation Drawer -->
     <aside class="app-sidebar" id="main-sidebar">
       <div class="sidebar-header" style="padding:14px 12px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
         <div style="display:flex; align-items:center; gap:10px; overflow:hidden;">
-          <img src="amaco_logo.png" alt="AMACO Insurance Logo" style="height:36px; width:auto; border-radius:6px; background:#ffffff; padding:2px 6px; box-shadow:0 2px 8px rgba(236,72,153,0.3); flex-shrink:0;">
+          <img src="eims_logo.png" alt="EIMS ProSystem Logo" style="height:36px; width:auto; border-radius:6px; background:#ffffff; padding:2px 6px; box-shadow:0 2px 8px rgba(236,72,153,0.3); flex-shrink:0;">
           <div class="sidebar-title">
-            <h2 style="font-size:13.5px; font-weight:800; color:#ffffff; margin:0;">AMACO Insurance</h2>
+            <h2 style="font-size:13.5px; font-weight:800; color:#ffffff; margin:0;">EIMS Insurance</h2>
             <p style="font-size:10.5px; color:#ec4899; margin:0; font-weight:600;">EIMS ProSystem</p>
           </div>
         </div>
@@ -374,11 +399,6 @@
             <a class="accordion-item" data-view="mpesa-gateway" id="nav-mpesa-gateway">
               <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
               M-PESA B2C & STK Push
-            </a>
-            <a class="accordion-item" data-view="ecitizen-pesaflow" id="nav-ecitizen-pesaflow">
-              <svg viewBox="0 0 24 24"><path d="M3 21h18M3 10h18M5 10v11M9 10v11M13 10v11M17 10v11M12 3L2 10h20L12 3z"></path></svg>
-              e-Citizen & PesaFlow
-            </a>
             <a class="accordion-item" data-view="itax-compliance" id="nav-itax-compliance">
               <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line></svg>
               KRA iTax & eTIMS
@@ -429,21 +449,13 @@
             <span class="accordion-chevron" aria-hidden="true"></span>
           </button>
           <div class="accordion-content">
-            <a class="accordion-item" data-view="lpr-scanner" id="nav-lpr-scanner">
+            <a class="accordion-item" data-view="lpr-scanner" id="nav-lpr-scanner" style="display: none;">
               <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
               ANPR License Plate Reader
             </a>
-            <a class="accordion-item" data-view="qr-generator" id="nav-qr-generator">
+            <a class="accordion-item" data-view="qr-generator" id="nav-qr-generator" style="display: none;">
               <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
               Test QR Code Engine
-            </a>
-            <a class="accordion-item" data-view="alerts-simulator" id="nav-alerts-simulator">
-              <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-              Notification Simulator
-            </a>
-            <a class="accordion-item" data-view="mobile-app" id="nav-mobile-app">
-              <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
-              Mobile App Portal Sim
             </a>
             <a class="accordion-item" data-view="ai-assistant" id="nav-ai-assistant">
               <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
@@ -467,6 +479,18 @@
             <a class="accordion-item" data-view="subscription-pricing" id="nav-subscription-pricing">
               <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
               Subscriptions & Licenses
+            </a>
+            <a class="accordion-item" data-view="ecitizen-pesaflow" id="nav-ecitizen-pesaflow">
+              <svg viewBox="0 0 24 24"><path d="M3 21h18M3 10h18M5 10v11M9 10v11M13 10v11M17 10v11M12 3L2 10h20L12 3z"></path></svg>
+              e-Citizen & PesaFlow
+            </a>
+            <a class="accordion-item" data-view="alerts-simulator" id="nav-alerts-simulator">
+              <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+              Notification Simulator
+            </a>
+            <a class="accordion-item" data-view="mobile-app" id="nav-mobile-app">
+              <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+              Mobile App Portal Sim
             </a>
           </div>
         </div>
@@ -829,20 +853,6 @@
                 </div>
                 
                 <div class="annotate-tools">
-                  <h3 class="annotate-title">Draw Tools</h3>
-                  <button type="button" class="damage-type-btn active" id="tool-dent">
-                    <span class="damage-color-dot dent"></span>
-                    Dent / Impact
-                  </button>
-                  <button type="button" class="damage-type-btn" id="tool-scratch">
-                    <span class="damage-color-dot scratch"></span>
-                    Scratches
-                  </button>
-                  <button type="button" class="damage-type-btn" id="tool-crack">
-                    <span class="damage-color-dot crack"></span>
-                    Glass Crack
-                  </button>
-                  
                   <button type="button" class="btn btn-primary" id="mobile-capture-btn" onclick="openCameraCaptureModal()" style="margin-top:auto;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;">
                       <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
@@ -3643,7 +3653,7 @@
                   <div class="form-group">
                     <label for="qr-opt-logo">Center Logo Overlay</label>
                     <select id="qr-opt-logo" class="form-control" style="font-size:12.5px;" onchange="updateTestQRCode()">
-                      <option value="amaco">AMACO Logo</option>
+                      <option value="eims">EIMS Logo</option>
                       <option value="aki">AKI Shield</option>
                       <option value="kra">KRA Emblem</option>
                       <option value="none">None</option>
@@ -4025,12 +4035,12 @@
   <!-- ================= AI REPORT ASSISTANT MODAL ================= -->
   <div class="modal-overlay" id="ai-assistant-modal">
     <div class="modal-window" style="max-width:700px; height:85vh; display:flex; flex-direction:column;">
-      <div class="modal-header" style="background: linear-gradient(135deg, rgba(255,107,0,0.1), rgba(255,133,51,0.1));">
+      <div class="modal-header" style="background: linear-gradient(135deg, rgba(30,64,175,0.1), rgba(59,130,246,0.1));">
         <div style="display:flex; align-items:center; gap:10px;">
-          <div style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg, #ff6b00, #ff8533); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold; font-size:18px;"></div>
+          <div style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg, #1e40af, #3b82f6); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold; font-size:18px;">G</div>
           <div>
-            <h2 style="font-size:16px;">EIMS AI Report Assistant</h2>
-            <p style="font-size:11px; color:var(--text-secondary); margin:0;">Automated Report Analytics, Branch Audits & Executive Synthesizer</p>
+            <h2 style="font-size:16px;">EIMS Gemini Executive Report Copilot</h2>
+            <p style="font-size:11px; color:var(--text-secondary); margin:0;">Dedicated Google Gemini 2.5 Flash Analytical Optimizer</p>
           </div>
         </div>
         <button class="modal-close-btn" id="ai-modal-close-x">×</button>
@@ -4043,22 +4053,23 @@
           <button class="btn btn-secondary ai-prompt-pill" data-prompt="Analyze branch performance: which office leads in new policy acquisitions?" onclick="window.handleAIPillClick(this)" style="padding:6px 12px; font-size:11.5px; white-space:nowrap;">Branch Performance</button>
           <button class="btn btn-secondary ai-prompt-pill" data-prompt="Audit claims velocity vs fraud risk index for this period." onclick="window.handleAIPillClick(this)" style="padding:6px 12px; font-size:11.5px; white-space:nowrap;">Fraud & Risk Audit</button>
           <button class="btn btn-secondary ai-prompt-pill" data-prompt="Generate KIRA Regulatory Compliance Summary Report." onclick="window.handleAIPillClick(this)" style="padding:6px 12px; font-size:11.5px; white-space:nowrap;">KIRA Brief</button>
+          <button class="btn btn-secondary ai-prompt-pill" data-prompt="Audit total registered claims, salvage assets, and subrogation recovery ledger." onclick="window.handleAIPillClick(this)" style="padding:6px 12px; font-size:11.5px; white-space:nowrap;">Claims & Recovery</button>
+          <button class="btn btn-secondary ai-prompt-pill" data-prompt="Verify AKI Digital Registry certificate sync status and SHA-256 seal logs." onclick="window.handleAIPillClick(this)" style="padding:6px 12px; font-size:11.5px; white-space:nowrap;">Certificates</button>
         </div>
 
         <!-- Chat / Output Container -->
         <div id="ai-assistant-messages" style="flex-grow:1; overflow-y:auto; padding:12px; background-color:var(--bg-primary); border-radius:10px; border:1px solid var(--border-color); display:flex; flex-direction:column; gap:16px;">
           <div style="display:flex; gap:12px; align-items:flex-start;">
-            <div style="width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg, #ff6b00, #ff8533); color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;"></div>
+            <div style="width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg, #1e40af, #3b82f6); color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">G</div>
             <div style="background-color:var(--bg-surface); border:1px solid var(--border-color); padding:14px 16px; border-radius:14px; font-size:13px; line-height:1.5; color:var(--text-primary); max-width:90%;">
-              <strong>Jambo! I am your AI Report Assistant.</strong><br>
+              <strong>Jambo! I am your dedicated Google Gemini Assistant.</strong><br>
               I can analyze all system data including monthly branch production, claims telemetry, fraud indexes, and underwriting ledgers. Click a quick prompt above or type your question below to generate a report.
             </div>
           </div>
         </div>
 
-        <!-- Typing Indicator -->
         <div id="ai-typing-indicator" style="display:none; padding:8px 12px; font-size:12px; color:var(--text-muted); align-items:center; gap:8px;">
-          <span class="pulse-circle"></span> AI is analyzing dataset and compiling report...
+          <span class="pulse-circle"></span> Gemini 2.5 is synthesizing live analytical metrics...
         </div>
 
         <!-- Input Bar -->
@@ -4174,102 +4185,168 @@
         </div>
 
         <!-- Official AKI Digital Certificate Card -->
-        <div id="aki-cert-card" style="background:#ffffff; color:#0f172a; border-radius:16px; padding:24px; box-shadow:0 20px 40px rgba(0,0,0,0.5); position:relative; overflow:hidden; font-family:-apple-system,BlinkMacSystemFont,sans-serif;">
-          <!-- Top Watermark & Header -->
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #0266cc; padding-bottom:14px; margin-bottom:16px;">
-            <div>
-              <div style="font-size:10px; font-weight:800; color:#0266cc; letter-spacing:1.5px; text-transform:uppercase;">REPUBLIC OF KENYA • AKI DIGITAL MOTOR REGISTRY</div>
-              <div style="font-size:18px; font-weight:900; color:#0f172a; margin-top:2px;">MOTOR INSURANCE CERTIFICATE</div>
-              <div style="font-size:11px; color:#475569; font-weight:600;">(Issued pursuant to the Motor Vehicles Third Party Risks Act - Cap 405)</div>
+        <div id="aki-cert-card" style="background:#ffffff; color:#0f172a; border-radius:12px; padding:20px; box-shadow:0 20px 40px rgba(0,0,0,0.5); position:relative; overflow:hidden; font-family:-apple-system,BlinkMacSystemFont,sans-serif; border:1px solid #cbd5e1; max-width:850px; margin:0 auto;">
+          
+          <!-- Top Row: Three Windshield Stickers -->
+          <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; margin-bottom:16px;">
+            
+            <!-- STICKER 1: FILE COPY -->
+            <div style="background:#f1faf5; border:1.5px dashed #4ade80; border-radius:8px; padding:10px; display:flex; flex-direction:column; justify-content:space-between; height:200px; font-size:9px; color:#1e293b; position:relative; background-image: radial-gradient(#e8f5e9 1px, transparent 1px); background-size: 8px 8px;">
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+                  <span style="font-weight:900; color:#15803d; font-size:10px;">AKI</span>
+                  <div style="text-align:right;">
+                    <div style="font-weight:800; text-transform:uppercase; font-size:7px; color:#64748b;">File Copy</div>
+                    <div style="font-weight:700; color:#15803d; font-size:8px;">CERTIFICATE OF INSURANCE</div>
+                  </div>
+                </div>
+                <div style="font-weight:700; font-size:8px; margin-bottom:6px; border-bottom:1px solid #cbd5e1; padding-bottom:2px;">No: <span id="cert-ref-no-file" style="color:#0f172a;">XXXXXXXX</span></div>
+                
+                <div style="display:grid; grid-template-columns: 1fr; gap:2px; font-size:8px; line-height:1.2;">
+                  <div><strong>POLICY HOLDER:</strong> <span id="v-owner-lbl" style="font-weight:600;">XXXXXXXX</span></div>
+                  <div><strong>POLICY NO:</strong> <span id="v-policy-lbl" style="font-weight:600;">XXXXXXXX</span></div>
+                  <div><strong>COMMENCING DATE:</strong> <span id="v-start-lbl" style="font-weight:600;">XXXXXXXX</span></div>
+                  <div><strong>EXPIRING:</strong> <span id="v-expiry-lbl" style="color:#b91c1c; font-weight:700;">XXXXXXXX</span></div>
+                  <div><strong>REGISTRATION NO:</strong> <span id="v-plate-lbl" style="font-weight:700; font-size:9.5px; color:#0f172a;">XXXXXXXX</span></div>
+                  <div><strong>CHASSIS NUMBER:</strong> <span id="v-chassis-lbl" style="font-family:monospace;">XXXXXXXX</span></div>
+                </div>
+              </div>
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #cbd5e1; padding-top:4px; margin-top:4px; font-size:7px; color:#64748b;">
+                  <div>ISSUED BY: EIMS</div>
+                  <div>PHONE NO: 020-221234</div>
+                </div>
+                <div style="background:#15803d; color:#ffffff; font-weight:900; text-align:center; padding:2px; margin-top:4px; border-radius:3px; letter-spacing:1px; font-size:8px;">PRIVATE CAR</div>
+              </div>
+            </div>
+
+            <!-- STICKER 2: DUPLICATE COPY -->
+            <div style="background:#f1faf5; border:1.5px dashed #4ade80; border-radius:8px; padding:10px; display:flex; flex-direction:column; justify-content:space-between; height:200px; font-size:9px; color:#1e293b; position:relative; background-image: radial-gradient(#e8f5e9 1px, transparent 1px); background-size: 8px 8px;">
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+                  <span style="font-weight:900; color:#15803d; font-size:10px;">AKI</span>
+                  <div style="text-align:right;">
+                    <div style="font-weight:800; text-transform:uppercase; font-size:7px; color:#64748b;">Duplicate</div>
+                    <div style="font-weight:700; color:#15803d; font-size:8px;">CERTIFICATE OF INSURANCE</div>
+                  </div>
+                </div>
+                <div style="font-weight:700; font-size:8px; margin-bottom:6px; border-bottom:1px solid #cbd5e1; padding-bottom:2px;">No: <span id="cert-ref-no-dup" style="color:#0f172a;">XXXXXXXX</span></div>
+                
+                <div style="display:grid; grid-template-columns: 1fr; gap:2px; font-size:8px; line-height:1.2;">
+                  <div><strong>POLICY HOLDER:</strong> <span id="v-owner-lbl2" style="font-weight:600;">XXXXXXXX</span></div>
+                  <div><strong>POLICY NO:</strong> <span id="v-policy-lbl2" style="font-weight:600;">XXXXXXXX</span></div>
+                  <div><strong>COMMENCING DATE:</strong> <span id="v-start-lbl2" style="font-weight:600;">XXXXXXXX</span></div>
+                  <div><strong>EXPIRING:</strong> <span id="v-expiry-lbl2" style="color:#b91c1c; font-weight:700;">XXXXXXXX</span></div>
+                  <div><strong>REGISTRATION NO:</strong> <span id="v-plate-lbl2" style="font-weight:700; font-size:9.5px; color:#0f172a;">XXXXXXXX</span></div>
+                  <div><strong>CHASSIS NUMBER:</strong> <span id="v-chassis-lbl2" style="font-family:monospace;">XXXXXXXX</span></div>
+                </div>
+              </div>
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #cbd5e1; padding-top:4px; margin-top:4px; font-size:7px; color:#64748b;">
+                  <div>ISSUED BY: EIMS</div>
+                  <div>PHONE NO: 020-221234</div>
+                </div>
+                <div style="background:#15803d; color:#ffffff; font-weight:900; text-align:center; padding:2px; margin-top:4px; border-radius:3px; letter-spacing:1px; font-size:8px;">PRIVATE CAR</div>
+              </div>
+            </div>
+
+            <!-- STICKER 3: CERTIFICATE OF INSURANCE (ORIGINAL WITH QR) -->
+            <div style="background:linear-gradient(135deg, #fef2f2, #f0fdf4); border:1.5px solid #16a34a; border-radius:8px; padding:10px; display:flex; flex-direction:column; justify-content:space-between; height:200px; font-size:9px; color:#1e293b; position:relative; background-image: radial-gradient(#dcfce7 1px, transparent 1px); background-size: 10px 10px;">
+              <div>
+                <!-- Top bar containing dynamic scannable QR on left and AKI logo on right -->
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+                  <div id="aki-cert-qr-container" style="width:85px; height:85px; background:#ffffff; border-radius:4px; border:1px solid #cbd5e1; display:flex; align-items:center; justify-content:center; flex-shrink:0;"></div>
+                  <div style="text-align:right;">
+                    <span style="font-weight:900; color:#15803d; font-size:11px; display:block;">AKI</span>
+                    <div style="font-weight:800; font-size:7px; color:#16a34a; text-transform:uppercase;" id="cert-display-status">VALID & ACTIVE</div>
+                    <div style="font-weight:700; color:#1e293b; font-size:7.5px; margin-top:2px;">CERTIFICATE OF INSURANCE</div>
+                  </div>
+                </div>
+                
+                <div style="font-weight:700; font-size:8px; margin-bottom:4px; border-bottom:1px solid #cbd5e1; padding-bottom:2px; display:flex; justify-content:space-between;">
+                  <span>No: <strong id="cert-ref-no" style="color:#0266cc;">XXXXXXXX</strong></span>
+                </div>
+                
+                <div style="display:grid; grid-template-columns: 1fr; gap:1px; font-size:7.5px; line-height:1.2;">
+                  <div><strong>POLICY HOLDER:</strong> <span id="cert-owner" style="font-weight:600;">XXXXXXXX</span></div>
+                  <div><strong>POLICY NO:</strong> <span id="cert-pol-no" style="font-weight:600; color:#0266cc;">XXXXXXXX</span></div>
+                  <div><strong>COMMENCING DATE:</strong> <span id="cert-start-date" style="font-weight:600;">XXXXXXXX</span></div>
+                  <div><strong>EXPIRING:</strong> <strong id="cert-expiry-date" style="color:#dc2626;">XXXXXXXX</strong></div>
+                  <div><strong>REGISTRATION NO:</strong> <strong id="cert-plate" style="font-size:10px; color:#0f172a; border: 1px solid #cbd5e1; padding: 0 4px; border-radius: 2px; background: #fff; display: inline-block; margin-top: 1px;">XXXXXXXX</strong></div>
+                  <div style="display:none;"><strong>CHASSIS NUMBER:</strong> <span id="cert-chassis">XXXXXXXX</span></div>
+                </div>
+              </div>
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #cbd5e1; padding-top:4px; margin-top:4px; font-size:7px; color:#64748b;">
+                  <div>ISSUED BY: EIMS</div>
+                  <div>PHONE NO: 020-221234</div>
+                </div>
+                <div style="background:#0f172a; color:#ffffff; font-weight:900; text-align:center; padding:2px; margin-top:4px; border-radius:3px; letter-spacing:1px; font-size:8px;">PRIVATE CAR</div>
+              </div>
+            </div>
+            
+          </div>
+
+          <!-- Middle Metadata Table (Kenyan Certificate Standard Layout) -->
+          <div style="display:grid; grid-template-columns: 1fr 1.2fr 1fr; gap:12px; border-top:1px solid #cbd5e1; padding-top:14px; margin-top:6px; font-size:10.5px;">
+            
+            <!-- Column 1: Specific vehicle parameters -->
+            <div style="display:flex; flex-direction:column; gap:4px; border-right:1px solid #cbd5e1; padding-right:12px;">
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f1f5f9; padding-bottom:2px;">
+                <span style="color:#64748b; font-size:9.5px; font-weight:600;">MAKE:</span>
+                <strong id="cert-make-val" style="color:#0f172a;">Toyota</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f1f5f9; padding-bottom:2px;">
+                <span style="color:#64748b; font-size:9.5px; font-weight:600;">MODEL:</span>
+                <strong id="cert-model" style="color:#0f172a;">Fielder (2018)</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f1f5f9; padding-bottom:2px;">
+                <span style="color:#64748b; font-size:9.5px; font-weight:600;">SUM INSURED:</span>
+                <strong id="cert-sum-insured" style="color:#0266cc;">KSh 1,625,000</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f1f5f9; padding-bottom:2px;">
+                <span style="color:#64748b; font-size:9.5px; font-weight:600;">ISSUING OFFICE:</span>
+                <strong style="color:#0f172a;">EIMS County Office</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f1f5f9; padding-bottom:2px;">
+                <span style="color:#64748b; font-size:9.5px; font-weight:600;">INTERMEDIARY IRA:</span>
+                <strong style="color:#0f172a;">IRA-893041-2026</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding-bottom:2px;">
+                <span style="color:#64748b; font-size:9.5px; font-weight:600;">INTERMEDIARY:</span>
+                <strong style="color:#0f172a;">EIMS Insurance Agency</strong>
+              </div>
+            </div>
+
+            <!-- Column 2: Legal Certification Statement -->
+            <div style="border-right:1px solid #cbd5e1; padding-right:12px; font-size:9px; line-height:1.3; color:#334155; text-align:justify;">
+              <strong>XYZ Insurance Company Ltd.</strong><br>
+              in collaboration with the Association of Kenya Insurers (AKI), hereby certifies that the Policy of Insurance (Ref number listed above) covering the liabilities required to be covered by the Insurance (Motor Vehicles Third Party Risks) Act Cap 405 of the laws of Kenya has been issued as detailed above.
+            </div>
+
+            <!-- Column 3: Ownership disclaimer & Legal notes -->
+            <div style="font-size:9px; line-height:1.3; color:#475569; text-align:justify;">
+              In the event of change of ownership, please notify the Insurance Company; such that this Certificate will be marked as Invalid. As the owner of the Policy, you are required by law to ensure that you notify the Insurance company on any change of ownership.
+            </div>
+            
+          </div>
+
+          <!-- Bottom Row: Verification instructions & Watermarks -->
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; border-top:1px dashed #cbd5e1; padding-top:10px; margin-top:14px; align-items:center; font-size:9px; color:#64748b;">
+            <div style="display:flex; gap:10px; align-items:center;">
+              <div style="font-weight:800; color:#0266cc; font-size:8.5px; border:1px solid #cbd5e1; padding:2px 4px; border-radius:3px;">HOW TO VERIFY</div>
+              <div style="line-height:1.2;">
+                To verify using a Mobile Phone in Kenya Dial <strong>*352#</strong> and follow the prompts. OR To verify from web, visit <strong>https://www.dmvic.com/verification.html</strong> on web browser.
+              </div>
             </div>
             <div style="text-align:right;">
-              <div style="background:#0266cc; color:#fff; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:800;" id="cert-display-status">VALID & ACTIVE</div>
-              <div style="font-size:10px; color:#64748b; margin-top:4px;" id="cert-ref-no">REF: AKI-2026-984210</div>
+              <div style="font-weight:800; color:#15803d; letter-spacing:0.5px; font-size:8.5px;">PLEASE ENSURE THAT THIS CERTIFICATE IS PRINTED IN COLOUR</div>
+              <div style="font-size:8px; margin-top:2px; font-family:monospace; color:#0266cc;">
+                <strong>SHA-256 digital signature seal:</strong> <span id="cert-sha256-hash">XXXXXXXX</span>
+              </div>
             </div>
           </div>
-
-          <div style="display:grid; grid-template-columns: 1fr 180px; gap:20px; align-items:center;">
-            <!-- Certificate Info Grid -->
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; font-size:12px;">
-              <div>
-                <span style="font-size:10px; color:#64748b; display:block; font-weight:700; text-transform:uppercase;">Registration Plate</span>
-                <strong style="font-size:15px; color:#0f172a;" id="cert-plate">KDG 123A</strong>
-              </div>
-              <div>
-                <span style="font-size:10px; color:#64748b; display:block; font-weight:700; text-transform:uppercase;">Policyholder Name</span>
-                <strong style="font-size:13px; color:#0f172a;" id="cert-owner">Boniface Mwangi</strong>
-              </div>
-              <div>
-                <span style="font-size:10px; color:#64748b; display:block; font-weight:700; text-transform:uppercase;">Make / Model</span>
-                <span style="font-size:12px; color:#334155;" id="cert-model">Toyota Fielder (2018)</span>
-              </div>
-              <div>
-                <span style="font-size:10px; color:#64748b; display:block; font-weight:700; text-transform:uppercase;">Chassis Number</span>
-                <span style="font-size:12px; color:#334155; font-family:monospace;" id="cert-chassis">NZE161G-7856421</span>
-              </div>
-              <div>
-                <span style="font-size:10px; color:#64748b; display:block; font-weight:700; text-transform:uppercase;">Underwritten Policy No</span>
-                <span style="font-size:12px; color:#0266cc; font-weight:700;" id="cert-pol-no">POL-MOT-8973-2026</span>
-              </div>
-              <div>
-                <span style="font-size:10px; color:#64748b; display:block; font-weight:700; text-transform:uppercase;">Sum Insured</span>
-                <span style="font-size:12px; color:#0f172a; font-weight:700;" id="cert-sum-insured">KSh 1,450,000</span>
-              </div>
-              <div>
-                <span style="font-size:10px; color:#64748b; display:block; font-weight:700; text-transform:uppercase;">Effective Date</span>
-                <span style="font-size:11.5px; color:#334155;" id="cert-start-date">2026-01-01</span>
-              </div>
-              <div>
-                <span style="font-size:10px; color:#64748b; display:block; font-weight:700; text-transform:uppercase;">Expiration Date</span>
-                <span style="font-size:11.5px; color:#dc2626; font-weight:700;" id="cert-expiry-date">2026-12-31</span>
-              </div>
-            </div>
-
-            <!-- Scannable Digital QR Code Container -->
-            <div style="background:#f8fafc; border:2px solid #e2e8f0; border-radius:12px; padding:12px; text-align:center;">
-              <svg id="cert-qr-code" width="130" height="130" viewBox="0 0 100 100" style="display:block; margin:0 auto;">
-                <rect width="100" height="100" fill="#ffffff" />
-                <!-- QR Corner Finder Patterns -->
-                <path d="M 5 5 H 35 V 35 H 5 Z M 10 10 V 30 H 30 V 10 Z M 15 15 H 25 V 25 H 15 Z" fill="#0266cc"/>
-                <path d="M 65 5 H 95 V 35 H 65 Z M 70 10 V 30 H 90 V 10 Z M 75 15 H 85 V 25 H 75 Z" fill="#0266cc"/>
-                <path d="M 5 65 H 35 V 95 H 5 Z M 10 70 V 90 H 30 V 70 Z M 15 75 H 25 V 85 H 15 Z" fill="#0266cc"/>
-                <!-- Simulated Encrypted QR Data Bits -->
-                <rect x="42" y="10" width="8" height="8" fill="#0266cc" />
-                <rect x="52" y="18" width="8" height="8" fill="#0f172a" />
-                <rect x="42" y="28" width="8" height="8" fill="#0f172a" />
-                <rect x="10" y="42" width="8" height="8" fill="#0f172a" />
-                <rect x="22" y="42" width="8" height="8" fill="#0266cc" />
-                <rect x="34" y="42" width="8" height="8" fill="#0f172a" />
-                <rect x="46" y="42" width="8" height="8" fill="#0266cc" />
-                <rect x="58" y="42" width="8" height="8" fill="#0f172a" />
-                <rect x="70" y="42" width="8" height="8" fill="#0266cc" />
-                <rect x="82" y="42" width="8" height="8" fill="#0f172a" />
-                <rect x="42" y="54" width="8" height="8" fill="#0266cc" />
-                <rect x="54" y="54" width="8" height="8" fill="#0f172a" />
-                <rect x="66" y="54" width="8" height="8" fill="#0266cc" />
-                <rect x="42" y="66" width="8" height="8" fill="#0f172a" />
-                <rect x="54" y="66" width="8" height="8" fill="#0266cc" />
-                <rect x="66" y="66" width="8" height="8" fill="#0f172a" />
-                <rect x="78" y="66" width="8" height="8" fill="#0266cc" />
-                <rect x="42" y="78" width="8" height="8" fill="#0266cc" />
-                <rect x="54" y="78" width="8" height="8" fill="#0f172a" />
-                <rect x="66" y="78" width="8" height="8" fill="#0266cc" />
-                <rect x="78" y="78" width="8" height="8" fill="#0f172a" />
-              </svg>
-              <div style="font-size:9.5px; font-weight:800; color:#0266cc; margin-top:6px;">SCAN TO VERIFY</div>
-              <div style="font-size:8.5px; color:#64748b;">NTSA / Police Verified</div>
-            </div>
-          </div>
-
-          <!-- Bottom Digital Watermark Signature -->
-          <div style="margin-top:16px; padding-top:12px; border-top:1px dashed #cbd5e1; display:flex; justify-content:space-between; align-items:center; font-size:10px; color:#64748b; flex-wrap:wrap; gap:8px;">
-            <div>
-               <strong>SHA-256 Digital Hash Seal:</strong><code id="cert-sha256-hash" style="font-family:monospace; color:#0266cc; font-weight:700;">d7f8a92b3c4e5f60718293a4b5c6d7e8f901a2b3</code>
-            </div>
-            <div>
-              <strong>KRA Stamp Duty:</strong> PAID (KSh 40)
-            </div>
-          </div>
+          
         </div>
 
         <!-- Action Controls -->
@@ -4567,7 +4644,7 @@
         <div class="form-group" style="margin-bottom:16px;">
           <label for="renewal-broker-select">Assigned Agency Broker</label>
           <select class="form-control" id="renewal-broker-select">
-            <option value="AMACO Insurance (African Merchant Assurance Co. Ltd)" selected>AMACO Insurance (African Merchant Assurance Co. Ltd)</option>
+            <option value="EIMS Insurance Agency" selected>EIMS Insurance Agency</option>
             <option value="Minet Kenya Insurance Brokers">Minet Kenya Insurance Brokers (HQ Branch)</option>
             <option value="AON Kenya Risk Solutions">AON Kenya Risk Solutions (Mombasa Branch)</option>
             <option value="Grassroots Financial Services">Grassroots Financial Services (Kisumu Branch)</option>
@@ -4702,7 +4779,7 @@
           <div class="form-group">
             <label for="modal-policy-broker">Assigned Agency Broker</label>
             <select class="form-control" id="modal-policy-broker">
-              <option value="AMACO Insurance" selected>AMACO Insurance</option>
+              <option value="EIMS Insurance" selected>EIMS Insurance</option>
               <option value="Minet Kenya Insurance Brokers">Minet Kenya Brokers</option>
               <option value="AON Kenya Risk Solutions">AON Kenya Risk Solutions</option>
               <option value="Grassroots Financial Services">Grassroots Financial Services</option>

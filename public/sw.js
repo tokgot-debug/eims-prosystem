@@ -11,7 +11,7 @@ const ASSETS_TO_CACHE = [
   '/app.js',
   '/firebase-config.js',
   '/qrcode.min.js',
-  '/amaco_logo.png',
+  '/eims_logo.png',
   '/car_damaged.jpg',
   '/car_plate.jpg',
   '/futuristic_hero.jpg'

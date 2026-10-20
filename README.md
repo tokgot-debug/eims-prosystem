@@ -1,6 +1,6 @@
-# AMACO EIMS ProSystem
+# EIMS ProSystem
 
-Enterprise Insurance Management System for African Merchant Assurance Company (AMACO) — claims, underwriting, settlement and statutory compliance for the Kenyan market.
+Enterprise Insurance Management System for claims, underwriting, settlement and statutory compliance for the Kenyan market.
 
 ## Layout
 
