@@ -371,7 +371,7 @@ body {
 }
 
 .accordion-item.active {
-  background: linear-gradient(135deg, rgba(255, 107, 0, 0.2), rgba(2, 102, 204, 0.2));
+  background: linear-gradient(135deg, rgba(255, 107, 0, 0.25), rgba(234, 88, 12, 0.15));
   color: #ffffff;
   font-weight: 700;
   border-left: 3px solid #ff6b00;
@@ -1173,7 +1173,7 @@ body {
 
 .damage-type-btn.active {
   border-color: var(--primary);
-  background-color: rgba(56, 189, 248, 0.1);
+  background-color: rgba(255, 107, 0, 0.12);
   font-weight: 600;
 }
 
@@ -1248,7 +1248,7 @@ body {
 }
 
 .audit-check-icon.info {
-  background-color: rgba(56, 189, 248, 0.1);
+  background-color: rgba(255, 107, 0, 0.12);
   color: var(--primary);
 }
 
@@ -1301,7 +1301,7 @@ body {
 }
 
 .claims-table tr:hover td {
-  background-color: rgba(56, 189, 248, 0.02);
+  background-color: rgba(255, 107, 0, 0.03);
 }
 
 .status-badge {
@@ -1330,8 +1330,8 @@ body {
 }
 
 .status-badge.disbursed {
-  background-color: rgba(59, 130, 246, 0.15);
-  color: #3b82f6;
+  background-color: rgba(255, 107, 0, 0.15);
+  color: var(--primary);
 }
 
 .fraud-pill {

@@ -488,6 +488,14 @@ function navigateToView(viewId) {
     updateTestQRCode();
   } else if (viewId === "geomap-center") {
     setTimeout(renderGeoMapCenter, 300);
+  } else if (viewId === "subscription-pricing") {
+    if (typeof updateSubscriptionUI === "function") updateSubscriptionUI();
+  }
+
+  // Sync top header module quick-jump selector
+  const headerJump = document.getElementById("header-module-jump");
+  if (headerJump && headerJump.value !== viewId) {
+    headerJump.value = viewId;
   }
 }
 
@@ -509,6 +517,13 @@ function setupViewNavigation() {
 function showToast(title, message, type = "success") {
   const container = document.getElementById("toast-container");
   if (!container) return;
+
+  // Support 2-argument calls: showToast("Message text", "success" | "info" | "warning" | "danger")
+  if (arguments.length === 2 && ["success", "info", "warning", "danger"].includes(message)) {
+    type = message;
+    message = title;
+    title = type === "danger" ? "System Alert" : type === "warning" ? "Warning" : type === "info" ? "System Info" : "Completed";
+  }
   
   const toast = document.createElement("div");
   toast.className = `toast ${type}`;
@@ -516,7 +531,7 @@ function showToast(title, message, type = "success") {
   toast.innerHTML = `
     <div class="toast-content">
       <h5>${title}</h5>
-      <p>${message}</p>
+      <p>${message || ""}</p>
     </div>
     <button class="toast-close">×</button>
   `;
@@ -537,21 +552,40 @@ function showToast(title, message, type = "success") {
 // ================= DASHBOARD CONTROLLER =================
 function renderDashboard() {
   // Compute Stats
-  const totalClaims = claims.length;
+  const totalClaims = claims.length || 1;
   const settledValue = claims.reduce((acc, curr) => curr.status === "Approved" || curr.status === "Disbursed" ? acc + curr.cost : acc, 0);
   const investigationCount = claims.filter(c => c.status === "Under Investigation").length;
   const avgFraudScore = Math.round(claims.reduce((acc, curr) => acc + curr.fraudScore, 0) / totalClaims);
   
-  document.getElementById("stat-total-claims").innerText = totalClaims;
+  document.getElementById("stat-total-claims").innerText = claims.length;
   document.getElementById("stat-total-payout").innerText = "KSh " + (settledValue / 1000000).toFixed(1) + "M";
   document.getElementById("stat-investigating").innerText = investigationCount;
   document.getElementById("stat-avg-fraud").innerText = avgFraudScore + "%";
+
+  // Dynamically update Triage Distribution legend & ring
+  const greenCount = claims.filter(c => c.triage === "Green").length;
+  const yellowCount = claims.filter(c => c.triage === "Yellow").length;
+  const greenPct = Math.round((greenCount / totalClaims) * 100);
+  const yellowPct = Math.round((yellowCount / totalClaims) * 100);
+  const redPct = Math.max(0, 100 - greenPct - yellowPct);
+  const triageLegendStrong = document.querySelectorAll(".triage-legend-item strong");
+  if (triageLegendStrong.length >= 3) {
+    triageLegendStrong[0].innerText = greenPct + "%";
+    triageLegendStrong[1].innerText = yellowPct + "%";
+    triageLegendStrong[2].innerText = redPct + "%";
+  }
+  const triageRing = document.querySelector(".triage-ring");
+  if (triageRing) {
+    const gEnd = greenPct;
+    const yEnd = greenPct + yellowPct;
+    triageRing.style.background = `conic-gradient(var(--success) 0% ${gEnd}%, var(--warning) ${gEnd}% ${yEnd}%, var(--danger) ${yEnd}% 100%)`;
+  }
   
   // Render Recent Table
   const tbody = document.querySelector("#dashboard-recent-table tbody");
   tbody.innerHTML = "";
   
-  claims.slice(-3).reverse().forEach(claim => {
+  claims.slice(-5).reverse().forEach(claim => {
     const tr = document.createElement("tr");
     tr.style.cursor = "pointer";
     tr.addEventListener("click", () => openAuditModal(claim.id));
@@ -788,6 +822,28 @@ function resetFNOLStepper() {
   updateFNOLStepperView();
 }
 
+function jumpToFNOLStep(targetStep) {
+  if (targetStep === currentFNOLStep) return;
+  if (targetStep > currentFNOLStep) {
+    // Auto-fill defaults if jumping ahead with empty fields so demo exploration is seamless
+    const plateEl = document.getElementById("claim-plate");
+    const ownerEl = document.getElementById("claim-owner");
+    const phoneEl = document.getElementById("claim-phone");
+    if (plateEl && !plateEl.value.trim()) plateEl.value = "KDG 123A";
+    if (ownerEl && !ownerEl.value.trim()) ownerEl.value = "Boniface Mwangi";
+    if (phoneEl && !phoneEl.value.trim()) phoneEl.value = "+254 712 345678";
+    currentFNOLClaim.plate = plateEl ? plateEl.value.trim().toUpperCase() : "KDG 123A";
+    currentFNOLClaim.owner = ownerEl ? ownerEl.value.trim() : "Boniface Mwangi";
+    currentFNOLClaim.phone = phoneEl ? phoneEl.value.trim() : "+254 712 345678";
+  }
+  currentFNOLStep = targetStep;
+  updateFNOLStepperView();
+  if (currentFNOLStep === 4) {
+    runAICoreAudit();
+  }
+}
+window.jumpToFNOLStep = jumpToFNOLStep;
+
 function setupFNOLStepper() {
   currentFNOLClaim = {
     id: "CLM-2026-004",
@@ -840,7 +896,7 @@ function setupFNOLStepper() {
     document.getElementById("anpr-placeholder-content").style.display = "none";
     const preview = document.getElementById("anpr-preview-img");
     preview.style.display = "block";
-    preview.src = "assets/car_plate.jpg";
+    preview.src = "car_plate.jpg";
     document.getElementById("claim-plate").value = "KDG 123A";
     showToast("License Image Loaded", "Plate ready for optical ANPR scanning", "info");
   });
@@ -1202,23 +1258,30 @@ function updateMapResourceContext(lat, lng) {
 // DRAWING CANVAS ANNOTATION
 function setupCanvasAnnotator() {
   annotationCanvas = document.getElementById("annotation-canvas");
+  if (!annotationCanvas) return;
   annotationCtx = annotationCanvas.getContext("2d");
   
-  // Switch drawing tools
-  document.getElementById("tool-dent").addEventListener("click", () => setDrawTool("dent"));
-  document.getElementById("tool-scratch").addEventListener("click", () => setDrawTool("scratch"));
-  document.getElementById("tool-crack").addEventListener("click", () => setDrawTool("crack"));
+  // Switch drawing tools (null-safe)
+  const dentBtn = document.getElementById("tool-dent");
+  const scratchBtn = document.getElementById("tool-scratch");
+  const crackBtn = document.getElementById("tool-crack");
+  if (dentBtn) dentBtn.addEventListener("click", () => setDrawTool("dent"));
+  if (scratchBtn) scratchBtn.addEventListener("click", () => setDrawTool("scratch"));
+  if (crackBtn) crackBtn.addEventListener("click", () => setDrawTool("crack"));
   
-  document.getElementById("annotate-clear-btn").addEventListener("click", () => {
-    canvasCircles = [];
-    redrawCanvas();
-    showToast("Annotations Cleared", "Red damage indicators reset.", "info");
-  });
+  const clearBtn = document.getElementById("annotate-clear-btn");
+  if (clearBtn) {
+    clearBtn.addEventListener("click", () => {
+      canvasCircles = [];
+      redrawCanvas();
+      showToast("Annotations Cleared", "Red damage indicators reset.", "info");
+    });
+  }
   
   // Click event on canvas
   annotationCanvas.addEventListener("mousedown", (e) => {
     if (!annotationImageLoaded) {
-      showToast("Load Image First", "Please click 'Load Damaged Car Image' before mapping damage.", "warning");
+      showToast("Load Image First", "Please click 'Load Demo Photo' before mapping damage.", "warning");
       return;
     }
     
@@ -1234,7 +1297,8 @@ function setupCanvasAnnotator() {
 function setDrawTool(tool) {
   activeDrawTool = tool;
   document.querySelectorAll(".damage-type-btn").forEach(btn => btn.classList.remove("active"));
-  document.getElementById(`tool-${tool}`).classList.add("active");
+  const activeBtn = document.getElementById(`tool-${tool}`);
+  if (activeBtn) activeBtn.classList.add("active");
 }
 
 function resizeAnnotationCanvas() {
@@ -2493,7 +2557,7 @@ function addNewUserSeat() {
   const tr = document.createElement("tr");
   tr.innerHTML = `
     <td style="padding:8px;"><strong>${randomName}</strong></td>
-    <td style="padding:8px;"><span class="badge" style="background:rgba(2,102,204,0.15); color:#38bdf8;">${randomRole}</span></td>
+    <td style="padding:8px;"><span class="badge" style="background:rgba(234,88,12,0.15); color:#ea580c;">${randomRole}</span></td>
     <td style="padding:8px;">${randomBranch}</td>
     <td style="padding:8px;"><span style="color:var(--success);">Active</span></td>
     <td style="padding:8px;"><button class="btn btn-secondary" style="padding:2px 8px; font-size:10px;">Edit</button></td>
@@ -2523,7 +2587,7 @@ function switchMobileAppMode(mode) {
   } else {
     clientView.style.display = "block";
     workshopView.style.display = "none";
-    clientBtn.style.background = "#0266cc";
+    clientBtn.style.background = "#ea580c";
     clientBtn.style.color = "#ffffff";
     workshopBtn.style.background = "transparent";
     workshopBtn.style.color = "#94a3b8";
@@ -2661,7 +2725,7 @@ function renderScheduledPayouts() {
       <td><code>${s.id}</code></td>
       <td><strong>${s.claimId}</strong><br><span style="font-size:10px; color:var(--text-secondary);">${s.plate}</span></td>
       <td>${s.claimant}<br><span style="font-size:10px; color:var(--text-muted);">${s.phone}</span></td>
-      <td><span class="badge" style="background:rgba(2,102,204,0.15); color:#38bdf8;">${s.channel}</span></td>
+      <td><span class="badge" style="background:rgba(234,88,12,0.15); color:#ea580c;">${s.channel}</span></td>
       <td><strong>${s.releaseDate}</strong></td>
       <td><strong style="color:var(--success);">KSh ${s.amount.toLocaleString()}</strong></td>
       <td><span style="font-size:11px; color:var(--text-secondary);">${s.note}</span></td>
@@ -2912,7 +2976,7 @@ function renderProductionReports() {
   
   if (interval === "daily") {
     banner.style.display = "block";
-    banner.style.backgroundColor = "rgba(2, 102, 204, 0.1)";
+    banner.style.backgroundColor = "rgba(234, 88, 12, 0.1)";
     banner.style.borderColor = "var(--primary)";
     banner.style.color = "var(--primary-light)";
     banner.innerHTML = ` <strong>Daily Real-Time Production Log Active:</strong> Displaying today's 24-hour acquisition audit log for <strong>${branchFilter === "ALL"? "All Offices": branchFilter}</strong> (${line} Line).`;
@@ -3012,12 +3076,14 @@ function openRenewalModal() {
   
   const duePolicies = policies.slice(0, 6);
   duePolicies.forEach((pol, idx) => {
+    const polId = pol.policyNo || pol.id || `POL-2026-0${idx + 1}`;
+    const polClient = pol.clientName || pol.name || "Insured Client";
     const tr = document.createElement("tr");
     tr.style.borderBottom = "1px solid var(--border-color)";
     tr.innerHTML = `
-      <td style="padding:6px;"><input type="checkbox" class="renewal-check-item" value="${pol.id}" checked></td>
-      <td style="padding:6px; font-weight:700;">${pol.id}</td>
-      <td style="padding:6px;">${pol.name}</td>
+      <td style="padding:6px;"><input type="checkbox" class="renewal-check-item" value="${polId}" checked></td>
+      <td style="padding:6px; font-weight:700;">${polId}</td>
+      <td style="padding:6px;">${polClient}</td>
       <td style="padding:6px;"><span class="status-badge active">${pol.line}</span></td>
       <td style="padding:6px; font-weight:700; color:var(--primary);">KSh ${pol.premium.toLocaleString()}</td>
       <td style="padding:6px;">2026-08-${15 + idx}</td>
@@ -3452,6 +3518,40 @@ let garages = [
   { id: "GAR-08", name: "Eastern Star Garage", location: "Machakos Town", rating: "4.6 ", activeRepairs: 3, slaScore: "92%", status: "Accredited" }
 ];
 
+let currentGarageRepairStage = 3;
+
+function updateGarageRepairStageDOM() {
+  for (let i = 1; i <= 5; i++) {
+    const el = document.getElementById(`repair-stage-${i}`);
+    if (!el) continue;
+    if (i < currentGarageRepairStage) {
+      el.innerText = "✓ Done";
+      el.style.color = "var(--success)";
+      el.style.fontWeight = "700";
+    } else if (i === currentGarageRepairStage) {
+      el.innerText = i === 5 ? "✓ Audit Complete" : "In Progress...";
+      el.style.color = i === 5 ? "var(--success)" : "var(--primary)";
+      el.style.fontWeight = "700";
+    } else {
+      el.innerText = "Pending";
+      el.style.color = "var(--text-muted)";
+      el.style.fontWeight = "400";
+    }
+  }
+}
+
+function advanceGarageRepairStage() {
+  if (currentGarageRepairStage < 5) {
+    currentGarageRepairStage++;
+  } else {
+    currentGarageRepairStage = 1;
+  }
+  updateGarageRepairStageDOM();
+  const stageLabels = ["Vehicle Intake", "Parts Sourced", "Panel Beating", "Spray Painting", "Quality Release Audit"];
+  showToast("Repair Stage Updated", `Vehicle repair advanced to Stage ${currentGarageRepairStage}: ${stageLabels[currentGarageRepairStage - 1]}.`, "success");
+}
+window.advanceGarageRepairStage = advanceGarageRepairStage;
+
 function renderGarageNetwork() {
   const tbody = document.querySelector("#garage-table tbody");
   if (!tbody) return;
@@ -3475,19 +3575,24 @@ function renderGarageNetwork() {
     tbody.appendChild(tr);
   });
   
+  updateGarageRepairStageDOM();
+
   const issueBtn = document.getElementById("issue-repair-voucher-btn");
   if (issueBtn) {
-    issueBtn.addEventListener("click", () => {
-      showToast("Voucher Issued", "Digital Repair Release Voucher printed for Nairobi Auto Care.", "success");
+    issueBtn.onclick = () => {
+      const assignedText = document.getElementById("track-garage-name")?.innerText || "Accredited Garage";
+      showToast("Voucher Issued", `Digital Repair Release Voucher authorized (${assignedText}).`, "success");
       window.print();
-    });
+    };
   }
 }
 
 function assignGarageClaim(garageName) {
   const trackName = document.getElementById("track-garage-name");
   if (trackName) trackName.innerText = `Assigned to: ${garageName}`;
-  showToast("Garage Assigned", `Claim assigned to ${garageName} for repair intake.`, "info");
+  currentGarageRepairStage = 1;
+  updateGarageRepairStageDOM();
+  showToast("Garage Assigned", `Claim assigned to ${garageName} for Stage 1 Vehicle Intake.`, "info");
 }
 
 // 2. MULTI-CHANNEL CLAIMS SETTLEMENT GATEWAY (M-PESA, AIRTEL MONEY, BANK TRANSFER)
@@ -3651,6 +3756,15 @@ function renderLossAssessors() {
 }
 
 function dispatchAssessor(firmName) {
+  const firmEl = document.getElementById("assessor-report-firm");
+  const refEl = document.getElementById("assessor-report-ref");
+  const verdictEl = document.getElementById("assessor-report-verdict");
+  if (firmEl) firmEl.innerText = `Physical valuation report assigned to ${firmName}.`;
+  if (refEl) refEl.innerText = `Report Ref: GAR-${Math.floor(1000 + Math.random() * 8999)}-2026`;
+  if (verdictEl) {
+    verdictEl.innerText = `Assessor Verdict: Field Inspection Dispatched (${firmName})`;
+    verdictEl.style.color = "var(--primary)";
+  }
   showToast("Assessor Dispatched", `Physical inspection request dispatched to ${firmName}.`, "info");
 }
 
@@ -3806,10 +3920,22 @@ function renderIRACompliance() {
   const tbody = document.querySelector("#ira-tax-table tbody");
   if (!tbody) return;
   tbody.innerHTML = "";
+
+  const phcfPct = (typeof iraTaxRates !== "undefined" && iraTaxRates.phcf) ? iraTaxRates.phcf : 0.25;
+  const trainPct = (typeof iraTaxRates !== "undefined" && iraTaxRates.training) ? iraTaxRates.training : 0.20;
+  const stampVal = (typeof iraTaxRates !== "undefined" && iraTaxRates.stampDuty) ? iraTaxRates.stampDuty : 40;
+
+  let totalPhcf = 0;
+  let totalTrain = 0;
+  let totalStamp = 0;
+
   policies.forEach(p => {
-    const phcf = Math.round(p.premium * 0.0025);
-    const training = Math.round(p.premium * 0.002);
-    const stamp = 40;
+    const phcf = Math.round(p.premium * (phcfPct / 100));
+    const training = Math.round(p.premium * (trainPct / 100));
+    const stamp = stampVal;
+    totalPhcf += phcf;
+    totalTrain += training;
+    totalStamp += stamp;
     
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -3818,11 +3944,27 @@ function renderIRACompliance() {
       <td><strong style="color:var(--primary);">KSh ${p.premium.toLocaleString()}</strong></td>
       <td>KSh ${phcf.toLocaleString()}</td>
       <td>KSh ${training.toLocaleString()}</td>
-      <td>KSh ${stamp}</td>
+      <td>KSh ${stamp.toLocaleString()}</td>
       <td><span class="status-badge approved">Remitted (KRA)</span></td>
     `;
     tbody.appendChild(tr);
   });
+
+  const elPhcf = document.getElementById("ira-kpi-phcf");
+  const elTrain = document.getElementById("ira-kpi-training");
+  const elStamp = document.getElementById("ira-kpi-stamp");
+  const elTotal = document.getElementById("ira-kpi-total");
+  const elPhcfLbl = document.getElementById("ira-kpi-phcf-label");
+  const elTrainLbl = document.getElementById("ira-kpi-training-label");
+  const elStampLbl = document.getElementById("ira-kpi-stamp-label");
+
+  if (elPhcfLbl) elPhcfLbl.innerText = `PHCF LEVY (${phcfPct.toFixed(2)}%)`;
+  if (elTrainLbl) elTrainLbl.innerText = `TRAINING LEVY (${trainPct.toFixed(2)}%)`;
+  if (elStampLbl) elStampLbl.innerText = `STAMP DUTY (KSh ${stampVal}/CERT)`;
+  if (elPhcf) elPhcf.innerText = `KSh ${totalPhcf.toLocaleString()}`;
+  if (elTrain) elTrain.innerText = `KSh ${totalTrain.toLocaleString()}`;
+  if (elStamp) elStamp.innerText = `KSh ${totalStamp.toLocaleString()}`;
+  if (elTotal) elTotal.innerText = `KSh ${(totalPhcf + totalTrain + totalStamp).toLocaleString()}`;
 }
 
 function exportIRAReturnForm() {
@@ -5682,7 +5824,7 @@ const ocrTestSuite = [
 ];
 
 let isOcrTraining = false;
-let ocrModelTrained = false;
+let ocrModelTrained = true;
 
 function initOCRCNNMatrix() {
   const matrix = document.getElementById("ocr-cnn-matrix");
@@ -5699,7 +5841,7 @@ function scrambleCNNMatrix() {
   const matrix = document.getElementById("ocr-cnn-matrix");
   if (!matrix) return;
   const nodes = matrix.children;
-  const colors = ["#ff6b00", "#ffaa00", "#10b981", "#18181b", "#18181b", "#18181b", "#3b82f6"];
+  const colors = ["#ff6b00", "#ffaa00", "#10b981", "#18181b", "#18181b", "#18181b", "#ea580c"];
   for (let i = 0; i < nodes.length; i++) {
     nodes[i].style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
   }
@@ -5713,7 +5855,7 @@ function renderOCRTestSuiteGrid() {
     const card = document.createElement("div");
     card.style.cssText = "background:rgba(255,255,255,0.02); border:1px solid var(--border-color); border-radius:10px; padding:12px; display:flex; flex-direction:column; justify-content:space-between; gap:8px;";
     
-    let badgeColor = "#38bdf8";
+    let badgeColor = "#ea580c";
     if (item.format === "EV Plate") badgeColor = "#10b981";
     if (item.format === "Diplomatic" || item.format === "Diplomatic Series" || item.format === "Dealer") badgeColor = "#ef4444";
     if (item.format === "Government") badgeColor = "#eab308";
