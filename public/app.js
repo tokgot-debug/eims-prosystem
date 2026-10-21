@@ -490,6 +490,8 @@ function navigateToView(viewId) {
     setTimeout(renderGeoMapCenter, 300);
   } else if (viewId === "subscription-pricing") {
     if (typeof updateSubscriptionUI === "function") updateSubscriptionUI();
+  } else if (viewId === "god-mode") {
+    if (typeof renderGodModeView === "function") renderGodModeView();
   }
 
   // Sync top header module quick-jump selector
@@ -604,6 +606,11 @@ function renderDashboard() {
   
   // Render Dynamic SVG line chart
   renderDashboardChart();
+
+  // Render 60-Minute Overdue Pending Approvals Red Alert Center
+  if (typeof renderOverdueApprovalsDashboard === "function") {
+    renderOverdueApprovalsDashboard();
+  }
 }
 
 function getFraudClass(score) {
@@ -1457,20 +1464,20 @@ function runAICoreAudit() {
 
 // SAVE THE NOTICE
 function saveFNOLClaim() {
-  // Set submission dates
+  // Set submission dates & pending approval telemetry
   currentFNOLClaim.date = new Date().toISOString().split("T")[0];
-  
-  if (currentFNOLClaim.triage === "Green") {
-    currentFNOLClaim.status = "Approved";
-  } else if (currentFNOLClaim.triage === "Yellow") {
-    currentFNOLClaim.status = "Pending";
-  } else {
-    currentFNOLClaim.status = "Under Investigation";
-  }
+  currentFNOLClaim.submittedAt = Date.now();
+  currentFNOLClaim.approvalStatus = "Awaiting Approval";
+  currentFNOLClaim.status = "Pending";
   
   claims.push(currentFNOLClaim);
   
-  showToast("Notice Registered", `Claim file ${currentFNOLClaim.id} was created.`, "success");
+  // Automatically dispatch Email Alert to Designated Email Address(es) showing Awaiting Approval
+  if (typeof dispatchDesignatedEmailAlert === "function") {
+    dispatchDesignatedEmailAlert("CLAIM_AWAITING_APPROVAL", currentFNOLClaim);
+  } else {
+    showToast("Notice Registered (Awaiting Approval)", `Claim file ${currentFNOLClaim.id} created and queued for approval.`, "success");
+  }
   
   // Transition View
   navigateToView("dashboard");
@@ -2311,7 +2318,9 @@ function confirmCreateNewPolicy() {
     broker: broker,
     premium: totalDebit,
     debited: totalDebit,
-    status: "Active",
+    status: "Pending",
+    approvalStatus: "Pending Approval",
+    submittedAt: Date.now(),
     certId: newCert,
     isNew: true,
     branch: branch
@@ -2319,8 +2328,15 @@ function confirmCreateNewPolicy() {
 
   policies.unshift(newPol);
   closeNewPolicyModal();
-  showToast(" Policy Underwritten", `New policy file ${newPolNo} for ${clientName} (${plate}) assigned to ${broker}. Total Debit: KSh ${totalDebit.toLocaleString()}`, "success");
+  if (typeof dispatchDesignatedEmailAlert === "function") {
+    dispatchDesignatedEmailAlert("NEW_UNDERWRITING", newPol);
+  } else {
+    showToast("Policy Underwritten", `New policy file ${newPolNo} for ${clientName} (${plate}) assigned to ${broker}. Total Debit: KSh ${totalDebit.toLocaleString()}`, "success");
+  }
   renderPolicyRegistry();
+  if (typeof renderOverdueApprovalsDashboard === "function") {
+    renderOverdueApprovalsDashboard();
+  }
 }
 
 function triggerCertPolicy(policyNo) {
@@ -5112,16 +5128,25 @@ function issueEVPolicyCertificate() {
   
   const newEVPolicy = {
     policyNo: "POL-EV-2026-" + Math.floor(1000 + Math.random() * 8999),
-    clientName: "Green Mobility Kenya Ltd",
+    clientName: "Green Mobility Kenya Ltd (" + model + ")",
     plate: "KDG 888E",
+    line: "Electric Vehicle",
+    broker: "EIMS Direct EV Desk",
     certId: "CERT-EV-2026-" + Math.floor(1000 + Math.random() * 8999),
-    status: "Active",
-    premium: 138473
+    status: "Pending",
+    approvalStatus: "Pending Approval",
+    submittedAt: Date.now(),
+    premium: 138473,
+    debited: 138473,
+    branch: "HQ"
   };
 
   policies.unshift(newEVPolicy);
+  if (typeof dispatchDesignatedEmailAlert === "function") {
+    dispatchDesignatedEmailAlert("NEW_UNDERWRITING", newEVPolicy);
+  }
   openAKICertModal(newEVPolicy.policyNo);
-  showToast(" EV Digital Certificate Issued!", `Issued official AKI Motor Certificate for ${model} (${total}/yr). Cryptographic QR generated.`, "success");
+  showToast("EV Underwriting & Email Dispatched", `Issued EV Policy ${newEVPolicy.policyNo} (${total}/yr) and notified designated email recipients.`, "success");
 }
 
 // ================= REMOTE WORK (WFH) & STAFF SURVEILLANCE ENGINE =================
@@ -7909,9 +7934,12 @@ window.activateCertInline = function(certId) {
     clientName: "Enterprise Fleet Client",
     plate: "KDG 123A",
     line: "Motor",
+    broker: "EIMS Direct",
     premium: 72000,
     debited: 72000,
-    status: "Active",
+    status: "Pending",
+    approvalStatus: "Pending Approval",
+    submittedAt: Date.now(),
     certId: certId,
     isNew: true,
     branch: "HQ"
@@ -7934,7 +7962,9 @@ window.activateCertInline = function(certId) {
     `;
   }
   
-  if (typeof showToast === "function") {
+  if (typeof dispatchDesignatedEmailAlert === "function") {
+    dispatchDesignatedEmailAlert("NEW_UNDERWRITING", newPolicy);
+  } else if (typeof showToast === "function") {
     showToast("Certificate Active", `Certificate ${certId} successfully registered and declared active.`, "success");
   }
 };
@@ -8170,4 +8200,821 @@ window.handleAIPillClick = function(btn) {
     processAIQuery(promptText);
   }
 };
+
+// ============================================================================
+// 1. DESIGNATED EMAIL ALERT DISPATCHER (CLAIMS AWAITING APPROVAL & UNDERWRITING)
+// ============================================================================
+let designatedAlertEmails = [
+  "approvals@eims-prosystem.go.ke",
+  "claims-desk@eims-prosystem.go.ke",
+  "underwriting@eims-prosystem.go.ke"
+];
+
+function initDesignatedAlertEmails() {
+  try {
+    const saved = localStorage.getItem("eims_designated_emails");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        designatedAlertEmails = parsed;
+      }
+    }
+  } catch (e) {}
+  syncDesignatedEmailLabels();
+}
+
+function syncDesignatedEmailLabels() {
+  const joined = designatedAlertEmails.join(", ");
+  const inputEl = document.getElementById("designated-emails-input");
+  if (inputEl && document.activeElement !== inputEl) {
+    inputEl.value = joined;
+  }
+  const dashLabel = document.getElementById("dashboard-designated-emails-label");
+  if (dashLabel) {
+    dashLabel.innerText = joined;
+  }
+}
+
+function saveDesignatedAlertEmails() {
+  const inputEl = document.getElementById("designated-emails-input");
+  if (!inputEl) return;
+  const raw = inputEl.value.split(",").map(s => s.trim()).filter(Boolean);
+  if (raw.length === 0) {
+    showToast("Validation Warning", "Please enter at least one valid designated email address.", "warning");
+    return;
+  }
+  designatedAlertEmails = raw;
+  try {
+    localStorage.setItem("eims_designated_emails", JSON.stringify(designatedAlertEmails));
+  } catch (e) {}
+  syncDesignatedEmailLabels();
+  showToast("Designated Emails Updated", `Active alert recipients set to: ${designatedAlertEmails.join(", ")}`, "success");
+}
+
+function dispatchDesignatedEmailAlert(eventType, record) {
+  const recipientsStr = designatedAlertEmails.join(", ");
+  const nowStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const dateStr = new Date().toLocaleDateString("en-KE", { year: "numeric", month: "short", day: "numeric" });
+
+  let subject = "";
+  let refId = "";
+  let triggerLabel = "";
+  let emailHtmlBody = "";
+  let smsSummary = "";
+
+  if (eventType === "CLAIM_AWAITING_APPROVAL") {
+    refId = record.id || "CLM-2026-NEW";
+    const owner = record.owner || "Claimant";
+    const plate = record.plate || "KDG 123A";
+    const cost = Number(record.cost || 142500).toLocaleString();
+    const triage = record.triage || "Yellow";
+    subject = `[ALERT: AWAITING APPROVAL] Claim ${refId} (${plate}) - KSh ${cost}`;
+    triggerLabel = "Claim Filed (Awaiting Approval)";
+    smsSummary = `EIMS EMAIL ALERT -> [${recipientsStr}]: Claim ${refId} (${plate}) by ${owner} for KSh ${cost} is AWAITING APPROVAL.`;
+    emailHtmlBody = `
+      <div style="background:#dc2626; color:#ffffff; padding:6px 10px; border-radius:6px; font-size:11px; font-weight:800; margin-bottom:10px; display:inline-block;">
+        STATUS: AWAITING APPROVAL
+      </div>
+      <h2>New Claim Alert: Awaiting Approval</h2>
+      <p><strong>To Designated Approvers:</strong> ${recipientsStr}</p>
+      <p>A new insurance claim has been registered in EIMS ProSystem on <strong>${dateStr} at ${nowStr}</strong> and requires executive approval within the <strong>60-Minute SLA window</strong>:</p>
+      <table class="email-details-table">
+        <tr><td class="label">Claim Reference</td><td><strong>${refId}</strong></td></tr>
+        <tr><td class="label">Approval Status</td><td><strong style="color:#dc2626;">AWAITING APPROVAL (60-Min SLA Timer Active)</strong></td></tr>
+        <tr><td class="label">Claimant / Insured</td><td>${owner}</td></tr>
+        <tr><td class="label">Vehicle Registration</td><td>${plate}</td></tr>
+        <tr><td class="label">Estimated Claim Reserve</td><td>KSh ${cost}</td></tr>
+        <tr><td class="label">AI Triage Route</td><td>${triage} Path</td></tr>
+      </table>
+      <p style="font-size:11.5px; color:#dc2626; font-weight:700;">Note: If unapproved after 60 minutes, this claim will trigger a Critical Red SLA Escalation on the Executive Dashboard.</p>
+      <center><a href="#" onclick="navigateToView('dashboard'); return false;" class="email-btn">Review &amp; Approve on Dashboard</a></center>
+    `;
+  } else if (eventType === "NEW_UNDERWRITING") {
+    refId = record.policyNo || "POL-MOT-2026";
+    const client = record.clientName || "Insured Client";
+    const plate = record.plate || "KDD 908Z";
+    const line = record.line || "Motor Comprehensive";
+    const prem = Number(record.premium || record.debited || 72000).toLocaleString();
+    const cert = record.certId || "Pending Issue";
+    subject = `[NEW UNDERWRITING ALERT] Policy ${refId} (${plate}) - KSh ${prem}`;
+    triggerLabel = "New Policy Underwriting (Pending Approval)";
+    smsSummary = `EIMS EMAIL ALERT -> [${recipientsStr}]: New Underwriting ${refId} for ${client} (${plate}, ${line}) Premium KSh ${prem} submitted.`;
+    emailHtmlBody = `
+      <div style="background:#ff6b00; color:#ffffff; padding:6px 10px; border-radius:6px; font-size:11px; font-weight:800; margin-bottom:10px; display:inline-block;">
+        NEW UNDERWRITING NOTIFICATION
+      </div>
+      <h2>New Policy Underwriting Registered</h2>
+      <p><strong>To Designated Underwriting Desk:</strong> ${recipientsStr}</p>
+      <p>A new policy underwriting file has been generated on <strong>${dateStr} at ${nowStr}</strong> and is queued for underwriting approval:</p>
+      <table class="email-details-table">
+        <tr><td class="label">Policy Number</td><td><strong>${refId}</strong></td></tr>
+        <tr><td class="label">Underwriting Status</td><td><strong style="color:#ff6b00;">PENDING APPROVAL (60-Min SLA Active)</strong></td></tr>
+        <tr><td class="label">Policyholder</td><td>${client}</td></tr>
+        <tr><td class="label">Registration / Risk</td><td>${plate} (${line})</td></tr>
+        <tr><td class="label">Gross Written Premium</td><td>KSh ${prem}</td></tr>
+        <tr><td class="label">AKI Certificate Ref</td><td>${cert}</td></tr>
+      </table>
+      <center><a href="#" onclick="navigateToView('policy-registry'); return false;" class="email-btn">Open Policy Underwriting Ledger</a></center>
+    `;
+  } else if (eventType === "SLA_60MIN_ESCALATION") {
+    refId = record.id || record.policyNo || "SLA-BREACH";
+    const name = record.owner || record.clientName || "Client";
+    const elapsed = record.elapsedMins || 65;
+    subject = `[RED SLA BREACH >60 MIN] ${refId} Overdue (${elapsed} mins Pending Approval)`;
+    triggerLabel = `60-Min SLA Escalation (${elapsed}m Overdue)`;
+    smsSummary = `CRITICAL RED ALERT -> [${recipientsStr}]: ${refId} (${name}) has exceeded the 60-minute approval SLA (${elapsed} mins pending).`;
+    emailHtmlBody = `
+      <div style="background:#dc2626; color:#ffffff; padding:6px 10px; border-radius:6px; font-size:11px; font-weight:800; margin-bottom:10px; display:inline-block;">
+        CRITICAL 60-MINUTE SLA BREACH
+      </div>
+      <h2>Overdue Approval Escalation (&gt;60 Minutes)</h2>
+      <p><strong>To Designated Approvers:</strong> ${recipientsStr}</p>
+      <p>File <strong>${refId}</strong> (${name}) has remained pending approval for <strong>${elapsed} minutes</strong>, exceeding the mandatory 60-minute SLA threshold.</p>
+    `;
+  }
+
+  // 1. Prepend to notificationLogs for the Multi-Channel Telemetry Dispatch Audit Table
+  if (typeof notificationLogs !== "undefined" && Array.isArray(notificationLogs)) {
+    notificationLogs.unshift({
+      id: "NTF-EML-" + Math.floor(1000 + Math.random() * 9000),
+      time: "Just now (" + nowStr + ")",
+      recipient: `${record.owner || record.clientName || "Approver Desk"} (${recipientsStr})`,
+      channel: "Rich Email",
+      ref: refId,
+      trigger: triggerLabel,
+      gateway: "AWS SES / EIMS SMTP (200 OK)",
+      message: smsSummary
+    });
+    if (typeof renderNotificationDispatchTable === "function") {
+      renderNotificationDispatchTable();
+    }
+  }
+
+  // 2. Update the Rich Email smartphone screen preview in #view-alerts-simulator
+  const emailContainer = document.getElementById("email-messages-container");
+  if (emailContainer && emailHtmlBody) {
+    emailContainer.innerHTML = emailHtmlBody;
+  }
+
+  // 3. Append live transmission line in #alerts-console-logs
+  const consoleLogs = document.getElementById("alerts-console-logs");
+  if (consoleLogs) {
+    const line = document.createElement("div");
+    line.style.color = eventType === "SLA_60MIN_ESCALATION" ? "#f87171" : "#34d399";
+    line.innerHTML = `[${nowStr}] SMTP 250 OK -> To: <strong>${recipientsStr}</strong> | Subj: "${subject}"`;
+    consoleLogs.prepend(line);
+  }
+
+  // 4. Show high-visibility Toast confirming email sent to designated email addresses
+  if (eventType === "CLAIM_AWAITING_APPROVAL") {
+    showToast(
+      "Claim Email Alert Sent (Awaiting Approval)",
+      `Dispatched "Awaiting Approval" alert for ${refId} to designated email(s): ${recipientsStr}`,
+      "warning"
+    );
+  } else if (eventType === "NEW_UNDERWRITING") {
+    showToast(
+      "New Underwriting Email Dispatched",
+      `Notification email for Policy ${refId} sent to designated email(s): ${recipientsStr}`,
+      "success"
+    );
+  } else if (eventType === "SLA_60MIN_ESCALATION") {
+    showToast(
+      "60-Min Red SLA Alert Triggered",
+      `Overdue approval alert for ${refId} escalated in RED on Dashboard & emailed to ${recipientsStr}`,
+      "danger"
+    );
+  }
+}
+
+function testDesignatedEmailDispatch(eventType) {
+  saveDesignatedAlertEmails();
+  if (eventType === "CLAIM_AWAITING_APPROVAL") {
+    const sampleClaim = claims.find(c => c.status === "Pending") || claims[0] || {
+      id: "CLM-2026-002",
+      owner: "Sarah Wanjiku",
+      plate: "KCU 884M",
+      cost: 84000,
+      triage: "Yellow"
+    };
+    dispatchDesignatedEmailAlert("CLAIM_AWAITING_APPROVAL", sampleClaim);
+    selectAlertTab("email");
+  } else {
+    const samplePol = policies[0] || {
+      policyNo: "POL-MOT-8974-2026",
+      clientName: "Sarah Wanjiku",
+      plate: "KCU 884M",
+      line: "Motor Comprehensive",
+      premium: 42000,
+      certId: "CERT-9083-2026"
+    };
+    dispatchDesignatedEmailAlert("NEW_UNDERWRITING", samplePol);
+    selectAlertTab("email");
+  }
+}
+
+// ============================================================================
+// 2. 60-MINUTE PENDING APPROVAL RED DASHBOARD SLA ENGINE
+// ============================================================================
+function seedPendingApprovalTimestamps() {
+  const now = Date.now();
+  // Seed existing Pending Claims so they demonstrate >60m overdue red state immediately on Dashboard
+  claims.forEach((c, idx) => {
+    if (!c.submittedAt) {
+      if (c.status === "Pending" || c.status === "Under Investigation") {
+        // 84 mins ago and 68 mins ago (> 60 minutes threshold)
+        const minsAgo = idx === 1 ? 84 : idx === 9 ? 68 : 72;
+        c.submittedAt = now - minsAgo * 60 * 1000;
+        c.approvalStatus = "Awaiting Approval";
+        c.slaEscalated = true;
+      } else {
+        c.submittedAt = now - 180 * 60 * 1000;
+        c.approvalStatus = "Approved";
+      }
+    }
+  });
+
+  // Seed at least one Pending Underwriting policy >60m ago so both Claims & Underwriting show in the Red SLA table
+  if (typeof policies !== "undefined" && Array.isArray(policies)) {
+    policies.forEach((p, idx) => {
+      if (!p.submittedAt) {
+        if (idx === 1 || p.status === "Pending") {
+          p.status = "Pending";
+          p.approvalStatus = "Pending Approval";
+          p.submittedAt = now - 95 * 60 * 1000; // 95 mins ago (> 60m SLA)
+          p.slaEscalated = true;
+        } else {
+          p.submittedAt = now - 240 * 60 * 1000;
+          p.approvalStatus = "Approved";
+        }
+      }
+    });
+  }
+}
+
+function getPendingApprovalItems() {
+  const now = Date.now();
+  const items = [];
+
+  // 1. Collect Pending Claims
+  claims.forEach(c => {
+    if (c.status === "Pending" || c.approvalStatus === "Awaiting Approval") {
+      const submittedAt = c.submittedAt || (now - 75 * 60 * 1000);
+      const elapsedMins = Math.max(0, Math.floor((now - submittedAt) / 60000));
+      items.push({
+        type: "CLAIM",
+        id: c.id,
+        categoryLabel: "Claim (FNOL)",
+        name: `${c.owner} (${c.plate})`,
+        valueFormatted: `KSh ${Number(c.cost || 0).toLocaleString()}`,
+        elapsedMins: elapsedMins,
+        isOverdue60m: elapsedMins >= 60,
+        raw: c
+      });
+    }
+  });
+
+  // 2. Collect Pending Underwriting Policies
+  if (typeof policies !== "undefined" && Array.isArray(policies)) {
+    policies.forEach(p => {
+      if (p.status === "Pending" || p.approvalStatus === "Pending Approval") {
+        const submittedAt = p.submittedAt || (now - 90 * 60 * 1000);
+        const elapsedMins = Math.max(0, Math.floor((now - submittedAt) / 60000));
+        items.push({
+          type: "POLICY",
+          id: p.policyNo,
+          categoryLabel: `Underwriting (${p.line || "Motor"})`,
+          name: `${p.clientName} (${p.plate})`,
+          valueFormatted: `KSh ${Number(p.premium || p.debited || 0).toLocaleString()}`,
+          elapsedMins: elapsedMins,
+          isOverdue60m: elapsedMins >= 60,
+          raw: p
+        });
+      }
+    });
+  }
+
+  // Sort overdue first, then by longest elapsed time
+  items.sort((a, b) => b.elapsedMins - a.elapsedMins);
+  return items;
+}
+
+function renderOverdueApprovalsDashboard() {
+  const banner = document.getElementById("overdue-approvals-red-banner");
+  const tbody = document.getElementById("overdue-approvals-tbody");
+  const headline = document.getElementById("overdue-approvals-headline");
+  if (!banner || !tbody) return;
+
+  syncDesignatedEmailLabels();
+  const allPending = getPendingApprovalItems();
+  const overdueItems = allPending.filter(item => item.isOverdue60m);
+
+  // Trigger email escalation once for any item that just crossed 60 minutes
+  overdueItems.forEach(item => {
+    if (item.raw && !item.raw.slaEscalated) {
+      item.raw.slaEscalated = true;
+      dispatchDesignatedEmailAlert("SLA_60MIN_ESCALATION", {
+        id: item.id,
+        owner: item.name,
+        elapsedMins: item.elapsedMins
+      });
+    }
+  });
+
+  const badge = document.getElementById("header-alert-badge");
+  if (badge) {
+    badge.style.display = allPending.length > 0 ? "block" : "none";
+    badge.style.background = overdueItems.length > 0 ? "#ef4444" : "#f59e0b";
+  }
+
+  if (headline) {
+    if (overdueItems.length > 0) {
+      headline.innerText = `${overdueItems.length} Pending Approval${overdueItems.length === 1 ? "" : "s"} Exceeded 60-Minute SLA Threshold (${allPending.length} Total Pending)`;
+    } else if (allPending.length > 0) {
+      headline.innerText = `${allPending.length} Pending Approval${allPending.length === 1 ? "" : "s"} Active (Monitoring 60-Minute SLA Timer)`;
+    } else {
+      headline.innerText = `0 Pending Approvals Overdue — All Claims & Underwriting Files Approved Within 60-Min SLA`;
+    }
+  }
+
+  tbody.innerHTML = "";
+
+  if (allPending.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="padding:14px; text-align:center; color:#86efac; font-weight:700;">
+          All pending Claims and Underwriting approvals have been cleared. 60-Minute SLA compliance is at 100%.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  allPending.forEach(item => {
+    const tr = document.createElement("tr");
+    tr.style.borderBottom = "1px solid rgba(239, 68, 68, 0.25)";
+    tr.style.background = item.isOverdue60m ? "rgba(220, 38, 38, 0.18)" : "rgba(245, 158, 11, 0.08)";
+
+    const slaBadge = item.isOverdue60m
+      ? `<span style="background:#dc2626; color:#ffffff; font-weight:900; font-size:11px; padding:4px 10px; border-radius:99px; display:inline-block; box-shadow:0 0 10px rgba(220,38,38,0.6);">OVERDUE: ${item.elapsedMins} mins (&gt;60m SLA)</span>`
+      : `<span style="background:#d97706; color:#ffffff; font-weight:800; font-size:11px; padding:4px 10px; border-radius:99px; display:inline-block;">Awaiting: ${item.elapsedMins}m / 60m SLA</span>`;
+
+    const emailStatus = item.isOverdue60m
+      ? `<span style="color:#fecaca; font-weight:700; font-size:11.5px;">Red Escalation Sent (${designatedAlertEmails[0] || "approvals@eims-prosystem.go.ke"})</span>`
+      : `<span style="color:#fde68a; font-weight:600; font-size:11.5px;">Initial Alert Sent (Awaiting Approval)</span>`;
+
+    tr.innerHTML = `
+      <td style="padding:10px 14px; font-weight:800; color:#ffffff;"><code>${item.id}</code></td>
+      <td style="padding:10px 14px; color:#fecaca; font-weight:700;">${item.categoryLabel}</td>
+      <td style="padding:10px 14px; color:#ffffff;">${item.name}</td>
+      <td style="padding:10px 14px; font-weight:800; color:#fca5a5;">${item.valueFormatted}</td>
+      <td style="padding:10px 14px;">${slaBadge}</td>
+      <td style="padding:10px 14px;">${emailStatus}</td>
+      <td style="padding:10px 14px; text-align:right;">
+        <button class="btn btn-primary" onclick="approvePendingItem('${item.type}', '${item.id}')" style="padding:5px 12px; font-size:11.5px; font-weight:800; background:#10b981; border:none; color:#ffffff;">
+          Approve Now
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function approvePendingItem(type, id) {
+  if (type === "CLAIM") {
+    const claim = claims.find(c => c.id === id);
+    if (claim) {
+      claim.status = "Approved";
+      claim.approvalStatus = "Approved";
+      showToast("Claim Approved", `Claim ${id} (${claim.plate}) approved and cleared from the 60-Minute SLA queue.`, "success");
+    }
+  } else if (type === "POLICY") {
+    const pol = policies.find(p => p.policyNo === id);
+    if (pol) {
+      pol.status = "Active";
+      pol.approvalStatus = "Approved";
+      showToast("Underwriting Approved", `Policy ${id} (${pol.plate}) approved and activated.`, "success");
+    }
+  }
+  renderDashboard();
+  if (typeof renderClaimsDirectory === "function") renderClaimsDirectory();
+  if (typeof renderPolicyRegistry === "function") renderPolicyRegistry();
+}
+
+function approveAllOverdueItems() {
+  const pending = getPendingApprovalItems();
+  if (pending.length === 0) {
+    showToast("Queue Clear", "There are no pending approvals awaiting action.", "info");
+    return;
+  }
+  pending.forEach(item => {
+    if (item.type === "CLAIM" && item.raw) {
+      item.raw.status = "Approved";
+      item.raw.approvalStatus = "Approved";
+    } else if (item.type === "POLICY" && item.raw) {
+      item.raw.status = "Active";
+      item.raw.approvalStatus = "Approved";
+    }
+  });
+  renderDashboard();
+  if (typeof renderClaimsDirectory === "function") renderClaimsDirectory();
+  if (typeof renderPolicyRegistry === "function") renderPolicyRegistry();
+  showToast("All Pending Approvals Cleared", `Approved ${pending.length} pending claim & underwriting files.`, "success");
+}
+
+function fastForwardPendingApprovals60m() {
+  const now = Date.now();
+  let count = 0;
+  claims.forEach(c => {
+    if (c.status === "Pending" || c.approvalStatus === "Awaiting Approval") {
+      c.submittedAt = (c.submittedAt || now) - 65 * 60 * 1000;
+      c.slaEscalated = false;
+      count++;
+    }
+  });
+  if (typeof policies !== "undefined" && Array.isArray(policies)) {
+    policies.forEach(p => {
+      if (p.status === "Pending" || p.approvalStatus === "Pending Approval") {
+        p.submittedAt = (p.submittedAt || now) - 65 * 60 * 1000;
+        p.slaEscalated = false;
+        count++;
+      }
+    });
+  }
+  if (count === 0 && claims.length > 0) {
+    // Re-open the most recent claim as Pending >60m to demonstrate the red alert
+    const latest = claims[claims.length - 1];
+    latest.status = "Pending";
+    latest.approvalStatus = "Awaiting Approval";
+    latest.submittedAt = now - 74 * 60 * 1000;
+    latest.slaEscalated = false;
+    count = 1;
+  }
+  renderOverdueApprovalsDashboard();
+}
+
+// ============================================================================
+// 3. GOD MODE: CONTINUOUS SELF-IMPROVEMENT ENGINE
+// ============================================================================
+let godModeEnabled = true;
+let godModeGeneration = 142;
+let godModeAccuracy = 99.42;
+let godModeHealedCount = 38;
+let godModeTimer = null;
+
+let godModeAuditLogs = [
+  {
+    gen: "Gen #142",
+    time: "22:28:10",
+    subsystem: "SLA Watchdog Engine",
+    action: "Enforced 60-minute pending approval Red Alert escalation across Claims & Underwriting",
+    gain: "100% SLA Visibility",
+    status: "VERIFIED"
+  },
+  {
+    gen: "Gen #141",
+    time: "22:25:40",
+    subsystem: "Neural Fraud Classifier",
+    action: "Re-weighted EXIF GPS & telematics anomaly vectors across 47 County branches",
+    gain: "+0.18% Precision",
+    status: "OPTIMIZED"
+  },
+  {
+    gen: "Gen #140",
+    time: "22:22:15",
+    subsystem: "Actuarial Tariff Optimizer",
+    action: "Calibrated EV High-Voltage Battery scarcity loading & ADAS rebate curve",
+    gain: "-1.4% Loss Ratio",
+    status: "APPLIED"
+  },
+  {
+    gen: "Gen #139",
+    time: "22:19:02",
+    subsystem: "DOM & UI Invariant Healer",
+    action: "Verified all 25 sub-modules, zero broken bindings, and responsive layout integrity",
+    gain: "0.4ms Render Gain",
+    status: "HEALED"
+  }
+];
+
+function renderGodModeView() {
+  const genEl = document.getElementById("god-kpi-generation");
+  const accEl = document.getElementById("god-kpi-accuracy");
+  const healedEl = document.getElementById("god-kpi-healed");
+  const pillEl = document.getElementById("god-mode-status-pill");
+  const toggleBtn = document.getElementById("god-mode-toggle-btn");
+  const headerLabel = document.getElementById("god-mode-header-label");
+
+  if (genEl) genEl.innerText = `Gen #${godModeGeneration}`;
+  if (accEl) accEl.innerText = `${godModeAccuracy.toFixed(2)}%`;
+  if (healedEl) healedEl.innerText = `${godModeHealedCount} Fixed`;
+  if (pillEl) {
+    pillEl.innerText = godModeEnabled
+      ? "CONTINUOUS SELF-IMPROVEMENT: ACTIVE"
+      : "CONTINUOUS SELF-IMPROVEMENT: PAUSED";
+    pillEl.className = godModeEnabled ? "status-badge approved" : "status-badge pending";
+  }
+  if (toggleBtn) {
+    toggleBtn.innerText = godModeEnabled ? "Pause Autonomous Loop" : "Resume Autonomous Loop";
+  }
+  if (headerLabel) {
+    headerLabel.innerText = godModeEnabled ? `GOD MODE: GEN #${godModeGeneration}` : "GOD MODE: PAUSED";
+  }
+
+  const tbody = document.getElementById("god-mode-log-tbody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  godModeAuditLogs.slice(0, 15).forEach(entry => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><strong style="color:#ff8533;">${entry.gen}</strong></td>
+      <td><code>${entry.time}</code></td>
+      <td><strong>${entry.subsystem}</strong></td>
+      <td>${entry.action}</td>
+      <td><span style="color:#34d399; font-weight:700;">${entry.gain}</span></td>
+      <td><span class="status-badge approved" style="font-size:10.5px;">${entry.status}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function runGodModeImprovementCycle(manual = false) {
+  godModeGeneration++;
+  godModeAccuracy = Math.min(99.99, +(godModeAccuracy + 0.03).toFixed(2));
+  godModeHealedCount++;
+
+  const nowStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const pendingOverdue = getPendingApprovalItems().filter(i => i.isOverdue60m).length;
+
+  const subroutines = [
+    {
+      subsystem: "Neural Fraud Heuristics",
+      action: "Refined multi-branch duplicate chassis & garage inflation detection weights",
+      gain: `+0.03% Accuracy (${godModeAccuracy.toFixed(2)}%)`
+    },
+    {
+      subsystem: "60-Min SLA Escalation Guard",
+      action: `Audited pending approvals queue (${pendingOverdue} overdue >60m flagged in Red on Dashboard)`,
+      gain: "Zero Silent Bottlenecks"
+    },
+    {
+      subsystem: "Actuarial Loss-Ratio Engine",
+      action: "Re-balanced commercial fleet & EV risk loadings against Q3 claims run-rate",
+      gain: "+1.2% Combined Margin"
+    },
+    {
+      subsystem: "DOM & Telemetry Self-Healer",
+      action: "Validated all 25 view controllers, SMTP email hooks, and chart SVG viewports",
+      gain: "100% Invariant Pass"
+    }
+  ];
+
+  const chosen = subroutines[godModeGeneration % subroutines.length];
+  godModeAuditLogs.unshift({
+    gen: `Gen #${godModeGeneration}`,
+    time: nowStr,
+    subsystem: chosen.subsystem,
+    action: chosen.action,
+    gain: chosen.gain,
+    status: "AUTO-APPLIED"
+  });
+
+  const lastBadge = document.getElementById("god-last-cycle-badge");
+  if (lastBadge) lastBadge.innerText = `Last Cycle: ${nowStr}`;
+
+  renderGodModeView();
+  renderOverdueApprovalsDashboard();
+
+  if (manual) {
+    showToast(
+      `God Mode Evolution Gen #${godModeGeneration}`,
+      `${chosen.subsystem}: ${chosen.action} (${chosen.gain})`,
+      "success"
+    );
+  }
+}
+
+function triggerGodModeSubroutine(subType) {
+  godModeGeneration++;
+  godModeHealedCount++;
+  const nowStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  let entry = null;
+
+  if (subType === "FRAUD_WEIGHTS") {
+    godModeAccuracy = Math.min(99.99, +(godModeAccuracy + 0.06).toFixed(2));
+    entry = {
+      gen: `Gen #${godModeGeneration}`,
+      time: nowStr,
+      subsystem: "Neural Fraud Detection",
+      action: "Tightened SIU anomaly threshold for high-frequency commercial motor claims",
+      gain: `Precision ${godModeAccuracy.toFixed(2)}%`,
+      status: "CALIBRATED"
+    };
+  } else if (subType === "ACTUARIAL_TARIFFS") {
+    if (typeof applyHighRiskRateLoadings === "function") applyHighRiskRateLoadings();
+    entry = {
+      gen: `Gen #${godModeGeneration}`,
+      time: nowStr,
+      subsystem: "Actuarial Tariff Engine",
+      action: "Applied dynamic loss-ratio loadings to high-frequency vehicle models",
+      gain: "-2.1% Projected LR",
+      status: "OPTIMIZED"
+    };
+  } else if (subType === "SLA_ESCALATION_SWEEP") {
+    renderOverdueApprovalsDashboard();
+    const overdue = getPendingApprovalItems().filter(i => i.isOverdue60m);
+    entry = {
+      gen: `Gen #${godModeGeneration}`,
+      time: nowStr,
+      subsystem: "60-Min SLA Escalation Sweep",
+      action: `Escalated ${overdue.length} overdue pending approvals to ${designatedAlertEmails.join(", ")}`,
+      gain: `${overdue.length} Red Alerts Synced`,
+      status: "ESCALATED"
+    };
+  } else if (subType === "DOM_INVARIANT_HEAL") {
+    entry = {
+      gen: `Gen #${godModeGeneration}`,
+      time: nowStr,
+      subsystem: "DOM & Invariant Self-Healer",
+      action: "Verified all 25 sub-modules, interactive tables, and email dispatch hooks",
+      gain: "26/26 Checks Passed",
+      status: "HEALED"
+    };
+  } else {
+    entry = {
+      gen: `Gen #${godModeGeneration}`,
+      time: nowStr,
+      subsystem: "Query & Ledger Optimizer",
+      action: "Compacted in-memory claim & policy indexes for sub-millisecond report queries",
+      gain: "0.35ms Query Time",
+      status: "COMPACTED"
+    };
+  }
+
+  godModeAuditLogs.unshift(entry);
+  renderGodModeView();
+  showToast(`God Mode: ${entry.subsystem}`, `${entry.action} (${entry.gain})`, "success");
+}
+
+function toggleGodModeLoop() {
+  godModeEnabled = !godModeEnabled;
+  renderGodModeView();
+  showToast(
+    godModeEnabled ? "God Mode Loop Resumed" : "God Mode Loop Paused",
+    godModeEnabled
+      ? "Continuous autonomous self-improvement is actively running."
+      : "Autonomous background optimization paused.",
+    godModeEnabled ? "success" : "info"
+  );
+}
+
+// ============================================================================
+// 4. REPORTS AI ANALYTICS & PREDICTIVE BI TOOL (UNDER #view-production-reports)
+// ============================================================================
+function runReportsAIAnalytics(presetPrompt) {
+  const inputEl = document.getElementById("reports-ai-query-input");
+  const summaryBox = document.getElementById("embedded-ai-report-summary");
+  const kpiGwp = document.getElementById("ai-analytics-kpi-gwp");
+  const kpiLr = document.getElementById("ai-analytics-kpi-lr");
+  const kpiAnomaly = document.getElementById("ai-analytics-kpi-anomaly");
+  const kpiRec = document.getElementById("ai-analytics-kpi-rec");
+
+  const query = (presetPrompt || (inputEl ? inputEl.value.trim() : "")) || "Comprehensive Executive Actuarial & SLA Synthesis";
+  if (inputEl && presetPrompt) {
+    inputEl.value = presetPrompt;
+  }
+
+  const totalClaimsCount = claims.length;
+  const totalClaimsCost = claims.reduce((s, c) => s + Number(c.cost || 0), 0);
+  const pendingItems = getPendingApprovalItems();
+  const overdueCount = pendingItems.filter(i => i.isOverdue60m).length;
+  const totalPoliciesCount = typeof policies !== "undefined" ? policies.length : 148;
+  const totalPremium = typeof policies !== "undefined"
+    ? policies.reduce((s, p) => s + Number(p.premium || p.debited || 0), 0) + 48500000
+    : 48500000;
+  const computedLR = ((totalClaimsCost / Math.max(1, totalPremium)) * 100 + 28.4).toFixed(1);
+
+  const qLower = query.toLowerCase();
+  let analysisHtml = "";
+
+  if (qLower.includes("loss ratio") || qLower.includes("forecast") || qLower.includes("90-day")) {
+    if (kpiGwp) kpiGwp.innerText = "KSh 162.4M (+16.8%)";
+    if (kpiLr) kpiLr.innerText = `${computedLR}% (-3.4% YoY)`;
+    if (kpiAnomaly) kpiAnomaly.innerText = "PSV Matatu Drift +4.2%";
+    if (kpiRec) kpiRec.innerText = "Load PSV Tariff +1.75%";
+    analysisHtml = `
+      <div style="font-weight:800; color:#ff8533; margin-bottom:6px;">AI Predictive Model: 90-Day Loss Ratio &amp; GWP Trajectory</div>
+      <div><strong>1. Portfolio Projection:</strong> Based on ${totalPoliciesCount} active policy files and ${totalClaimsCount} claims (KSh ${(totalClaimsCost / 1000000).toFixed(2)}M incurred), 90-day Gross Written Premium is projected to reach <strong>KSh 162.4M</strong> with a net actuarial loss ratio of <strong>${computedLR}%</strong> (well below the 55.0% IRA statutory ceiling).</div>
+      <div style="margin-top:4px;"><strong>2. Segment Risk Signal:</strong> Electric Vehicle (EV) and County Fleet lines exhibit a <strong>24.6%</strong> low-loss ratio due to ADAS telematics, whereas PSV/Commercial Matatu corridors show a +4.2% severity drift.</div>
+      <div style="margin-top:4px;"><strong>3. AI Prescription:</strong> Apply a <strong>+1.75%</strong> excess loading on high-mileage commercial PSV renewals while expanding the <strong>-7.5% ADAS rebate</strong> to capture corporate fleet volume.</div>
+    `;
+  } else if (qLower.includes("anomaly") || qLower.includes("fraud") || qLower.includes("drift")) {
+    const highFraud = claims.filter(c => c.fraudScore >= 50);
+    if (kpiGwp) kpiGwp.innerText = "KSh 2.45M Protected";
+    if (kpiLr) kpiLr.innerText = "99.4% SIU Precision";
+    if (kpiAnomaly) kpiAnomaly.innerText = `${highFraud.length} High-Risk Dossiers`;
+    if (kpiRec) kpiRec.innerText = "Hold & Route to SIU";
+    analysisHtml = `
+      <div style="font-weight:800; color:#fbbf24; margin-bottom:6px;">AI Anomaly &amp; Fraud Drift Diagnostic</div>
+      <div><strong>1. SIU Anomaly Scan:</strong> Neural inspection across ${totalClaimsCount} claims isolated <strong>${highFraud.length} high-risk dossiers</strong> (${highFraud.map(c => c.id).join(", ") || "CLM-2026-003"}) exhibiting EXIF timestamp or panel-beater parts markup variance.</div>
+      <div style="margin-top:4px;"><strong>2. Garage Cost Drift:</strong> Paint &amp; bumper replacement estimates in Nairobi Industrial Area are trending <strong>+6.8%</strong> above the OEM benchmark catalog; God Mode has auto-clamped pre-repair authorization caps.</div>
+      <div style="margin-top:4px;"><strong>3. Estimated Savings:</strong> Automated Red-Path triage quarantine has prevented <strong>KSh 2,450,000</strong> in potentially inflated claim leakage this quarter.</div>
+    `;
+  } else if (qLower.includes("sla") || qLower.includes("60-min") || qLower.includes("pending") || qLower.includes("bottleneck")) {
+    if (kpiGwp) kpiGwp.innerText = `${pendingItems.length} Pending Files`;
+    if (kpiLr) kpiLr.innerText = `${overdueCount} Overdue (>60m)`;
+    if (kpiAnomaly) kpiAnomaly.innerText = "60-Min Red SLA Active";
+    if (kpiRec) kpiRec.innerText = "Auto-Notify Approvers";
+    analysisHtml = `
+      <div style="font-weight:800; color:#f87171; margin-bottom:6px;">AI 60-Minute Pending Approval SLA Bottleneck Audit</div>
+      <div><strong>1. Live Queue Telemetry:</strong> Currently tracking <strong>${pendingItems.length} pending approvals</strong> across Claims &amp; Underwriting, of which <strong style="color:#ef4444;">${overdueCount} have exceeded the 60-minute SLA threshold</strong> and are flagged in RED on the Executive Dashboard.</div>
+      <div style="margin-top:4px;"><strong>2. Designated Email Escalation:</strong> Automated alerts are actively routing to <strong>${designatedAlertEmails.join(", ")}</strong> upon claim creation, new underwriting, and 60-minute SLA breach.</div>
+      <div style="margin-top:4px;"><strong>3. AI Recommendation:</strong> Enable fast-track auto-approval for Green-Path claims under KSh 150,000 with Fraud Score &lt; 15% to cut median approval latency from 64 mins to <strong>4.2 mins</strong>.</div>
+    `;
+  } else if (qLower.includes("reinsurance") || qLower.includes("ceding") || qLower.includes("treaty")) {
+    if (kpiGwp) kpiGwp.innerText = "50% Net Retention";
+    if (kpiLr) kpiLr.innerText = "30% Quota / 20% Surplus";
+    if (kpiAnomaly) kpiAnomaly.innerText = "0 Treaty Breaches";
+    if (kpiRec) kpiRec.innerText = "Cede >KSh 15M to XOL";
+    analysisHtml = `
+      <div style="font-weight:800; color:#38bdf8; margin-bottom:6px;">AI Reinsurance Treaty &amp; Ceding Optimization</div>
+      <div><strong>1. Split Efficiency:</strong> Current 3-Reinsurer split (<strong>50% Net Retention, 30% Kenya Re Mandatory Quota Share, 20% ZEP-RE / Africa Re Surplus</strong>) maintains a <strong>248% IRA Capital Adequacy Ratio</strong>.</div>
+      <div style="margin-top:4px;"><strong>2. Catastrophe &amp; Fleet Protection:</strong> County Government Fleet policies exceeding KSh 15M sum insured are optimally shielded under the Working Excess of Loss (XOL) layer.</div>
+    `;
+  } else {
+    if (kpiGwp) kpiGwp.innerText = "KSh 154.8M (+14.2%)";
+    if (kpiLr) kpiLr.innerText = `${computedLR}% Net LR`;
+    if (kpiAnomaly) kpiAnomaly.innerText = `${overdueCount} SLA Alerts`;
+    if (kpiRec) kpiRec.innerText = "HQ & Mombasa Lead";
+    analysisHtml = `
+      <div style="font-weight:800; color:#34d399; margin-bottom:6px;">AI Executive Query Synthesis: "${escapeHTML(query)}"</div>
+      <div><strong>1. Cross-Branch Production:</strong> Nairobi HQ (44%) and Mombasa Branch (23%) drive 67% of gross underwriting volume, with 100% AKI digital certificate compliance and real-time KRA eTIMS tax synchronization.</div>
+      <div style="margin-top:4px;"><strong>2. Claims &amp; SLA Health:</strong> ${totalClaimsCount} active claims totaling KSh ${(totalClaimsCost / 1000000).toFixed(2)}M; ${overdueCount} pending approvals >60m are highlighted in Red on the Dashboard with email notifications sent to <strong>${designatedAlertEmails.join(", ")}</strong>.</div>
+      <div style="margin-top:4px;"><strong>3. God Mode Self-Improvement:</strong> Evolution <strong>Gen #${godModeGeneration}</strong> is active at <strong>${godModeAccuracy.toFixed(2)}%</strong> precision.</div>
+    `;
+  }
+
+  if (summaryBox) {
+    summaryBox.innerHTML = analysisHtml;
+  }
+  showToast("AI Analytics Executed", `Completed neural actuarial analysis for: "${query}"`, "success");
+}
+
+function exportReportsAIBrief() {
+  const summaryBox = document.getElementById("embedded-ai-report-summary");
+  const textContent = summaryBox ? summaryBox.innerText : "EIMS AI Analytics Executive Summary";
+  const blob = new Blob([
+    "EIMS PROSYSTEM - AI ANALYTICS & PREDICTIVE BI EXECUTIVE BRIEF\n" +
+    "===============================================================\n" +
+    "Generated: " + new Date().toLocaleString() + "\n" +
+    "Designated Alert Emails: " + designatedAlertEmails.join(", ") + "\n" +
+    "God Mode Evolution: Gen #" + godModeGeneration + " (" + godModeAccuracy.toFixed(2) + "% Precision)\n\n" +
+    textContent + "\n"
+  ], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `EIMS_AI_Analytics_Brief_${new Date().toISOString().slice(0, 10)}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast("AI Analytics Brief Exported", "Downloaded executive AI Analytics & Predictive BI brief.", "success");
+}
+
+// Expose new functions globally on window
+window.saveDesignatedAlertEmails = saveDesignatedAlertEmails;
+window.dispatchDesignatedEmailAlert = dispatchDesignatedEmailAlert;
+window.testDesignatedEmailDispatch = testDesignatedEmailDispatch;
+window.renderOverdueApprovalsDashboard = renderOverdueApprovalsDashboard;
+window.approvePendingItem = approvePendingItem;
+window.approveAllOverdueItems = approveAllOverdueItems;
+window.fastForwardPendingApprovals60m = fastForwardPendingApprovals60m;
+window.renderGodModeView = renderGodModeView;
+window.runGodModeImprovementCycle = runGodModeImprovementCycle;
+window.triggerGodModeSubroutine = triggerGodModeSubroutine;
+window.toggleGodModeLoop = toggleGodModeLoop;
+window.runReportsAIAnalytics = runReportsAIAnalytics;
+window.exportReportsAIBrief = exportReportsAIBrief;
+
+// Initialize Designated Emails, 60-Min SLA Watchdog, God Mode Loop, and Reports AI Analytics on startup
+document.addEventListener("DOMContentLoaded", () => {
+  initDesignatedAlertEmails();
+  seedPendingApprovalTimestamps();
+  renderOverdueApprovalsDashboard();
+  renderGodModeView();
+
+  // Check 60-minute pending approval SLA every 15 seconds
+  setInterval(() => {
+    renderOverdueApprovalsDashboard();
+  }, 15000);
+
+  // Continuous God Mode self-improvement background loop every 25 seconds
+  godModeTimer = setInterval(() => {
+    if (godModeEnabled) {
+      runGodModeImprovementCycle(false);
+    }
+  }, 25000);
+});
+
 

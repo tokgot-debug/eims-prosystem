@@ -470,6 +470,10 @@
               <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
               EIMS Neural AI Copilot
             </a>
+            <a class="accordion-item" data-view="god-mode" id="nav-god-mode">
+              <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+              God Mode Self-Improver
+            </a>
           </div>
         </div>
 
@@ -561,14 +565,15 @@
               <option value="ira-compliance">IRA Solvency Returns</option>
             </optgroup>
             <optgroup label="5. Analytics &amp; Staff">
-              <option value="production-reports">Reports &amp; Query Center</option>
+              <option value="production-reports">Reports &amp; AI Analytics</option>
               <option value="vehicle-loss-ratios">Loss Ratio Risk Analytics</option>
               <option value="remote-monitoring">Remote Staff Monitor</option>
             </optgroup>
-            <optgroup label="6. AI Tools &amp; OCR">
+            <optgroup label="6. AI Tools &amp; Self-Improvement">
               <option value="lpr-scanner">ANPR License Plate Reader</option>
               <option value="qr-generator">QR Code &amp; Badge Engine</option>
               <option value="ai-assistant">EIMS Neural AI Copilot</option>
+              <option value="god-mode">God Mode (Self-Improver)</option>
             </optgroup>
             <optgroup label="7. Platform &amp; Settings">
               <option value="subscription-pricing">Subscriptions &amp; Licenses</option>
@@ -576,6 +581,12 @@
               <option value="mobile-app">Mobile App Portal Sim</option>
             </optgroup>
           </select>
+
+          <!-- God Mode Autonomous Self-Improvement Header Button -->
+          <button class="btn btn-secondary" id="god-mode-header-btn" onclick="navigateToView('god-mode')" title="God Mode: Continuous Autonomous Self-Improvement Engine" style="padding:8px 12px; font-size:12px; font-weight:800; border-radius:8px; gap:6px; border:1px solid #ff6b00; background:linear-gradient(135deg, rgba(255,107,0,0.18), rgba(220,38,38,0.18)); color:#ff8533; box-shadow:0 0 12px rgba(255,107,0,0.28);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            <span id="god-mode-header-label">GOD MODE: ON</span>
+          </button>
 
           <!-- Workshop Repairer App Quick Button -->
           <button class="btn btn-secondary" onclick="navigateToWorkshopApp()" title="Workshop Pre-Repair Authorization App" style="padding:8px 14px; font-size:12.5px; border-radius:8px; gap:6px;">
@@ -603,7 +614,7 @@
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
             </svg>
-            <span class="badge-dot" id="header-alert-badge" style="display:none;"></span>
+            <span class="badge-dot" id="header-alert-badge" style="display:block; background:#ef4444;"></span>
           </button>
           
           <!-- Theme Toggle Option -->
@@ -635,11 +646,14 @@
               <p>Unified real-time telemetry across all 7 EIMS ProSystem modules across Kenya</p>
             </div>
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button class="btn btn-secondary" onclick="navigateToView('god-mode')" style="border-color:#ff6b00; color:#ff8533;">
+                God Mode Telemetry
+              </button>
               <button class="btn btn-secondary" onclick="navigateToView('geomap-center')">
                 GIS Command Map
               </button>
               <button class="btn btn-secondary" onclick="navigateToView('production-reports')">
-                Reports &amp; Query Center
+                Reports &amp; AI Analytics
               </button>
               <button class="btn btn-primary" onclick="navigateToView('create-claim')">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -650,7 +664,61 @@
               </button>
             </div>
           </div>
-          
+
+          <!-- ================= 60-MINUTE PENDING APPROVAL RED SLA ESCALATION BANNER ================= -->
+          <div id="overdue-approvals-red-banner" class="dashboard-card" style="padding:20px 24px; margin-bottom:22px; background:linear-gradient(135deg, rgba(220, 38, 38, 0.22), rgba(153, 27, 27, 0.14)); border:2px solid #ef4444; border-radius:12px; box-shadow:0 8px 28px rgba(239, 68, 68, 0.25);">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:14px; margin-bottom:14px;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <div style="width:42px; height:42px; border-radius:10px; background:#dc2626; color:#ffffff; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 0 16px rgba(239,68,68,0.65);">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                  </svg>
+                </div>
+                <div>
+                  <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <span style="background:#dc2626; color:#ffffff; font-size:10.5px; font-weight:900; padding:3px 9px; border-radius:99px; letter-spacing:0.6px; text-transform:uppercase;">CRITICAL 60-MINUTE SLA BREACH</span>
+                    <h2 style="font-size:16px; font-weight:800; color:#fecaca; margin:0;" id="overdue-approvals-headline">3 Pending Approvals Exceeded 60-Minute SLA Threshold</h2>
+                  </div>
+                  <p style="font-size:12.5px; color:#fca5a5; margin-top:4px;" id="overdue-approvals-subtext">
+                    Automated escalation emails dispatched to designated approvers: <strong id="dashboard-designated-emails-label" style="color:#ffffff;">approvals@eims-prosystem.go.ke, claims-desk@eims-prosystem.go.ke, underwriting@eims-prosystem.go.ke</strong>
+                  </p>
+                </div>
+              </div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="btn btn-secondary" onclick="fastForwardPendingApprovals60m()" title="Fast-forward any newly submitted pending claims or underwritings by +60 minutes to trigger red SLA alert" style="padding:7px 12px; font-size:11.5px; font-weight:700; border-color:#f87171; color:#fecaca; background:rgba(220,38,38,0.2);">
+                  Simulate +60m SLA Breach
+                </button>
+                <button class="btn btn-secondary" onclick="navigateToView('alerts-simulator')" style="padding:7px 12px; font-size:11.5px; font-weight:700; border-color:#f87171; color:#ffffff; background:rgba(0,0,0,0.35);">
+                  Configure Alert Emails
+                </button>
+                <button class="btn btn-primary" onclick="approveAllOverdueItems()" style="padding:7px 14px; font-size:11.5px; font-weight:800; background:#dc2626; border:1px solid #fca5a5; color:#ffffff;">
+                  Approve All Overdue Now
+                </button>
+              </div>
+            </div>
+
+            <div style="overflow-x:auto; background:rgba(9, 9, 11, 0.65); border:1px solid rgba(239, 68, 68, 0.45); border-radius:8px;">
+              <table style="width:100%; border-collapse:collapse; font-size:12.5px; text-align:left;">
+                <thead>
+                  <tr style="border-bottom:1px solid rgba(239, 68, 68, 0.35); color:#fca5a5; font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">
+                    <th style="padding:10px 14px;">Reference ID</th>
+                    <th style="padding:10px 14px;">Category</th>
+                    <th style="padding:10px 14px;">Client / Claimant &amp; Risk</th>
+                    <th style="padding:10px 14px;">Value / Exposure</th>
+                    <th style="padding:10px 14px;">Elapsed Pending Time</th>
+                    <th style="padding:10px 14px;">Email Alert Status</th>
+                    <th style="padding:10px 14px; text-align:right;">Immediate Action</th>
+                  </tr>
+                </thead>
+                <tbody id="overdue-approvals-tbody">
+                  <!-- Populated dynamically by renderOverdueApprovalsDashboard() -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <!-- Statistics Widget Block -->
           <div class="dashboard-stats-grid">
             <div class="stat-card">
@@ -1313,8 +1381,38 @@
         <section class="app-view" id="view-alerts-simulator">
           <div class="view-title-block">
             <div>
-              <h1>Notification Telemetry Simulator</h1>
-              <p>Simulate how claims status alerts are dispatched to the claimant in real-time</p>
+              <h1>Notification Telemetry &amp; Designated Email Gateway</h1>
+              <p>Configure designated email recipients for automated Claim Awaiting Approval alerts, New Underwriting notifications, and 60-Minute SLA Escalations</p>
+            </div>
+          </div>
+
+          <!-- DESIGNATED EMAIL RECIPIENTS CONFIGURATION CARD -->
+          <div class="dashboard-card" id="designated-emails-config-card" style="padding:20px 24px; margin-bottom:24px; background:linear-gradient(135deg, rgba(255,107,0,0.10), rgba(17,24,39,0.85)); border:1px solid #ff6b00; border-radius:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+              <div>
+                <h2 style="font-size:15.5px; font-weight:800; color:var(--text-primary); margin:0;">Designated Approval &amp; Underwriting Alert Email Recipients</h2>
+                <p style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">
+                  Every new Claim (Awaiting Approval), New Policy Underwriting, and 60-Minute Overdue Approval automatically dispatches a rich HTML email alert to all designated addresses below.
+                </p>
+              </div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <span class="status-badge approved" style="font-size:11px;">SMTP / SendGrid Relay: ACTIVE</span>
+              </div>
+            </div>
+            <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+              <div class="form-group" style="flex:1; min-width:300px; margin-bottom:0;">
+                <label for="designated-emails-input" style="font-weight:700; font-size:12px;">Designated Email Address(es) (Comma-Separated)</label>
+                <input type="text" class="form-control" id="designated-emails-input" value="approvals@eims-prosystem.go.ke, claims-desk@eims-prosystem.go.ke, underwriting@eims-prosystem.go.ke" placeholder="e.g. approvals@eims-prosystem.go.ke, underwriting@eims-prosystem.go.ke">
+              </div>
+              <button class="btn btn-primary" onclick="saveDesignatedAlertEmails()" style="padding:10px 18px; font-weight:700;">
+                Save Designated Emails
+              </button>
+              <button class="btn btn-secondary" onclick="testDesignatedEmailDispatch('CLAIM_AWAITING_APPROVAL')" style="padding:10px 14px; font-weight:700; border-color:#ff6b00; color:#ff8533;">
+                Test Claim Awaiting Approval Email
+              </button>
+              <button class="btn btn-secondary" onclick="testDesignatedEmailDispatch('NEW_UNDERWRITING')" style="padding:10px 14px; font-weight:700; border-color:#10b981; color:#34d399;">
+                Test New Underwriting Email
+              </button>
             </div>
           </div>
           
@@ -1777,16 +1875,73 @@
 
           </div>
 
-          <!-- EMBEDDED AI SYNTHESIS CARD -->
-          <div class="dashboard-card" style="padding:20px; margin-bottom:24px; background: linear-gradient(135deg, rgba(255,107,0,0.05), rgba(56,189,248,0.05)); border:1px solid var(--primary-light);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <h3 style="font-size:15px; font-weight:700; color:var(--primary);"> AI Automated Executive Report Synthesis</h3>
+          <!-- ================= AI ANALYTICS & PREDICTIVE BI WORKBENCH (UNDER REPORTS) ================= -->
+          <div class="dashboard-card" id="reports-ai-analytics-workbench" style="padding:24px; margin-bottom:24px; background: linear-gradient(135deg, rgba(255,107,0,0.09), rgba(15,23,42,0.92)); border:1px solid #ff6b00; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.28);">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+              <div>
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                  <span style="background:#ff6b00; color:#ffffff; font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:99px; letter-spacing:0.5px; text-transform:uppercase;">NEURAL BI ENGINE v4.2</span>
+                  <h3 style="font-size:16.5px; font-weight:800; color:var(--text-primary); margin:0;">AI Analytics &amp; Predictive Actuarial Intelligence Tool</h3>
+                </div>
+                <p style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">
+                  Execute natural-language actuarial queries, 90-day loss ratio forecasting, branch anomaly detection, and automated executive report synthesis.
+                </p>
               </div>
-              <span class="status-badge approved" style="font-size:11px;">Queried Period: <span id="ai-period-badge">August 2026</span></span>
+              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <span class="status-badge approved" style="font-size:11px;">Queried Period: <span id="ai-period-badge">August 2026</span></span>
+                <button class="btn btn-secondary" onclick="exportReportsAIBrief()" style="padding:6px 12px; font-size:11.5px; font-weight:700; border-color:#ff6b00; color:#ff8533;">
+                  Export AI Analytics Brief
+                </button>
+              </div>
             </div>
-            <div id="embedded-ai-report-summary" style="font-size:13px; line-height:1.6; color:var(--text-primary);">
-              Querying live production, claims, and underwriting database...
+
+            <!-- Interactive Natural Language AI Query Bar & 1-Click Presets -->
+            <div class="no-print" style="background:rgba(9,9,11,0.65); border:1px solid var(--border-color); border-radius:10px; padding:14px; margin-bottom:16px;">
+              <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+                <input type="text" class="form-control" id="reports-ai-query-input" placeholder="Ask AI Analytics (e.g., Forecast Q4 Motor Loss Ratio, Identify high-risk branches, Optimize EV loading...)" style="flex:1; min-width:260px;" onkeydown="if(event.key==='Enter') runReportsAIAnalytics()">
+                <button class="btn btn-primary" onclick="runReportsAIAnalytics()" style="padding:10px 18px; font-weight:800;">
+                  Run AI Analytics
+                </button>
+              </div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                <span style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">AI Preset Models:</span>
+                <button class="btn btn-secondary" onclick="runReportsAIAnalytics('Forecast 90-Day Loss Ratio &amp; GWP Trajectory')" style="padding:4px 10px; font-size:11px;">90-Day Loss Ratio Forecast</button>
+                <button class="btn btn-secondary" onclick="runReportsAIAnalytics('Detect Claim Fraud Anomalies &amp; Garage Cost Drift')" style="padding:4px 10px; font-size:11px;">Anomaly &amp; Fraud Drift Scan</button>
+                <button class="btn btn-secondary" onclick="runReportsAIAnalytics('Branch Acquisition Efficiency &amp; Broker Margin Audit')" style="padding:4px 10px; font-size:11px;">Branch Profitability Rank</button>
+                <button class="btn btn-secondary" onclick="runReportsAIAnalytics('Pending Approval 60-Min SLA Bottleneck Analysis')" style="padding:4px 10px; font-size:11px;">60-Min SLA Bottleneck Audit</button>
+                <button class="btn btn-secondary" onclick="runReportsAIAnalytics('Reinsurance Treaty Ceding Optimization')" style="padding:4px 10px; font-size:11px;">Reinsurance Ceding Optimizer</button>
+              </div>
+            </div>
+
+            <!-- 4 Predictive AI Telemetry Cards -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:16px;">
+              <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(255,107,0,0.3); border-radius:8px; padding:12px 14px;">
+                <div style="font-size:11px; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">AI 90-Day GWP Forecast</div>
+                <div style="font-size:19px; font-weight:800; color:#ff8533; margin-top:4px;" id="ai-analytics-kpi-gwp">KSh 154.8M (+14.2%)</div>
+                <div style="font-size:11px; color:#34d399; margin-top:2px;" id="ai-analytics-kpi-gwp-sub">Confidence Interval: 96.4%</div>
+              </div>
+              <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(56,189,248,0.3); border-radius:8px; padding:12px 14px;">
+                <div style="font-size:11px; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Projected Net Loss Ratio</div>
+                <div style="font-size:19px; font-weight:800; color:#38bdf8; margin-top:4px;" id="ai-analytics-kpi-lr">38.4% (-3.1% YoY)</div>
+                <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;" id="ai-analytics-kpi-lr-sub">IRA Benchmark: &lt; 55.0%</div>
+              </div>
+              <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(245,158,11,0.3); border-radius:8px; padding:12px 14px;">
+                <div style="font-size:11px; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">AI Anomaly &amp; Drift Flags</div>
+                <div style="font-size:19px; font-weight:800; color:#fbbf24; margin-top:4px;" id="ai-analytics-kpi-anomaly">2 Outliers Isolated</div>
+                <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;" id="ai-analytics-kpi-anomaly-sub">SIU Savings: KSh 2.45M</div>
+              </div>
+              <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(16,185,129,0.3); border-radius:8px; padding:12px 14px;">
+                <div style="font-size:11px; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Actuarial Tariff Recommendation</div>
+                <div style="font-size:19px; font-weight:800; color:#34d399; margin-top:4px;" id="ai-analytics-kpi-rec">Rebate EV ADAS -2.5%</div>
+                <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;" id="ai-analytics-kpi-rec-sub">Est. Retention Lift: +9.8%</div>
+              </div>
+            </div>
+
+            <!-- AI Executive Synthesis Output Box -->
+            <div style="background:rgba(9,9,11,0.55); border-left:4px solid #ff6b00; border-radius:6px; padding:14px 16px;">
+              <div id="embedded-ai-report-summary" style="font-size:13px; line-height:1.65; color:var(--text-primary);">
+                Querying live production, claims, and underwriting database...
+              </div>
             </div>
           </div>
 
@@ -3867,6 +4022,114 @@
               </div>
             </div>
 
+          </div>
+        </section>
+
+        <!-- ================= GOD MODE: CONTINUOUS SELF-IMPROVEMENT ENGINE VIEW ================= -->
+        <section class="app-view" id="view-god-mode">
+          <div class="view-title-block" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+            <div>
+              <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;">
+                <span style="background:linear-gradient(135deg, #ff6b00, #dc2626); color:#ffffff; font-size:11px; font-weight:900; padding:4px 10px; border-radius:99px; letter-spacing:0.6px; text-transform:uppercase;">AUTONOMOUS KERNEL v9.4</span>
+                <span id="god-mode-status-pill" class="status-badge approved" style="font-size:11.5px;">CONTINUOUS SELF-IMPROVEMENT: ACTIVE</span>
+              </div>
+              <h1>God Mode: Continuous Platform Self-Improvement Engine</h1>
+              <p>Autonomous neural hyperparameter tuning, actuarial tariff self-calibration, 60-minute SLA auto-remediation, and UI/DOM invariant self-healing</p>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button class="btn btn-secondary" id="god-mode-toggle-btn" onclick="toggleGodModeLoop()" style="border-color:#ff6b00; color:#ff8533; font-weight:700;">
+                Pause Autonomous Loop
+              </button>
+              <button class="btn btn-primary" onclick="runGodModeImprovementCycle(true)" style="background:linear-gradient(135deg, #ff6b00, #dc2626); font-weight:800; border:none;">
+                Execute Self-Improvement Cycle Now
+              </button>
+            </div>
+          </div>
+
+          <!-- God Mode Telemetry KPI Grid -->
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:24px;">
+            <div class="dashboard-card" style="padding:20px; border-top:3px solid #ff6b00;">
+              <div style="font-size:11.5px; color:var(--text-secondary); font-weight:700; text-transform:uppercase;">Evolution Generation</div>
+              <div style="font-size:28px; font-weight:900; color:#ff8533; margin-top:6px;" id="god-kpi-generation">Gen #142</div>
+              <div style="font-size:11.5px; color:#34d399; margin-top:4px;" id="god-kpi-generation-sub">Auto-cycles every 25s</div>
+            </div>
+            <div class="dashboard-card" style="padding:20px; border-top:3px solid #10b981;">
+              <div style="font-size:11.5px; color:var(--text-secondary); font-weight:700; text-transform:uppercase;">AI Triage &amp; Fraud Precision</div>
+              <div style="font-size:28px; font-weight:900; color:#34d399; margin-top:6px;" id="god-kpi-accuracy">99.42%</div>
+              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:4px;" id="god-kpi-accuracy-sub">+0.84% via self-learning</div>
+            </div>
+            <div class="dashboard-card" style="padding:20px; border-top:3px solid #38bdf8;">
+              <div style="font-size:11.5px; color:var(--text-secondary); font-weight:700; text-transform:uppercase;">Self-Healed System Anomalies</div>
+              <div style="font-size:28px; font-weight:900; color:#38bdf8; margin-top:6px;" id="god-kpi-healed">38 Fixed</div>
+              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:4px;" id="god-kpi-healed-sub">26/26 UI &amp; Data Invariants Passing</div>
+            </div>
+            <div class="dashboard-card" style="padding:20px; border-top:3px solid #ef4444;">
+              <div style="font-size:11.5px; color:var(--text-secondary); font-weight:700; text-transform:uppercase;">60-Min SLA Escalation Guard</div>
+              <div style="font-size:28px; font-weight:900; color:#f87171; margin-top:6px;" id="god-kpi-sla-guard">100% Active</div>
+              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:4px;" id="god-kpi-sla-sub">Real-time Red Dashboard Watchdog</div>
+            </div>
+          </div>
+
+          <!-- Autonomous Self-Improvement Subsystems & Action Matrix -->
+          <div style="display:grid; grid-template-columns: 1.15fr 1.85fr; gap:24px; margin-bottom:24px;">
+            <div class="dashboard-card" style="padding:24px;">
+              <h3 style="font-size:15.5px; font-weight:800; margin-bottom:8px; color:var(--text-primary);">Autonomous Optimization Engines</h3>
+              <p style="font-size:12.5px; color:var(--text-secondary); margin-bottom:16px;">
+                Trigger targeted self-improvement routines across underwriting models, fraud heuristics, SLA escalations, and UI integrity.
+              </p>
+
+              <div style="display:flex; flex-direction:column; gap:10px;">
+                <button class="btn btn-secondary" onclick="triggerGodModeSubroutine('FRAUD_WEIGHTS')" style="justify-content:space-between; width:100%; padding:11px 14px; font-size:12.5px; text-align:left;">
+                  <span>1. Recalibrate Neural Fraud Detection Weights</span>
+                  <span style="color:#ff8533; font-weight:800;">Run Now</span>
+                </button>
+                <button class="btn btn-secondary" onclick="triggerGodModeSubroutine('ACTUARIAL_TARIFFS')" style="justify-content:space-between; width:100%; padding:11px 14px; font-size:12.5px; text-align:left;">
+                  <span>2. Auto-Optimize Underwriting Loss-Ratio Tariffs</span>
+                  <span style="color:#34d399; font-weight:800;">Run Now</span>
+                </button>
+                <button class="btn btn-secondary" onclick="triggerGodModeSubroutine('SLA_ESCALATION_SWEEP')" style="justify-content:space-between; width:100%; padding:11px 14px; font-size:12.5px; text-align:left;">
+                  <span>3. Sweep &gt;60m Pending Approvals &amp; Dispatch Red Alerts</span>
+                  <span style="color:#f87171; font-weight:800;">Run Now</span>
+                </button>
+                <button class="btn btn-secondary" onclick="triggerGodModeSubroutine('DOM_INVARIANT_HEAL')" style="justify-content:space-between; width:100%; padding:11px 14px; font-size:12.5px; text-align:left;">
+                  <span>4. Verify &amp; Self-Heal All 25 Module DOM Invariants</span>
+                  <span style="color:#38bdf8; font-weight:800;">Run Now</span>
+                </button>
+                <button class="btn btn-secondary" onclick="triggerGodModeSubroutine('CACHE_LATENCY_OPT')" style="justify-content:space-between; width:100%; padding:11px 14px; font-size:12.5px; text-align:left;">
+                  <span>5. Compact Ledger Indexes &amp; Optimize Query Latency</span>
+                  <span style="color:#fbbf24; font-weight:800;">Run Now</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Live Self-Improvement Telemetry Stream Table -->
+            <div class="dashboard-card" style="padding:24px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+                <div>
+                  <h3 style="font-size:15.5px; font-weight:800; color:var(--text-primary); margin:0;">Continuous Self-Improvement Audit Stream</h3>
+                  <p style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Real-time ledger of autonomous platform optimizations, model weight updates, and SLA interventions</p>
+                </div>
+                <span class="status-badge approved" id="god-last-cycle-badge" style="font-size:11px;">Last Cycle: Just now</span>
+              </div>
+
+              <div style="overflow-x:auto; max-height:320px; overflow-y:auto;">
+                <table class="claims-table" style="width:100%; font-size:12px;">
+                  <thead>
+                    <tr>
+                      <th>Generation</th>
+                      <th>Timestamp</th>
+                      <th>Subsystem</th>
+                      <th>Autonomous Optimization Applied</th>
+                      <th>Measured Gain</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="god-mode-log-tbody">
+                    <!-- Populated via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </section>
       </div>
