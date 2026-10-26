@@ -583,7 +583,7 @@
           </select>
 
           <!-- God Mode Autonomous Self-Improvement Header Button -->
-          <button class="btn btn-secondary" id="god-mode-header-btn" onclick="navigateToView('god-mode')" title="God Mode: Continuous Autonomous Self-Improvement Engine" style="padding:8px 12px; font-size:12px; font-weight:800; border-radius:8px; gap:6px; border:1px solid #ff6b00; background:linear-gradient(135deg, rgba(255,107,0,0.18), rgba(220,38,38,0.18)); color:#ff8533; box-shadow:0 0 12px rgba(255,107,0,0.28);">
+          <button class="btn btn-secondary" id="god-mode-header-btn" onclick="navigateToView('god-mode')" title="God Mode: Continuous Autonomous Self-Improvement Engine" style="padding:8px 12px; font-size:12px; font-weight:800; border-radius:8px; gap:6px; border:1px solid #ff6b00; background:linear-gradient(135deg, rgba(255,107,0,0.18), rgba(9,9,11,0.92)); color:#ff8533; box-shadow:0 0 12px rgba(255,107,0,0.28);">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
             <span id="god-mode-header-label">GOD MODE: ON</span>
           </button>
@@ -614,7 +614,7 @@
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
             </svg>
-            <span class="badge-dot" id="header-alert-badge" style="display:block; background:#ef4444;"></span>
+            <span class="badge-dot" id="header-alert-badge" style="display:block; background:#ff6b00;"></span>
           </button>
           
           <!-- Theme Toggle Option -->
@@ -665,11 +665,11 @@
             </div>
           </div>
 
-          <!-- ================= 60-MINUTE PENDING APPROVAL RED SLA ESCALATION BANNER ================= -->
-          <div id="overdue-approvals-red-banner" class="dashboard-card" style="padding:20px 24px; margin-bottom:22px; background:linear-gradient(135deg, rgba(220, 38, 38, 0.22), rgba(153, 27, 27, 0.14)); border:2px solid #ef4444; border-radius:12px; box-shadow:0 8px 28px rgba(239, 68, 68, 0.25);">
+          <!-- ================= 60-MINUTE PENDING APPROVAL SLA ESCALATION BANNER (ORANGE & BLACK THEME) ================= -->
+          <div id="overdue-approvals-red-banner" class="dashboard-card" style="padding:20px 24px; margin-bottom:22px; background:linear-gradient(135deg, rgba(255, 107, 0, 0.12), rgba(9, 9, 11, 0.96)); border:1.5px solid #ff6b00; border-radius:12px; box-shadow:0 8px 28px rgba(255, 107, 0, 0.18);">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:14px; margin-bottom:14px;">
               <div style="display:flex; align-items:center; gap:12px;">
-                <div style="width:42px; height:42px; border-radius:10px; background:#dc2626; color:#ffffff; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 0 16px rgba(239,68,68,0.65);">
+                <div style="width:42px; height:42px; border-radius:10px; background:linear-gradient(135deg, #ff6b00, #ea580c); color:#09090b; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 0 16px rgba(255,107,0,0.45);">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
                     <line x1="12" y1="9" x2="12" y2="13"></line>
@@ -678,31 +678,31 @@
                 </div>
                 <div>
                   <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                    <span style="background:#dc2626; color:#ffffff; font-size:10.5px; font-weight:900; padding:3px 9px; border-radius:99px; letter-spacing:0.6px; text-transform:uppercase;">CRITICAL 60-MINUTE SLA BREACH</span>
-                    <h2 style="font-size:16px; font-weight:800; color:#fecaca; margin:0;" id="overdue-approvals-headline">3 Pending Approvals Exceeded 60-Minute SLA Threshold</h2>
+                    <span id="overdue-approvals-pill" style="background:#ff6b00; color:#09090b; font-size:10.5px; font-weight:900; padding:3px 10px; border-radius:99px; letter-spacing:0.6px; text-transform:uppercase;">60-MINUTE SLA WATCHDOG</span>
+                    <h2 style="font-size:16px; font-weight:800; color:#ffffff; margin:0;" id="overdue-approvals-headline">3 Pending Approvals Exceeded 60-Minute SLA Threshold</h2>
                   </div>
-                  <p style="font-size:12.5px; color:#fca5a5; margin-top:4px;" id="overdue-approvals-subtext">
-                    Automated escalation emails dispatched to designated approvers: <strong id="dashboard-designated-emails-label" style="color:#ffffff;">approvals@eims-prosystem.go.ke, claims-desk@eims-prosystem.go.ke, underwriting@eims-prosystem.go.ke</strong>
+                  <p style="font-size:12.5px; color:#a1a1aa; margin-top:4px;" id="overdue-approvals-subtext">
+                    Automated escalation emails dispatched to designated approvers: <strong id="dashboard-designated-emails-label" style="color:#ff8533;">approvals@eims-prosystem.go.ke, claims-desk@eims-prosystem.go.ke, underwriting@eims-prosystem.go.ke</strong>
                   </p>
                 </div>
               </div>
               <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                <button class="btn btn-secondary" onclick="fastForwardPendingApprovals60m()" title="Fast-forward any newly submitted pending claims or underwritings by +60 minutes to trigger red SLA alert" style="padding:7px 12px; font-size:11.5px; font-weight:700; border-color:#f87171; color:#fecaca; background:rgba(220,38,38,0.2);">
+                <button class="btn btn-secondary" onclick="fastForwardPendingApprovals60m()" title="Fast-forward any newly submitted pending claims or underwritings by +60 minutes to trigger 60-minute SLA alert" style="padding:7px 12px; font-size:11.5px; font-weight:700; border-color:#ff6b00; color:#ff8533; background:#121215;">
                   Simulate +60m SLA Breach
                 </button>
-                <button class="btn btn-secondary" onclick="navigateToView('alerts-simulator')" style="padding:7px 12px; font-size:11.5px; font-weight:700; border-color:#f87171; color:#ffffff; background:rgba(0,0,0,0.35);">
+                <button class="btn btn-secondary" onclick="navigateToView('alerts-simulator')" style="padding:7px 12px; font-size:11.5px; font-weight:700; border-color:#27272a; color:#ffffff; background:#09090b;">
                   Configure Alert Emails
                 </button>
-                <button class="btn btn-primary" onclick="approveAllOverdueItems()" style="padding:7px 14px; font-size:11.5px; font-weight:800; background:#dc2626; border:1px solid #fca5a5; color:#ffffff;">
+                <button class="btn btn-primary" onclick="approveAllOverdueItems()" style="padding:7px 14px; font-size:11.5px; font-weight:800; background:linear-gradient(135deg, #ff6b00, #ff8533); border:none; color:#09090b;">
                   Approve All Overdue Now
                 </button>
               </div>
             </div>
 
-            <div style="overflow-x:auto; background:rgba(9, 9, 11, 0.65); border:1px solid rgba(239, 68, 68, 0.45); border-radius:8px;">
+            <div style="overflow-x:auto; background:#09090b; border:1px solid rgba(255, 107, 0, 0.35); border-radius:8px;">
               <table style="width:100%; border-collapse:collapse; font-size:12.5px; text-align:left;">
                 <thead>
-                  <tr style="border-bottom:1px solid rgba(239, 68, 68, 0.35); color:#fca5a5; font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">
+                  <tr style="border-bottom:1px solid rgba(255, 107, 0, 0.28); background:rgba(255, 107, 0, 0.08); color:#ff8533; font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">
                     <th style="padding:10px 14px;">Reference ID</th>
                     <th style="padding:10px 14px;">Category</th>
                     <th style="padding:10px 14px;">Client / Claimant &amp; Risk</th>
@@ -1387,7 +1387,7 @@
           </div>
 
           <!-- DESIGNATED EMAIL RECIPIENTS CONFIGURATION CARD -->
-          <div class="dashboard-card" id="designated-emails-config-card" style="padding:20px 24px; margin-bottom:24px; background:linear-gradient(135deg, rgba(255,107,0,0.10), rgba(17,24,39,0.85)); border:1px solid #ff6b00; border-radius:12px;">
+          <div class="dashboard-card" id="designated-emails-config-card" style="padding:20px 24px; margin-bottom:24px; background:linear-gradient(135deg, rgba(255,107,0,0.12), rgba(9,9,11,0.96)); border:1px solid #ff6b00; border-radius:12px;">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
               <div>
                 <h2 style="font-size:15.5px; font-weight:800; color:var(--text-primary); margin:0;">Designated Approval &amp; Underwriting Alert Email Recipients</h2>
@@ -1410,7 +1410,7 @@
               <button class="btn btn-secondary" onclick="testDesignatedEmailDispatch('CLAIM_AWAITING_APPROVAL')" style="padding:10px 14px; font-weight:700; border-color:#ff6b00; color:#ff8533;">
                 Test Claim Awaiting Approval Email
               </button>
-              <button class="btn btn-secondary" onclick="testDesignatedEmailDispatch('NEW_UNDERWRITING')" style="padding:10px 14px; font-weight:700; border-color:#10b981; color:#34d399;">
+              <button class="btn btn-secondary" onclick="testDesignatedEmailDispatch('NEW_UNDERWRITING')" style="padding:10px 14px; font-weight:700; border-color:#f59e0b; color:#fbbf24;">
                 Test New Underwriting Email
               </button>
             </div>
@@ -1747,15 +1747,15 @@
             </div>
           </div>
 
-          <!-- KPI SUMMARY METRICS ROW (MATCHES ATTACHMENT 1 SLEEK MODERN CARDS) -->
+          <!-- KPI SUMMARY METRICS ROW (ORANGE & BLACK THEME) -->
           <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:24px;">
             
             <!-- Card 1: Collections / Total Written Premium -->
-            <div style="background:#111622; border:1px solid #1e2638; border-radius:8px; padding:18px 22px; display:flex; flex-direction:column; justify-content:space-between; min-height:85px; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+            <div style="background:#121215; border:1px solid #27272a; border-top:2px solid #ff6b00; border-radius:8px; padding:18px 22px; display:flex; flex-direction:column; justify-content:space-between; min-height:85px; box-shadow:0 4px 12px rgba(0,0,0,0.4);">
               <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:12.5px; font-weight:500; color:#94a3b8; letter-spacing:0.2px;" id="kpi-1-label">Total Written Premium</span>
+                <span style="font-size:12.5px; font-weight:600; color:#a1a1aa; letter-spacing:0.2px;" id="kpi-1-label">Total Written Premium</span>
                 <!-- Gold Coin Hand SVG -->
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff6b00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M11 15h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L7 13"></path>
                   <path d="m7 21 1.6-1.4c.5-.4 1.2-.6 1.9-.6h5c1.7 0 3-1.3 3-3V7c0-1.7-1.3-3-3-3H7L3 9v8a4 4 0 0 0 4 4Z"></path>
                   <circle cx="17" cy="7" r="2"></circle>
@@ -1763,16 +1763,16 @@
               </div>
               <div>
                 <div style="font-size:24px; font-weight:800; color:#ffffff; margin-top:8px; line-height:1; letter-spacing:-0.5px;" id="kpi-1-val">KSh 48,500,000</div>
-                <div style="font-size:11px; color:#64748b; margin-top:6px;" id="kpi-1-sub">148 Active Policies</div>
+                <div style="font-size:11px; color:#ff8533; margin-top:6px;" id="kpi-1-sub">148 Active Policies</div>
               </div>
             </div>
 
             <!-- Card 2: Vehicles / Total Sum Insured -->
-            <div style="background:#111622; border:1px solid #1e2638; border-radius:8px; padding:18px 22px; display:flex; flex-direction:column; justify-content:space-between; min-height:85px; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+            <div style="background:#121215; border:1px solid #27272a; border-top:2px solid #ff8533; border-radius:8px; padding:18px 22px; display:flex; flex-direction:column; justify-content:space-between; min-height:85px; box-shadow:0 4px 12px rgba(0,0,0,0.4);">
               <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:12.5px; font-weight:500; color:#94a3b8; letter-spacing:0.2px;" id="kpi-2-label">Total Sum Insured</span>
-                <!-- Green Vehicle SUV SVG -->
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <span style="font-size:12.5px; font-weight:600; color:#a1a1aa; letter-spacing:0.2px;" id="kpi-2-label">Total Sum Insured</span>
+                <!-- Orange Vehicle SUV SVG -->
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff8533" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C1.4 11.2 1 12 1 13v3c0 .6.4 1 1 1h2"></path>
                   <circle cx="7" cy="17" r="2"></circle>
                   <circle cx="17" cy="17" r="2"></circle>
@@ -1780,14 +1780,14 @@
               </div>
               <div>
                 <div style="font-size:24px; font-weight:800; color:#ffffff; margin-top:8px; line-height:1; letter-spacing:-0.5px;" id="kpi-2-val">KSh 850,000,000</div>
-                <div style="font-size:11px; color:#64748b; margin-top:6px;" id="kpi-2-sub">Portfolio Liability</div>
+                <div style="font-size:11px; color:#a1a1aa; margin-top:6px;" id="kpi-2-sub">Portfolio Liability</div>
               </div>
             </div>
 
             <!-- Card 3: Exempted / Average Premium -->
-            <div style="background:#111622; border:1px solid #1e2638; border-radius:8px; padding:18px 22px; display:flex; flex-direction:column; justify-content:space-between; min-height:85px; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+            <div style="background:#121215; border:1px solid #27272a; border-top:2px solid #f59e0b; border-radius:8px; padding:18px 22px; display:flex; flex-direction:column; justify-content:space-between; min-height:85px; box-shadow:0 4px 12px rgba(0,0,0,0.4);">
               <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:12.5px; font-weight:500; color:#94a3b8; letter-spacing:0.2px;" id="kpi-3-label">Average Premium / Risk</span>
+                <span style="font-size:12.5px; font-weight:600; color:#a1a1aa; letter-spacing:0.2px;" id="kpi-3-label">Average Premium / Risk</span>
                 <!-- Amber Key Car SVG -->
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M14 16H9m10 0h1a1 1 0 0 0 1-1v-2.5a1.5 1.5 0 0 0-.4-1L18.5 9.4A2.5 2.5 0 0 0 16.7 8.5H14"></path>
@@ -1800,16 +1800,16 @@
               </div>
               <div>
                 <div style="font-size:24px; font-weight:800; color:#ffffff; margin-top:8px; line-height:1; letter-spacing:-0.5px;" id="kpi-3-val">KSh 327,700</div>
-                <div style="font-size:11px; color:#64748b; margin-top:6px;" id="kpi-3-sub">Motor & Non-Motor Avg</div>
+                <div style="font-size:11px; color:#a1a1aa; margin-top:6px;" id="kpi-3-sub">Motor & Non-Motor Avg</div>
               </div>
             </div>
 
             <!-- Card 4: Exited / Active Compliance -->
-            <div style="background:#111622; border:1px solid #1e2638; border-radius:8px; padding:18px 22px; display:flex; flex-direction:column; justify-content:space-between; min-height:85px; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+            <div style="background:#121215; border:1px solid #27272a; border-top:2px solid #ea580c; border-radius:8px; padding:18px 22px; display:flex; flex-direction:column; justify-content:space-between; min-height:85px; box-shadow:0 4px 12px rgba(0,0,0,0.4);">
               <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:12.5px; font-weight:500; color:#94a3b8; letter-spacing:0.2px;" id="kpi-4-label">Active Compliance</span>
-                <!-- Bright Green Route SVG -->
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <span style="font-size:12.5px; font-weight:600; color:#a1a1aa; letter-spacing:0.2px;" id="kpi-4-label">Active Compliance</span>
+                <!-- Orange Route SVG -->
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff6b00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M6 3v12"></path>
                   <path d="M18 9v12"></path>
                   <path d="M6 15a6 6 0 0 0 12-6"></path>
@@ -1819,7 +1819,7 @@
               </div>
               <div>
                 <div style="font-size:24px; font-weight:800; color:#ffffff; margin-top:8px; line-height:1; letter-spacing:-0.5px;" id="kpi-4-val">100% AKI Certs</div>
-                <div style="font-size:11px; color:#64748b; margin-top:6px;" id="kpi-4-sub">IRA & KRA Compliant</div>
+                <div style="font-size:11px; color:#ff8533; margin-top:6px;" id="kpi-4-sub">IRA & KRA Compliant</div>
               </div>
             </div>
 
@@ -1829,29 +1829,29 @@
           <div style="display:grid; grid-template-columns: 2fr 1.2fr; gap:20px; margin-bottom:24px;">
             
             <!-- Chart 1: Ultra-Premium Glowing Area Spline & Bar Trend Chart -->
-            <div class="dashboard-card" style="padding:22px; background:#0b0f19; border:1px solid #1e2638; border-radius:10px;">
+            <div class="dashboard-card" style="padding:22px; background:#09090b; border:1px solid #27272a; border-radius:10px;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
                 <div>
                   <h3 style="font-size:15.5px; font-weight:800; color:#ffffff; display:flex; align-items:center; gap:8px;">
                     <span></span> Financial Underwriting & Loss Performance Curve
                   </h3>
-                  <span style="font-size:11.5px; color:#94a3b8;">Real-time comparison of Gross Written Premium vs Incurred Loss Claims</span>
+                  <span style="font-size:11.5px; color:#a1a1aa;">Real-time comparison of Gross Written Premium vs Incurred Loss Claims</span>
                 </div>
                 
                 <!-- Chart Type Selector & Legend -->
                 <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
-                  <div style="display:flex; background:rgba(255,255,255,0.06); border-radius:6px; padding:3px; gap:4px;">
-                    <button id="chart-style-spline-btn" onclick="setReportChartType('spline')" style="padding:4px 10px; font-size:11px; font-weight:700; border-radius:4px; background:#ff6b00; color:#fff; border:none; cursor:pointer;">
+                  <div style="display:flex; background:#121215; border:1px solid #27272a; border-radius:6px; padding:3px; gap:4px;">
+                    <button id="chart-style-spline-btn" onclick="setReportChartType('spline')" style="padding:4px 10px; font-size:11px; font-weight:700; border-radius:4px; background:#ff6b00; color:#09090b; border:none; cursor:pointer;">
                        Glowing Wave
                     </button>
-                    <button id="chart-style-bar-btn" onclick="setReportChartType('bar')" style="padding:4px 10px; font-size:11px; font-weight:700; border-radius:4px; background:transparent; color:#94a3b8; border:none; cursor:pointer;">
+                    <button id="chart-style-bar-btn" onclick="setReportChartType('bar')" style="padding:4px 10px; font-size:11px; font-weight:700; border-radius:4px; background:transparent; color:#a1a1aa; border:none; cursor:pointer;">
                        3D Dual Bars
                     </button>
                   </div>
 
                   <div style="display:flex; gap:12px; font-size:11px; font-weight:700;">
                     <span style="display:flex; align-items:center; gap:5px; color:#ff8533;"><span style="width:10px; height:10px; background:#ff6b00; border-radius:50%; box-shadow:0 0 8px #ff6b00;"></span> Written Premium</span>
-                    <span style="display:flex; align-items:center; gap:5px; color:#00f2fe;"><span style="width:10px; height:10px; background:#00f2fe; border-radius:50%; box-shadow:0 0 8px #00f2fe;"></span> Loss Claims</span>
+                    <span style="display:flex; align-items:center; gap:5px; color:#fbbf24;"><span style="width:10px; height:10px; background:#f59e0b; border-radius:50%; box-shadow:0 0 8px #f59e0b;"></span> Loss Claims</span>
                   </div>
                 </div>
               </div>
@@ -1875,12 +1875,12 @@
 
           </div>
 
-          <!-- ================= AI ANALYTICS & PREDICTIVE BI WORKBENCH (UNDER REPORTS) ================= -->
-          <div class="dashboard-card" id="reports-ai-analytics-workbench" style="padding:24px; margin-bottom:24px; background: linear-gradient(135deg, rgba(255,107,0,0.09), rgba(15,23,42,0.92)); border:1px solid #ff6b00; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.28);">
+          <!-- ================= AI ANALYTICS & PREDICTIVE BI WORKBENCH (UNDER REPORTS — ORANGE & BLACK THEME) ================= -->
+          <div class="dashboard-card" id="reports-ai-analytics-workbench" style="padding:24px; margin-bottom:24px; background: linear-gradient(135deg, rgba(255,107,0,0.12), rgba(9,9,11,0.96)); border:1.5px solid #ff6b00; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.35);">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
               <div>
                 <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                  <span style="background:#ff6b00; color:#ffffff; font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:99px; letter-spacing:0.5px; text-transform:uppercase;">NEURAL BI ENGINE v4.2</span>
+                  <span style="background:#ff6b00; color:#09090b; font-size:10.5px; font-weight:900; padding:3px 9px; border-radius:99px; letter-spacing:0.5px; text-transform:uppercase;">NEURAL BI ENGINE v4.2</span>
                   <h3 style="font-size:16.5px; font-weight:800; color:var(--text-primary); margin:0;">AI Analytics &amp; Predictive Actuarial Intelligence Tool</h3>
                 </div>
                 <p style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">
@@ -1896,15 +1896,15 @@
             </div>
 
             <!-- Interactive Natural Language AI Query Bar & 1-Click Presets -->
-            <div class="no-print" style="background:rgba(9,9,11,0.65); border:1px solid var(--border-color); border-radius:10px; padding:14px; margin-bottom:16px;">
+            <div class="no-print" style="background:#09090b; border:1px solid rgba(255,107,0,0.3); border-radius:10px; padding:14px; margin-bottom:16px;">
               <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
                 <input type="text" class="form-control" id="reports-ai-query-input" placeholder="Ask AI Analytics (e.g., Forecast Q4 Motor Loss Ratio, Identify high-risk branches, Optimize EV loading...)" style="flex:1; min-width:260px;" onkeydown="if(event.key==='Enter') runReportsAIAnalytics()">
-                <button class="btn btn-primary" onclick="runReportsAIAnalytics()" style="padding:10px 18px; font-weight:800;">
+                <button class="btn btn-primary" onclick="runReportsAIAnalytics()" style="padding:10px 18px; font-weight:800; background:linear-gradient(135deg, #ff6b00, #ff8533); color:#09090b; border:none;">
                   Run AI Analytics
                 </button>
               </div>
               <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-                <span style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">AI Preset Models:</span>
+                <span style="font-size:11px; font-weight:700; color:#ff8533; text-transform:uppercase;">AI Preset Models:</span>
                 <button class="btn btn-secondary" onclick="runReportsAIAnalytics('Forecast 90-Day Loss Ratio &amp; GWP Trajectory')" style="padding:4px 10px; font-size:11px;">90-Day Loss Ratio Forecast</button>
                 <button class="btn btn-secondary" onclick="runReportsAIAnalytics('Detect Claim Fraud Anomalies &amp; Garage Cost Drift')" style="padding:4px 10px; font-size:11px;">Anomaly &amp; Fraud Drift Scan</button>
                 <button class="btn btn-secondary" onclick="runReportsAIAnalytics('Branch Acquisition Efficiency &amp; Broker Margin Audit')" style="padding:4px 10px; font-size:11px;">Branch Profitability Rank</button>
@@ -1913,32 +1913,32 @@
               </div>
             </div>
 
-            <!-- 4 Predictive AI Telemetry Cards -->
+            <!-- 4 Predictive AI Telemetry Cards (Orange & Black Theme) -->
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:16px;">
-              <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(255,107,0,0.3); border-radius:8px; padding:12px 14px;">
-                <div style="font-size:11px; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">AI 90-Day GWP Forecast</div>
+              <div style="background:#09090b; border:1px solid rgba(255,107,0,0.4); border-top:2px solid #ff6b00; border-radius:8px; padding:12px 14px;">
+                <div style="font-size:11px; color:#a1a1aa; font-weight:600; text-transform:uppercase;">AI 90-Day GWP Forecast</div>
                 <div style="font-size:19px; font-weight:800; color:#ff8533; margin-top:4px;" id="ai-analytics-kpi-gwp">KSh 154.8M (+14.2%)</div>
-                <div style="font-size:11px; color:#34d399; margin-top:2px;" id="ai-analytics-kpi-gwp-sub">Confidence Interval: 96.4%</div>
+                <div style="font-size:11px; color:#fbbf24; margin-top:2px;" id="ai-analytics-kpi-gwp-sub">Confidence Interval: 96.4%</div>
               </div>
-              <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(56,189,248,0.3); border-radius:8px; padding:12px 14px;">
-                <div style="font-size:11px; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Projected Net Loss Ratio</div>
-                <div style="font-size:19px; font-weight:800; color:#38bdf8; margin-top:4px;" id="ai-analytics-kpi-lr">38.4% (-3.1% YoY)</div>
-                <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;" id="ai-analytics-kpi-lr-sub">IRA Benchmark: &lt; 55.0%</div>
+              <div style="background:#09090b; border:1px solid rgba(255,107,0,0.35); border-top:2px solid #ff8533; border-radius:8px; padding:12px 14px;">
+                <div style="font-size:11px; color:#a1a1aa; font-weight:600; text-transform:uppercase;">Projected Net Loss Ratio</div>
+                <div style="font-size:19px; font-weight:800; color:#ffffff; margin-top:4px;" id="ai-analytics-kpi-lr">38.4% (-3.1% YoY)</div>
+                <div style="font-size:11px; color:#ff8533; margin-top:2px;" id="ai-analytics-kpi-lr-sub">IRA Benchmark: &lt; 55.0%</div>
               </div>
-              <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(245,158,11,0.3); border-radius:8px; padding:12px 14px;">
-                <div style="font-size:11px; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">AI Anomaly &amp; Drift Flags</div>
+              <div style="background:#09090b; border:1px solid rgba(245,158,11,0.4); border-top:2px solid #f59e0b; border-radius:8px; padding:12px 14px;">
+                <div style="font-size:11px; color:#a1a1aa; font-weight:600; text-transform:uppercase;">AI Anomaly &amp; Drift Flags</div>
                 <div style="font-size:19px; font-weight:800; color:#fbbf24; margin-top:4px;" id="ai-analytics-kpi-anomaly">2 Outliers Isolated</div>
-                <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;" id="ai-analytics-kpi-anomaly-sub">SIU Savings: KSh 2.45M</div>
+                <div style="font-size:11px; color:#a1a1aa; margin-top:2px;" id="ai-analytics-kpi-anomaly-sub">SIU Savings: KSh 2.45M</div>
               </div>
-              <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(16,185,129,0.3); border-radius:8px; padding:12px 14px;">
-                <div style="font-size:11px; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Actuarial Tariff Recommendation</div>
-                <div style="font-size:19px; font-weight:800; color:#34d399; margin-top:4px;" id="ai-analytics-kpi-rec">Rebate EV ADAS -2.5%</div>
-                <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;" id="ai-analytics-kpi-rec-sub">Est. Retention Lift: +9.8%</div>
+              <div style="background:#09090b; border:1px solid rgba(255,107,0,0.4); border-top:2px solid #ea580c; border-radius:8px; padding:12px 14px;">
+                <div style="font-size:11px; color:#a1a1aa; font-weight:600; text-transform:uppercase;">Actuarial Tariff Recommendation</div>
+                <div style="font-size:19px; font-weight:800; color:#ff8533; margin-top:4px;" id="ai-analytics-kpi-rec">Rebate EV ADAS -2.5%</div>
+                <div style="font-size:11px; color:#fbbf24; margin-top:2px;" id="ai-analytics-kpi-rec-sub">Est. Retention Lift: +9.8%</div>
               </div>
             </div>
 
             <!-- AI Executive Synthesis Output Box -->
-            <div style="background:rgba(9,9,11,0.55); border-left:4px solid #ff6b00; border-radius:6px; padding:14px 16px;">
+            <div style="background:#09090b; border:1px solid rgba(255,107,0,0.28); border-left:4px solid #ff6b00; border-radius:6px; padding:14px 16px;">
               <div id="embedded-ai-report-summary" style="font-size:13px; line-height:1.65; color:var(--text-primary);">
                 Querying live production, claims, and underwriting database...
               </div>
@@ -4030,7 +4030,7 @@
           <div class="view-title-block" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
             <div>
               <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;">
-                <span style="background:linear-gradient(135deg, #ff6b00, #dc2626); color:#ffffff; font-size:11px; font-weight:900; padding:4px 10px; border-radius:99px; letter-spacing:0.6px; text-transform:uppercase;">AUTONOMOUS KERNEL v9.4</span>
+                <span style="background:linear-gradient(135deg, #ff6b00, #ea580c); color:#09090b; font-size:11px; font-weight:900; padding:4px 10px; border-radius:99px; letter-spacing:0.6px; text-transform:uppercase;">AUTONOMOUS KERNEL v9.4</span>
                 <span id="god-mode-status-pill" class="status-badge approved" style="font-size:11.5px;">CONTINUOUS SELF-IMPROVEMENT: ACTIVE</span>
               </div>
               <h1>God Mode: Continuous Platform Self-Improvement Engine</h1>
@@ -4040,7 +4040,7 @@
               <button class="btn btn-secondary" id="god-mode-toggle-btn" onclick="toggleGodModeLoop()" style="border-color:#ff6b00; color:#ff8533; font-weight:700;">
                 Pause Autonomous Loop
               </button>
-              <button class="btn btn-primary" onclick="runGodModeImprovementCycle(true)" style="background:linear-gradient(135deg, #ff6b00, #dc2626); font-weight:800; border:none;">
+              <button class="btn btn-primary" onclick="runGodModeImprovementCycle(true)" style="background:linear-gradient(135deg, #ff6b00, #ff8533); color:#09090b; font-weight:800; border:none;">
                 Execute Self-Improvement Cycle Now
               </button>
             </div>
@@ -4051,22 +4051,22 @@
             <div class="dashboard-card" style="padding:20px; border-top:3px solid #ff6b00;">
               <div style="font-size:11.5px; color:var(--text-secondary); font-weight:700; text-transform:uppercase;">Evolution Generation</div>
               <div style="font-size:28px; font-weight:900; color:#ff8533; margin-top:6px;" id="god-kpi-generation">Gen #142</div>
-              <div style="font-size:11.5px; color:#34d399; margin-top:4px;" id="god-kpi-generation-sub">Auto-cycles every 25s</div>
+              <div style="font-size:11.5px; color:#fbbf24; margin-top:4px;" id="god-kpi-generation-sub">Auto-cycles every 25s</div>
             </div>
-            <div class="dashboard-card" style="padding:20px; border-top:3px solid #10b981;">
+            <div class="dashboard-card" style="padding:20px; border-top:3px solid #ff8533;">
               <div style="font-size:11.5px; color:var(--text-secondary); font-weight:700; text-transform:uppercase;">AI Triage &amp; Fraud Precision</div>
-              <div style="font-size:28px; font-weight:900; color:#34d399; margin-top:6px;" id="god-kpi-accuracy">99.42%</div>
-              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:4px;" id="god-kpi-accuracy-sub">+0.84% via self-learning</div>
+              <div style="font-size:28px; font-weight:900; color:#ffffff; margin-top:6px;" id="god-kpi-accuracy">99.42%</div>
+              <div style="font-size:11.5px; color:#ff8533; margin-top:4px;" id="god-kpi-accuracy-sub">+0.84% via self-learning</div>
             </div>
-            <div class="dashboard-card" style="padding:20px; border-top:3px solid #38bdf8;">
+            <div class="dashboard-card" style="padding:20px; border-top:3px solid #f59e0b;">
               <div style="font-size:11.5px; color:var(--text-secondary); font-weight:700; text-transform:uppercase;">Self-Healed System Anomalies</div>
-              <div style="font-size:28px; font-weight:900; color:#38bdf8; margin-top:6px;" id="god-kpi-healed">38 Fixed</div>
+              <div style="font-size:28px; font-weight:900; color:#fbbf24; margin-top:6px;" id="god-kpi-healed">38 Fixed</div>
               <div style="font-size:11.5px; color:var(--text-secondary); margin-top:4px;" id="god-kpi-healed-sub">26/26 UI &amp; Data Invariants Passing</div>
             </div>
-            <div class="dashboard-card" style="padding:20px; border-top:3px solid #ef4444;">
+            <div class="dashboard-card" style="padding:20px; border-top:3px solid #ea580c;">
               <div style="font-size:11.5px; color:var(--text-secondary); font-weight:700; text-transform:uppercase;">60-Min SLA Escalation Guard</div>
-              <div style="font-size:28px; font-weight:900; color:#f87171; margin-top:6px;" id="god-kpi-sla-guard">100% Active</div>
-              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:4px;" id="god-kpi-sla-sub">Real-time Red Dashboard Watchdog</div>
+              <div style="font-size:28px; font-weight:900; color:#ff6b00; margin-top:6px;" id="god-kpi-sla-guard">100% Active</div>
+              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:4px;" id="god-kpi-sla-sub">Real-time Dashboard SLA Watchdog</div>
             </div>
           </div>
 
@@ -4085,15 +4085,15 @@
                 </button>
                 <button class="btn btn-secondary" onclick="triggerGodModeSubroutine('ACTUARIAL_TARIFFS')" style="justify-content:space-between; width:100%; padding:11px 14px; font-size:12.5px; text-align:left;">
                   <span>2. Auto-Optimize Underwriting Loss-Ratio Tariffs</span>
-                  <span style="color:#34d399; font-weight:800;">Run Now</span>
+                  <span style="color:#ff8533; font-weight:800;">Run Now</span>
                 </button>
                 <button class="btn btn-secondary" onclick="triggerGodModeSubroutine('SLA_ESCALATION_SWEEP')" style="justify-content:space-between; width:100%; padding:11px 14px; font-size:12.5px; text-align:left;">
-                  <span>3. Sweep &gt;60m Pending Approvals &amp; Dispatch Red Alerts</span>
-                  <span style="color:#f87171; font-weight:800;">Run Now</span>
+                  <span>3. Sweep &gt;60m Pending Approvals &amp; Dispatch Alerts</span>
+                  <span style="color:#ff6b00; font-weight:800;">Run Now</span>
                 </button>
                 <button class="btn btn-secondary" onclick="triggerGodModeSubroutine('DOM_INVARIANT_HEAL')" style="justify-content:space-between; width:100%; padding:11px 14px; font-size:12.5px; text-align:left;">
                   <span>4. Verify &amp; Self-Heal All 25 Module DOM Invariants</span>
-                  <span style="color:#38bdf8; font-weight:800;">Run Now</span>
+                  <span style="color:#fbbf24; font-weight:800;">Run Now</span>
                 </button>
                 <button class="btn btn-secondary" onclick="triggerGodModeSubroutine('CACHE_LATENCY_OPT')" style="justify-content:space-between; width:100%; padding:11px 14px; font-size:12.5px; text-align:left;">
                   <span>5. Compact Ledger Indexes &amp; Optimize Query Latency</span>

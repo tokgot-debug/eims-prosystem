@@ -8453,6 +8453,7 @@ function seedPendingApprovalTimestamps() {
 }
 
 function getPendingApprovalItems() {
+  seedPendingApprovalTimestamps();
   const now = Date.now();
   const items = [];
 
@@ -8503,6 +8504,7 @@ function renderOverdueApprovalsDashboard() {
   const banner = document.getElementById("overdue-approvals-red-banner");
   const tbody = document.getElementById("overdue-approvals-tbody");
   const headline = document.getElementById("overdue-approvals-headline");
+  const pill = document.getElementById("overdue-approvals-pill");
   if (!banner || !tbody) return;
 
   syncDesignatedEmailLabels();
@@ -8524,7 +8526,13 @@ function renderOverdueApprovalsDashboard() {
   const badge = document.getElementById("header-alert-badge");
   if (badge) {
     badge.style.display = allPending.length > 0 ? "block" : "none";
-    badge.style.background = overdueItems.length > 0 ? "#ef4444" : "#f59e0b";
+    badge.style.background = "#ff6b00";
+  }
+
+  if (pill) {
+    pill.innerText = overdueItems.length > 0 ? "CRITICAL 60-MINUTE SLA BREACH" : "60-MINUTE SLA WATCHDOG";
+    pill.style.background = "#ff6b00";
+    pill.style.color = "#09090b";
   }
 
   if (headline) {
@@ -8541,8 +8549,8 @@ function renderOverdueApprovalsDashboard() {
 
   if (allPending.length === 0) {
     tbody.innerHTML = `
-      <tr>
-        <td colspan="7" style="padding:14px; text-align:center; color:#86efac; font-weight:700;">
+      <tr style="background:#121215;">
+        <td colspan="7" style="padding:14px; text-align:center; color:#ff8533; font-weight:700;">
           All pending Claims and Underwriting approvals have been cleared. 60-Minute SLA compliance is at 100%.
         </td>
       </tr>
@@ -8552,26 +8560,26 @@ function renderOverdueApprovalsDashboard() {
 
   allPending.forEach(item => {
     const tr = document.createElement("tr");
-    tr.style.borderBottom = "1px solid rgba(239, 68, 68, 0.25)";
-    tr.style.background = item.isOverdue60m ? "rgba(220, 38, 38, 0.18)" : "rgba(245, 158, 11, 0.08)";
+    tr.style.borderBottom = "1px solid rgba(255, 107, 0, 0.22)";
+    tr.style.background = item.isOverdue60m ? "rgba(255, 107, 0, 0.12)" : "#121215";
 
     const slaBadge = item.isOverdue60m
-      ? `<span style="background:#dc2626; color:#ffffff; font-weight:900; font-size:11px; padding:4px 10px; border-radius:99px; display:inline-block; box-shadow:0 0 10px rgba(220,38,38,0.6);">OVERDUE: ${item.elapsedMins} mins (&gt;60m SLA)</span>`
-      : `<span style="background:#d97706; color:#ffffff; font-weight:800; font-size:11px; padding:4px 10px; border-radius:99px; display:inline-block;">Awaiting: ${item.elapsedMins}m / 60m SLA</span>`;
+      ? `<span style="background:linear-gradient(135deg, #ff6b00, #ea580c); color:#09090b; font-weight:900; font-size:11px; padding:4px 10px; border-radius:99px; display:inline-block; box-shadow:0 0 10px rgba(255,107,0,0.45);">OVERDUE: ${item.elapsedMins} mins (&gt;60m SLA)</span>`
+      : `<span style="background:#1f1f24; border:1px solid #f59e0b; color:#fbbf24; font-weight:800; font-size:11px; padding:4px 10px; border-radius:99px; display:inline-block;">Awaiting: ${item.elapsedMins}m / 60m SLA</span>`;
 
     const emailStatus = item.isOverdue60m
-      ? `<span style="color:#fecaca; font-weight:700; font-size:11.5px;">Red Escalation Sent (${designatedAlertEmails[0] || "approvals@eims-prosystem.go.ke"})</span>`
-      : `<span style="color:#fde68a; font-weight:600; font-size:11.5px;">Initial Alert Sent (Awaiting Approval)</span>`;
+      ? `<span style="color:#ff8533; font-weight:700; font-size:11.5px;">SLA Escalation Sent (${designatedAlertEmails[0] || "approvals@eims-prosystem.go.ke"})</span>`
+      : `<span style="color:#fbbf24; font-weight:600; font-size:11.5px;">Initial Alert Sent (Awaiting Approval)</span>`;
 
     tr.innerHTML = `
       <td style="padding:10px 14px; font-weight:800; color:#ffffff;"><code>${item.id}</code></td>
-      <td style="padding:10px 14px; color:#fecaca; font-weight:700;">${item.categoryLabel}</td>
+      <td style="padding:10px 14px; color:#ff8533; font-weight:700;">${item.categoryLabel}</td>
       <td style="padding:10px 14px; color:#ffffff;">${item.name}</td>
-      <td style="padding:10px 14px; font-weight:800; color:#fca5a5;">${item.valueFormatted}</td>
+      <td style="padding:10px 14px; font-weight:800; color:#fbbf24;">${item.valueFormatted}</td>
       <td style="padding:10px 14px;">${slaBadge}</td>
       <td style="padding:10px 14px;">${emailStatus}</td>
       <td style="padding:10px 14px; text-align:right;">
-        <button class="btn btn-primary" onclick="approvePendingItem('${item.type}', '${item.id}')" style="padding:5px 12px; font-size:11.5px; font-weight:800; background:#10b981; border:none; color:#ffffff;">
+        <button class="btn btn-primary" onclick="approvePendingItem('${item.type}', '${item.id}')" style="padding:5px 12px; font-size:11.5px; font-weight:800; background:linear-gradient(135deg, #ff6b00, #ff8533); border:none; color:#09090b;">
           Approve Now
         </button>
       </td>
@@ -8642,7 +8650,7 @@ function fastForwardPendingApprovals60m() {
     });
   }
   if (count === 0 && claims.length > 0) {
-    // Re-open the most recent claim as Pending >60m to demonstrate the red alert
+    // Re-open the most recent claim as Pending >60m to demonstrate the SLA alert
     const latest = claims[claims.length - 1];
     latest.status = "Pending";
     latest.approvalStatus = "Awaiting Approval";
@@ -8667,7 +8675,7 @@ let godModeAuditLogs = [
     gen: "Gen #142",
     time: "22:28:10",
     subsystem: "SLA Watchdog Engine",
-    action: "Enforced 60-minute pending approval Red Alert escalation across Claims & Underwriting",
+    action: "Enforced 60-minute pending approval SLA escalation across Claims & Underwriting",
     gain: "100% SLA Visibility",
     status: "VERIFIED"
   },
@@ -8731,7 +8739,7 @@ function renderGodModeView() {
       <td><code>${entry.time}</code></td>
       <td><strong>${entry.subsystem}</strong></td>
       <td>${entry.action}</td>
-      <td><span style="color:#34d399; font-weight:700;">${entry.gain}</span></td>
+      <td><span style="color:#fbbf24; font-weight:700;">${entry.gain}</span></td>
       <td><span class="status-badge approved" style="font-size:10.5px;">${entry.status}</span></td>
     `;
     tbody.appendChild(tr);
@@ -8754,7 +8762,7 @@ function runGodModeImprovementCycle(manual = false) {
     },
     {
       subsystem: "60-Min SLA Escalation Guard",
-      action: `Audited pending approvals queue (${pendingOverdue} overdue >60m flagged in Red on Dashboard)`,
+      action: `Audited pending approvals queue (${pendingOverdue} overdue >60m flagged on Dashboard)`,
       gain: "Zero Silent Bottlenecks"
     },
     {
@@ -8828,7 +8836,7 @@ function triggerGodModeSubroutine(subType) {
       time: nowStr,
       subsystem: "60-Min SLA Escalation Sweep",
       action: `Escalated ${overdue.length} overdue pending approvals to ${designatedAlertEmails.join(", ")}`,
-      gain: `${overdue.length} Red Alerts Synced`,
+      gain: `${overdue.length} SLA Alerts Synced`,
       status: "ESCALATED"
     };
   } else if (subType === "DOM_INVARIANT_HEAL") {
@@ -8918,16 +8926,16 @@ function runReportsAIAnalytics(presetPrompt) {
       <div style="font-weight:800; color:#fbbf24; margin-bottom:6px;">AI Anomaly &amp; Fraud Drift Diagnostic</div>
       <div><strong>1. SIU Anomaly Scan:</strong> Neural inspection across ${totalClaimsCount} claims isolated <strong>${highFraud.length} high-risk dossiers</strong> (${highFraud.map(c => c.id).join(", ") || "CLM-2026-003"}) exhibiting EXIF timestamp or panel-beater parts markup variance.</div>
       <div style="margin-top:4px;"><strong>2. Garage Cost Drift:</strong> Paint &amp; bumper replacement estimates in Nairobi Industrial Area are trending <strong>+6.8%</strong> above the OEM benchmark catalog; God Mode has auto-clamped pre-repair authorization caps.</div>
-      <div style="margin-top:4px;"><strong>3. Estimated Savings:</strong> Automated Red-Path triage quarantine has prevented <strong>KSh 2,450,000</strong> in potentially inflated claim leakage this quarter.</div>
+      <div style="margin-top:4px;"><strong>3. Estimated Savings:</strong> Automated SIU triage quarantine has prevented <strong>KSh 2,450,000</strong> in potentially inflated claim leakage this quarter.</div>
     `;
   } else if (qLower.includes("sla") || qLower.includes("60-min") || qLower.includes("pending") || qLower.includes("bottleneck")) {
     if (kpiGwp) kpiGwp.innerText = `${pendingItems.length} Pending Files`;
     if (kpiLr) kpiLr.innerText = `${overdueCount} Overdue (>60m)`;
-    if (kpiAnomaly) kpiAnomaly.innerText = "60-Min Red SLA Active";
+    if (kpiAnomaly) kpiAnomaly.innerText = "60-Min SLA Active";
     if (kpiRec) kpiRec.innerText = "Auto-Notify Approvers";
     analysisHtml = `
-      <div style="font-weight:800; color:#f87171; margin-bottom:6px;">AI 60-Minute Pending Approval SLA Bottleneck Audit</div>
-      <div><strong>1. Live Queue Telemetry:</strong> Currently tracking <strong>${pendingItems.length} pending approvals</strong> across Claims &amp; Underwriting, of which <strong style="color:#ef4444;">${overdueCount} have exceeded the 60-minute SLA threshold</strong> and are flagged in RED on the Executive Dashboard.</div>
+      <div style="font-weight:800; color:#ff6b00; margin-bottom:6px;">AI 60-Minute Pending Approval SLA Bottleneck Audit</div>
+      <div><strong>1. Live Queue Telemetry:</strong> Currently tracking <strong>${pendingItems.length} pending approvals</strong> across Claims &amp; Underwriting, of which <strong style="color:#ff8533;">${overdueCount} have exceeded the 60-minute SLA threshold</strong> on the Executive Dashboard.</div>
       <div style="margin-top:4px;"><strong>2. Designated Email Escalation:</strong> Automated alerts are actively routing to <strong>${designatedAlertEmails.join(", ")}</strong> upon claim creation, new underwriting, and 60-minute SLA breach.</div>
       <div style="margin-top:4px;"><strong>3. AI Recommendation:</strong> Enable fast-track auto-approval for Green-Path claims under KSh 150,000 with Fraud Score &lt; 15% to cut median approval latency from 64 mins to <strong>4.2 mins</strong>.</div>
     `;
@@ -8937,7 +8945,7 @@ function runReportsAIAnalytics(presetPrompt) {
     if (kpiAnomaly) kpiAnomaly.innerText = "0 Treaty Breaches";
     if (kpiRec) kpiRec.innerText = "Cede >KSh 15M to XOL";
     analysisHtml = `
-      <div style="font-weight:800; color:#38bdf8; margin-bottom:6px;">AI Reinsurance Treaty &amp; Ceding Optimization</div>
+      <div style="font-weight:800; color:#ff8533; margin-bottom:6px;">AI Reinsurance Treaty &amp; Ceding Optimization</div>
       <div><strong>1. Split Efficiency:</strong> Current 3-Reinsurer split (<strong>50% Net Retention, 30% Kenya Re Mandatory Quota Share, 20% ZEP-RE / Africa Re Surplus</strong>) maintains a <strong>248% IRA Capital Adequacy Ratio</strong>.</div>
       <div style="margin-top:4px;"><strong>2. Catastrophe &amp; Fleet Protection:</strong> County Government Fleet policies exceeding KSh 15M sum insured are optimally shielded under the Working Excess of Loss (XOL) layer.</div>
     `;
@@ -8947,9 +8955,9 @@ function runReportsAIAnalytics(presetPrompt) {
     if (kpiAnomaly) kpiAnomaly.innerText = `${overdueCount} SLA Alerts`;
     if (kpiRec) kpiRec.innerText = "HQ & Mombasa Lead";
     analysisHtml = `
-      <div style="font-weight:800; color:#34d399; margin-bottom:6px;">AI Executive Query Synthesis: "${escapeHTML(query)}"</div>
+      <div style="font-weight:800; color:#ff8533; margin-bottom:6px;">AI Executive Query Synthesis: "${escapeHTML(query)}"</div>
       <div><strong>1. Cross-Branch Production:</strong> Nairobi HQ (44%) and Mombasa Branch (23%) drive 67% of gross underwriting volume, with 100% AKI digital certificate compliance and real-time KRA eTIMS tax synchronization.</div>
-      <div style="margin-top:4px;"><strong>2. Claims &amp; SLA Health:</strong> ${totalClaimsCount} active claims totaling KSh ${(totalClaimsCost / 1000000).toFixed(2)}M; ${overdueCount} pending approvals >60m are highlighted in Red on the Dashboard with email notifications sent to <strong>${designatedAlertEmails.join(", ")}</strong>.</div>
+      <div style="margin-top:4px;"><strong>2. Claims &amp; SLA Health:</strong> ${totalClaimsCount} active claims totaling KSh ${(totalClaimsCost / 1000000).toFixed(2)}M; ${overdueCount} pending approvals >60m are highlighted on the Dashboard with email notifications sent to <strong>${designatedAlertEmails.join(", ")}</strong>.</div>
       <div style="margin-top:4px;"><strong>3. God Mode Self-Improvement:</strong> Evolution <strong>Gen #${godModeGeneration}</strong> is active at <strong>${godModeAccuracy.toFixed(2)}%</strong> precision.</div>
     `;
   }
