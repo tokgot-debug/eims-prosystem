@@ -8526,22 +8526,21 @@ function renderOverdueApprovalsDashboard() {
   const badge = document.getElementById("header-alert-badge");
   if (badge) {
     badge.style.display = allPending.length > 0 ? "block" : "none";
-    badge.style.background = "#ff6b00";
+    badge.style.background = "#ea580c";
   }
 
   if (pill) {
-    pill.innerText = overdueItems.length > 0 ? "CRITICAL 60-MINUTE SLA BREACH" : "60-MINUTE SLA WATCHDOG";
-    pill.style.background = "#ff6b00";
-    pill.style.color = "#09090b";
+    const labelText = overdueItems.length > 0 ? "60-Min SLA Escalation" : "60-Min SLA Watchdog";
+    pill.innerHTML = `<span class="sla-status-dot"></span>${labelText}`;
   }
 
   if (headline) {
     if (overdueItems.length > 0) {
-      headline.innerText = `${overdueItems.length} Pending Approval${overdueItems.length === 1 ? "" : "s"} Exceeded 60-Minute SLA Threshold (${allPending.length} Total Pending)`;
+      headline.innerText = `${overdueItems.length} Pending Approval${overdueItems.length === 1 ? "" : "s"} Past 60-Minute SLA (${allPending.length} Total in Queue)`;
     } else if (allPending.length > 0) {
-      headline.innerText = `${allPending.length} Pending Approval${allPending.length === 1 ? "" : "s"} Active (Monitoring 60-Minute SLA Timer)`;
+      headline.innerText = `${allPending.length} Pending Approval${allPending.length === 1 ? "" : "s"} Active — Within 60-Minute SLA`;
     } else {
-      headline.innerText = `0 Pending Approvals Overdue — All Claims & Underwriting Files Approved Within 60-Min SLA`;
+      headline.innerText = `All Claims & Underwriting Approvals Cleared Within 60-Minute SLA`;
     }
   }
 
@@ -8549,9 +8548,9 @@ function renderOverdueApprovalsDashboard() {
 
   if (allPending.length === 0) {
     tbody.innerHTML = `
-      <tr style="background:#121215;">
-        <td colspan="7" style="padding:14px; text-align:center; color:#ff8533; font-weight:700;">
-          All pending Claims and Underwriting approvals have been cleared. 60-Minute SLA compliance is at 100%.
+      <tr>
+        <td colspan="7" style="padding:18px; text-align:center; color:#a1a1aa; font-weight:500;">
+          Queue clear — all pending Claims and Underwriting approvals have been reviewed within the 60-minute SLA.
         </td>
       </tr>
     `;
@@ -8560,27 +8559,31 @@ function renderOverdueApprovalsDashboard() {
 
   allPending.forEach(item => {
     const tr = document.createElement("tr");
-    tr.style.borderBottom = "1px solid rgba(255, 107, 0, 0.22)";
-    tr.style.background = item.isOverdue60m ? "rgba(255, 107, 0, 0.12)" : "#121215";
+
+    // Split "Faith Wanjiku (KBA 456X)" into crisp name + subtle muted plate
+    const parenIdx = item.name.indexOf(" (");
+    const primaryName = parenIdx > -1 ? escapeHTML(item.name.slice(0, parenIdx)) : escapeHTML(item.name);
+    const subPlate = parenIdx > -1 ? `<span style="color:#71717a; font-size:12px; margin-left:4px;">${escapeHTML(item.name.slice(parenIdx + 1))}</span>` : "";
 
     const slaBadge = item.isOverdue60m
-      ? `<span style="background:linear-gradient(135deg, #ff6b00, #ea580c); color:#09090b; font-weight:900; font-size:11px; padding:4px 10px; border-radius:99px; display:inline-block; box-shadow:0 0 10px rgba(255,107,0,0.45);">OVERDUE: ${item.elapsedMins} mins (&gt;60m SLA)</span>`
-      : `<span style="background:#1f1f24; border:1px solid #f59e0b; color:#fbbf24; font-weight:800; font-size:11px; padding:4px 10px; border-radius:99px; display:inline-block;">Awaiting: ${item.elapsedMins}m / 60m SLA</span>`;
+      ? `<span class="sla-time-pill overdue"><span class="sla-status-dot"></span>Overdue &middot; ${item.elapsedMins}m</span>`
+      : `<span class="sla-time-pill awaiting">Awaiting &middot; ${item.elapsedMins}m / 60m</span>`;
 
+    const primaryRecipient = escapeHTML(designatedAlertEmails[0] || "approvals@eims-prosystem.go.ke");
     const emailStatus = item.isOverdue60m
-      ? `<span style="color:#ff8533; font-weight:700; font-size:11.5px;">SLA Escalation Sent (${designatedAlertEmails[0] || "approvals@eims-prosystem.go.ke"})</span>`
-      : `<span style="color:#fbbf24; font-weight:600; font-size:11.5px;">Initial Alert Sent (Awaiting Approval)</span>`;
+      ? `<div style="color:#d4d4d8; font-weight:500; font-size:12px;">Escalation sent</div><div style="color:#71717a; font-size:11px;">${primaryRecipient}</div>`
+      : `<div style="color:#a1a1aa; font-weight:500; font-size:12px;">Initial alert sent</div><div style="color:#71717a; font-size:11px;">Awaiting review</div>`;
 
     tr.innerHTML = `
-      <td style="padding:10px 14px; font-weight:800; color:#ffffff;"><code>${item.id}</code></td>
-      <td style="padding:10px 14px; color:#ff8533; font-weight:700;">${item.categoryLabel}</td>
-      <td style="padding:10px 14px; color:#ffffff;">${item.name}</td>
-      <td style="padding:10px 14px; font-weight:800; color:#fbbf24;">${item.valueFormatted}</td>
-      <td style="padding:10px 14px;">${slaBadge}</td>
-      <td style="padding:10px 14px;">${emailStatus}</td>
-      <td style="padding:10px 14px; text-align:right;">
-        <button class="btn btn-primary" onclick="approvePendingItem('${item.type}', '${item.id}')" style="padding:5px 12px; font-size:11.5px; font-weight:800; background:linear-gradient(135deg, #ff6b00, #ff8533); border:none; color:#09090b;">
-          Approve Now
+      <td><span class="sla-ref-code">${escapeHTML(item.id)}</span></td>
+      <td><span class="sla-cat-chip">${escapeHTML(item.categoryLabel)}</span></td>
+      <td><span style="color:#f4f4f5; font-weight:500;">${primaryName}</span>${subPlate}</td>
+      <td style="font-weight:600; color:#f4f4f5; font-variant-numeric:tabular-nums; white-space:nowrap;">${escapeHTML(item.valueFormatted)}</td>
+      <td>${slaBadge}</td>
+      <td>${emailStatus}</td>
+      <td style="text-align:right;">
+        <button class="sla-row-approve-btn" onclick="approvePendingItem('${item.type}', '${item.id}')">
+          Approve
         </button>
       </td>
     `;
