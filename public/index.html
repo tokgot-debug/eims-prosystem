@@ -22,7 +22,7 @@
   </script>
   
   <!-- Modern CSS styling -->
-  <link rel="stylesheet" href="index.css?v=20261108f">
+  <link rel="stylesheet" href="index.css?v=20261108g">
   
   <!-- Leaflet CSS for Map integration -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
@@ -470,6 +470,45 @@
           </div>
         </div>
 
+        <!-- MODULE 3B: COMPOSITE INSURANCE LINES & DEDICATED MODULES -->
+        <div class="accordion-group open" id="mod-insurance-lines">
+          <button class="accordion-header" onclick="toggleAccordion('mod-insurance-lines')">
+            <div class="accordion-header-left">
+              <span class="accordion-icon">
+                <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+              </span>
+              <span>Insurance Lines &amp; Classes</span>
+            </div>
+            <span class="accordion-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-content">
+            <a class="accordion-item" data-view="ins-medical" id="nav-ins-medical">
+              <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+              Medical &amp; Health
+            </a>
+            <a class="accordion-item" data-view="ins-property" id="nav-ins-property">
+              <svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"></path></svg>
+              Property, Fire &amp; Eng
+            </a>
+            <a class="accordion-item" data-view="ins-life" id="nav-ins-life">
+              <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+              Life, GLA &amp; Pension
+            </a>
+            <a class="accordion-item" data-view="ins-wiba" id="nav-ins-wiba">
+              <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              WIBA &amp; Liability
+            </a>
+            <a class="accordion-item" data-view="ins-marine" id="nav-ins-marine">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"></circle><line x1="12" y1="22" x2="12" y2="8"></line><path d="M5 12H2a10 10 0 0 0 20 0h-3"></path></svg>
+              Marine, GIT &amp; Aviation
+            </a>
+            <a class="accordion-item" data-view="ins-agri" id="nav-ins-agri">
+              <svg viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"></path><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path></svg>
+              Agri, Livestock &amp; Climate
+            </a>
+          </div>
+        </div>
+
         <!-- MODULE 4: FINANCE, TAXES & COMPLIANCE -->
         <div class="accordion-group" id="mod-finance">
           <button class="accordion-header" onclick="toggleAccordion('mod-finance')">
@@ -641,6 +680,14 @@
               <option value="ev-underwriting">International EV Premium</option>
               <option value="reinsurance-ceding">Reinsurance Quota Share</option>
             </optgroup>
+            <optgroup label="3B. Insurance Lines &amp; Classes">
+              <option value="ins-medical">Medical &amp; Health Module</option>
+              <option value="ins-property">Property, Fire &amp; Engineering</option>
+              <option value="ins-life">Life, Group Life &amp; Pension</option>
+              <option value="ins-wiba">WIBA, Liability &amp; Fidelity</option>
+              <option value="ins-marine">Marine Cargo, GIT &amp; Aviation</option>
+              <option value="ins-agri">Agriculture, Livestock &amp; Climate</option>
+            </optgroup>
             <optgroup label="4. Finance &amp; Compliance">
               <option value="mpesa-gateway">M-PESA B2C &amp; STK Push</option>
               <option value="ecitizen-pesaflow">e-Citizen &amp; PesaFlow</option>
@@ -717,6 +764,60 @@
           </button>
         </div>
       </header>
+
+      <!-- Composite Multi-Line Insurance Modules Tab Bar -->
+      <nav class="ins-lines-tabbar-wrap" id="insurance-lines-tabbar" aria-label="Insurance Lines and Dedicated Modules">
+        <div class="ins-lines-tabbar" role="tablist">
+          <button class="ins-line-tab active" id="instab-dashboard" role="tab" aria-selected="true" data-target-view="dashboard" onclick="switchInsuranceLineTab('dashboard')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            <span>Command Overview</span>
+          </button>
+          <button class="ins-line-tab" id="instab-motor" role="tab" aria-selected="false" data-target-view="policy-registry" onclick="switchInsuranceLineTab('policy-registry')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+            <span>Motor &amp; Fleet</span>
+            <span class="ins-tab-badge" id="instab-count-motor">9</span>
+          </button>
+          <button class="ins-line-tab" id="instab-medical" role="tab" aria-selected="false" data-target-view="ins-medical" onclick="switchInsuranceLineTab('ins-medical')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+            <span>Medical &amp; Health</span>
+            <span class="ins-tab-badge" id="instab-count-medical">2</span>
+          </button>
+          <button class="ins-line-tab" id="instab-property" role="tab" aria-selected="false" data-target-view="ins-property" onclick="switchInsuranceLineTab('ins-property')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"></path></svg>
+            <span>Property &amp; Fire</span>
+            <span class="ins-tab-badge" id="instab-count-property">2</span>
+          </button>
+          <button class="ins-line-tab" id="instab-life" role="tab" aria-selected="false" data-target-view="ins-life" onclick="switchInsuranceLineTab('ins-life')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+            <span>Life &amp; Pension</span>
+            <span class="ins-tab-badge" id="instab-count-life">2</span>
+          </button>
+          <button class="ins-line-tab" id="instab-wiba" role="tab" aria-selected="false" data-target-view="ins-wiba" onclick="switchInsuranceLineTab('ins-wiba')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            <span>WIBA &amp; Liability</span>
+            <span class="ins-tab-badge" id="instab-count-wiba">2</span>
+          </button>
+          <button class="ins-line-tab" id="instab-marine" role="tab" aria-selected="false" data-target-view="ins-marine" onclick="switchInsuranceLineTab('ins-marine')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"></circle><line x1="12" y1="22" x2="12" y2="8"></line><path d="M5 12H2a10 10 0 0 0 20 0h-3"></path></svg>
+            <span>Marine &amp; Transit</span>
+            <span class="ins-tab-badge" id="instab-count-marine">2</span>
+          </button>
+          <button class="ins-line-tab" id="instab-agri" role="tab" aria-selected="false" data-target-view="ins-agri" onclick="switchInsuranceLineTab('ins-agri')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"></path><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path></svg>
+            <span>Agri &amp; Livestock</span>
+            <span class="ins-tab-badge" id="instab-count-agri">2</span>
+          </button>
+        </div>
+
+        <!-- Contextual Motor & Fleet Sub-Module Tabs (shown when any Motor/EV/Fleet view is active) -->
+        <div class="motor-subtabs-strip" id="motor-subtabs-strip" style="display:none;">
+          <span class="motor-subtabs-label">Motor &amp; Fleet Sub-Modules:</span>
+          <button class="motor-subtab-pill active" id="motorsub-policy-registry" onclick="navigateToView('policy-registry')">Master Policy Registry</button>
+          <button class="motor-subtab-pill" id="motorsub-aki-certificates" onclick="navigateToView('aki-certificates')">AKI Digital Motor Certs (DMVIC)</button>
+          <button class="motor-subtab-pill" id="motorsub-fleet-underwriting" onclick="navigateToView('fleet-underwriting')">County &amp; Commercial Fleet</button>
+          <button class="motor-subtab-pill" id="motorsub-ev-underwriting" onclick="navigateToView('ev-underwriting')">Electric Vehicle (EV) Line</button>
+        </div>
+      </nav>
       
       <!-- Primary Viewport -->
       <div class="app-view-container">
@@ -1454,7 +1555,19 @@
           <div class="dashboard-card" style="padding: 20px; margin-bottom: 24px;">
             <div style="display:flex; gap:16px; flex-wrap:wrap;">
               <div style="flex-grow:1; min-width:200px;">
-                <input type="text" class="form-control" id="directory-search-input" placeholder="Search claimant or plate..." oninput="window.renderClaimsDirectory()">
+                <input type="text" class="form-control" id="directory-search-input" placeholder="Search claimant, plate, asset or line..." oninput="window.renderClaimsDirectory()">
+              </div>
+              <div style="width:175px;">
+                <select class="form-control" id="directory-line-select" onchange="window.renderClaimsDirectory()">
+                  <option value="ALL">All Insurance Lines</option>
+                  <option value="Motor">Motor &amp; Fleet</option>
+                  <option value="Medical &amp; Health">Medical &amp; Health</option>
+                  <option value="Property &amp; Fire">Property &amp; Fire</option>
+                  <option value="Life &amp; Pension">Life &amp; Pension</option>
+                  <option value="WIBA &amp; Liability">WIBA &amp; Liability</option>
+                  <option value="Marine &amp; Transit">Marine &amp; Transit</option>
+                  <option value="Agriculture &amp; Livestock">Agriculture &amp; Livestock</option>
+                </select>
               </div>
               <div style="width:160px;">
                 <select class="form-control" id="directory-status-select" onchange="window.renderClaimsDirectory()">
@@ -1484,7 +1597,7 @@
                 <thead>
                   <tr>
                     <th>Claim ID</th>
-                    <th>Plate</th>
+                    <th>Plate / Asset Ref</th>
                     <th>Claimant</th>
                     <th>Incident Date</th>
                     <th>Damage Estimate</th>
@@ -1756,9 +1869,19 @@
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
                 <div>
                   <h3 style="font-size:15px; font-weight:600; margin:0;">Active &amp; Pending Policy Ledger</h3>
-                  <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Approve new underwriting files inline or manage debit notes and AKI certificates</div>
+                  <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Approve new underwriting files inline or manage debit notes, AKI motor certs &amp; IRA multi-line certificates</div>
                 </div>
                 <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                  <select class="form-control" id="policy-line-filter" onchange="renderPolicyRegistry()" style="width:190px; padding:6px 10px; font-size:12px;">
+                    <option value="ALL">All Insurance Classes</option>
+                    <option value="MOTOR_ALL">Motor, EV &amp; Fleet Only</option>
+                    <option value="Medical &amp; Health">Medical &amp; Health</option>
+                    <option value="Property &amp; Fire">Property, Fire &amp; Eng</option>
+                    <option value="Life &amp; Pension">Life, GLA &amp; Pension</option>
+                    <option value="WIBA &amp; Liability">WIBA &amp; Liability</option>
+                    <option value="Marine &amp; Transit">Marine, GIT &amp; Aviation</option>
+                    <option value="Agriculture &amp; Livestock">Agriculture &amp; Livestock</option>
+                  </select>
                   <select class="form-control" id="policy-status-filter" onchange="renderPolicyRegistry()" style="width:165px; padding:6px 10px; font-size:12px;">
                     <option value="ALL">All Statuses</option>
                     <option value="Pending">Pending Approval</option>
@@ -1766,7 +1889,7 @@
                     <option value="Suspended">Suspended</option>
                     <option value="Cancelled">Cancelled</option>
                   </select>
-                  <input type="text" class="form-control" id="policy-search-input" placeholder="Search policy, plate, client..." style="width:230px; padding:6px 12px; font-size:12px;">
+                  <input type="text" class="form-control" id="policy-search-input" placeholder="Search policy, plate, asset, client..." style="width:230px; padding:6px 12px; font-size:12px;">
                 </div>
               </div>
               
@@ -2051,11 +2174,15 @@
                 <label for="report-lob-filter" style="font-weight:700;">Line of Business</label>
                 <select class="form-control" id="report-lob-filter">
                   <option value="ALL" selected>All Risk Lines</option>
-                  <option value="Motor Comprehensive"> Motor Comprehensive</option>
-                  <option value="Motor Commercial"> Motor Commercial / Fleet</option>
-                  <option value="Fire & Perils"> Fire & Special Perils</option>
-                  <option value="Marine Cargo"> Marine & Freight Import</option>
-                  <option value="Engineering"> Engineering All Risks</option>
+                  <option value="Motor Comprehensive">Motor Comprehensive</option>
+                  <option value="Motor Commercial">Motor Commercial / Fleet</option>
+                  <option value="Medical &amp; Health">Medical &amp; Health Schemes</option>
+                  <option value="Fire &amp; Perils">Property, Fire &amp; Special Perils</option>
+                  <option value="Life &amp; Pension">Life, Group Life &amp; Pension</option>
+                  <option value="WIBA &amp; Liability">WIBA, Liability &amp; Fidelity</option>
+                  <option value="Marine Cargo">Marine Cargo, GIT &amp; Aviation</option>
+                  <option value="Agriculture &amp; Livestock">Agriculture, Livestock &amp; Climate</option>
+                  <option value="Engineering">Engineering All Risks</option>
                 </select>
               </div>
 
@@ -4506,6 +4633,1140 @@
             </div>
           </div>
         </section>
+
+        <!-- ================= DEDICATED MODULE: MEDICAL & HEALTH INSURANCE ================= -->
+        <section class="app-view" id="view-ins-medical">
+          <div class="view-title-block">
+            <div>
+              <div class="ins-module-kicker">IRA CLASS 08 &amp; SHIF COMPLEMENTARY • BIOMETRIC SMART CARD NETWORK</div>
+              <h1>Medical &amp; Health Insurance Module</h1>
+              <p>Corporate &amp; County Civil Servants Medical Schemes, Family Health, SHA/SHIF Executive Top-Up, Cashless Hospital Pre-Authorization (GOP) &amp; Smart Member Cards</p>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button class="btn btn-secondary" onclick="switchModuleSubTab('medical', 'operations')">Hospital GOP Desk</button>
+              <button class="btn btn-primary" onclick="switchModuleSubTab('medical', 'underwrite')">+ Underwrite Medical Scheme</button>
+            </div>
+          </div>
+
+          <div class="ins-module-subtabs" role="tablist" aria-label="Medical Module Workspace Tabs">
+            <button class="ins-subtab-btn active" id="ins-medical-subtab-ledger" role="tab" aria-selected="true" onclick="switchModuleSubTab('medical', 'ledger')">Portfolio &amp; Policy Ledger</button>
+            <button class="ins-subtab-btn" id="ins-medical-subtab-underwrite" role="tab" aria-selected="false" onclick="switchModuleSubTab('medical', 'underwrite')">Underwrite &amp; Tariff Calculator</button>
+            <button class="ins-subtab-btn" id="ins-medical-subtab-operations" role="tab" aria-selected="false" onclick="switchModuleSubTab('medical', 'operations')">Hospital Pre-Auth (GOP) &amp; Claims</button>
+          </div>
+
+          <!-- Sub-Panel 1: Portfolio & Policy Ledger -->
+          <div class="ins-subtab-panel active" id="ins-medical-panel-ledger">
+            <div class="ins-kpi-grid">
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">Active Schemes &amp; Policies</div>
+                <div class="ins-kpi-val" id="ins-medical-kpi-active">0</div>
+                <div class="ins-kpi-sub">In-force corporate &amp; family health covers</div>
+              </div>
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">Total Benefit Exposure</div>
+                <div class="ins-kpi-val" id="ins-medical-kpi-exposure">KSh 0</div>
+                <div class="ins-kpi-sub">Aggregate inpatient &amp; outpatient limits</div>
+              </div>
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">Medical Gross Written Premium</div>
+                <div class="ins-kpi-val accent" id="ins-medical-kpi-gwp">KSh 0</div>
+                <div class="ins-kpi-sub">Includes PHCF 0.25% &amp; ITL 0.20%</div>
+              </div>
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">Active Hospital Pre-Auths (GOP)</div>
+                <div class="ins-kpi-val success" id="ins-medical-kpi-ops">0</div>
+                <div class="ins-kpi-sub">24/7 cashless panel admissions</div>
+              </div>
+            </div>
+
+            <div class="dashboard-card" style="padding:20px;">
+              <div class="ins-ledger-toolbar">
+                <div>
+                  <h3 style="font-size:15px; font-weight:700; margin:0;">Medical &amp; Health Policy Schedule</h3>
+                  <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Issue Digital Smart Member Certificates, approve pending SLA schemes, or log hospital claims</div>
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                  <select class="form-control" id="ins-medical-status-filter" onchange="renderInsuranceLineModule('medical')" style="width:160px; padding:6px 10px; font-size:12px;">
+                    <option value="ALL">All Statuses</option>
+                    <option value="Active">Active</option>
+                    <option value="Pending">Pending SLA</option>
+                    <option value="Suspended">Suspended</option>
+                  </select>
+                  <input type="text" class="form-control" id="ins-medical-search" oninput="renderInsuranceLineModule('medical')" placeholder="Search scheme, policy, member..." style="width:230px; padding:6px 12px; font-size:12px;">
+                </div>
+              </div>
+              <div class="claims-table-wrapper">
+                <table class="claims-table">
+                  <thead>
+                    <tr>
+                      <th>Policy No</th>
+                      <th>Scheme / Policyholder</th>
+                      <th>Sub-Class &amp; Lives</th>
+                      <th>Annual Benefit Limit</th>
+                      <th>Gross Premium</th>
+                      <th>Smart Cert No</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ins-medical-ledger-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-Panel 2: Underwrite & Tariff Calculator -->
+          <div class="ins-subtab-panel" id="ins-medical-panel-underwrite" style="display:none;">
+            <div class="ins-uw-grid">
+              <div class="dashboard-card" style="padding:22px;">
+                <h3 style="font-size:16px; font-weight:700; margin-bottom:6px;">Actuarial Medical Scheme &amp; Individual Health Underwriter</h3>
+                <p style="font-size:12.5px; color:var(--text-secondary); margin-bottom:18px;">Computes age/headcount capitation, inpatient/outpatient benefit bands, maternity/dental/optical riders, and IRA Cap 487 levies.</p>
+                <div class="ins-form-grid">
+                  <div class="form-group">
+                    <label for="uw-medical-client">Employer Scheme / Principal Member Name</label>
+                    <input type="text" class="form-control" id="uw-medical-client" value="Kiambu County Health Workers Scheme" oninput="calculateInsuranceLineQuote('medical')">
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-medical-subclass">Medical Product Sub-Class</label>
+                    <select class="form-control" id="uw-medical-subclass" onchange="calculateInsuranceLineQuote('medical')">
+                      <option value="Corporate &amp; County Scheme">Corporate &amp; County Civil Servants Scheme</option>
+                      <option value="Individual &amp; Family Health">Individual &amp; Family Comprehensive Health</option>
+                      <option value="SHA / SHIF Supra Top-Up">SHA / SHIF Supra Inpatient Top-Up</option>
+                      <option value="SME &amp; Chamas Afya Cover">SME &amp; Registered Chama Afya Cover</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-medical-subject">Covered Lives / Member Census Ref</label>
+                    <input type="text" class="form-control" id="uw-medical-subject" value="120 Principal Staff + Dependants (Panel Tier A)" oninput="calculateInsuranceLineQuote('medical')">
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-medical-lives">Principal Lives / Family Units</label>
+                    <input type="number" class="form-control" id="uw-medical-lives" min="1" value="120" oninput="calculateInsuranceLineQuote('medical')">
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-medical-sum">Inpatient Limit per Family / Scheme Cap (KSh)</label>
+                    <input type="number" class="form-control" id="uw-medical-sum" min="100000" value="45000000" oninput="calculateInsuranceLineQuote('medical')">
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-medical-rider">Outpatient, Maternity, Dental &amp; Optical Rider</label>
+                    <select class="form-control" id="uw-medical-rider" onchange="calculateInsuranceLineQuote('medical')">
+                      <option value="1.28">Full Outpatient + Maternity + Optical + Dental (+28%)</option>
+                      <option value="1.15">Outpatient + Maternity Standard (+15%)</option>
+                      <option value="1.00">Inpatient Core &amp; Critical Illness Only (Base)</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; margin-top:18px;">
+                  <button class="btn btn-primary" onclick="submitInsuranceLinePolicy('medical')">Bind Medical Policy &amp; Mint Smart Card Cert</button>
+                </div>
+              </div>
+
+              <div class="dashboard-card ins-quote-summary-card" id="ins-medical-quote-card">
+                <div class="ins-quote-header">ACTUARIAL MEDICAL DEBIT SUMMARY</div>
+                <div id="ins-medical-quote-breakdown"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-Panel 3: Hospital Pre-Auth (GOP) & Claims -->
+          <div class="ins-subtab-panel" id="ins-medical-panel-operations" style="display:none;">
+            <div class="ins-uw-grid">
+              <div class="dashboard-card" style="padding:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+                  <div>
+                    <h3 style="font-size:15px; font-weight:700; margin:0;">24/7 Cashless Hospital Pre-Authorization (GOP) Queue</h3>
+                    <div style="font-size:12px; color:var(--text-secondary);">Biometric Smart Card admissions &amp; SHA/SHIF primary offset verification</div>
+                  </div>
+                  <button class="btn btn-secondary" onclick="executeLineSpecialOperation('medical')" style="font-size:12px;">+ Issue Cashless GOP Letter</button>
+                </div>
+                <div class="claims-table-wrapper">
+                  <table class="claims-table">
+                    <thead>
+                      <tr>
+                        <th>GOP Ref</th>
+                        <th>Hospital Facility</th>
+                        <th>Patient / Policy</th>
+                        <th>ICD-11 Procedure</th>
+                        <th>Auth Limit</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="ins-medical-ops-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="dashboard-card" style="padding:20px;">
+                <h3 style="font-size:15px; font-weight:700; margin-bottom:8px;">Submit Medical Reimbursement / Hospital Claim</h3>
+                <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">Routes directly to Master Claims Directory &amp; 60-Min SLA Watchdog.</p>
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label for="clm-medical-policy">Select Active Medical Policy</label>
+                  <select class="form-control" id="clm-medical-policy"></select>
+                </div>
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label for="clm-medical-claimant">Hospital Provider / Claimant Name</label>
+                  <input type="text" class="form-control" id="clm-medical-claimant" value="Aga Khan University Hospital - Inpatient">
+                </div>
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label for="clm-medical-amount">Claimed Medical Bill (KSh)</label>
+                  <input type="number" class="form-control" id="clm-medical-amount" value="185000">
+                </div>
+                <div class="form-group" style="margin-bottom:14px;">
+                  <label for="clm-medical-desc">Clinical / Discharge Summary Reference</label>
+                  <input type="text" class="form-control" id="clm-medical-desc" value="ICD-11 Surgical Admission • Smart Card Biometric Verified">
+                </div>
+                <button class="btn btn-primary" onclick="submitInsuranceLineClaim('medical')" style="width:100%;">Register Medical Claim</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= DEDICATED MODULE: PROPERTY, FIRE & ENGINEERING ================= -->
+        <section class="app-view" id="view-ins-property">
+          <div class="view-title-block">
+            <div>
+              <div class="ins-module-kicker">IRA CLASSES 03, 04 &amp; 05 • FIRE, INDUSTRIAL ALL RISKS &amp; ENGINEERING</div>
+              <h1>Property, Fire &amp; Engineering Module</h1>
+              <p>Commercial &amp; County Assets Fire &amp; Perils, Industrial All Risks (IAR), Contractors All Risks (CAR), Machinery Breakdown, Domestic Package &amp; PVT Extensions</p>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button class="btn btn-secondary" onclick="switchModuleSubTab('property', 'operations')">Fire Risk Surveys</button>
+              <button class="btn btn-primary" onclick="switchModuleSubTab('property', 'underwrite')">+ Underwrite Property / CAR</button>
+            </div>
+          </div>
+
+          <div class="ins-module-subtabs" role="tablist" aria-label="Property Module Workspace Tabs">
+            <button class="ins-subtab-btn active" id="ins-property-subtab-ledger" role="tab" aria-selected="true" onclick="switchModuleSubTab('property', 'ledger')">Portfolio &amp; Policy Ledger</button>
+            <button class="ins-subtab-btn" id="ins-property-subtab-underwrite" role="tab" aria-selected="false" onclick="switchModuleSubTab('property', 'underwrite')">Underwrite &amp; Tariff Calculator</button>
+            <button class="ins-subtab-btn" id="ins-property-subtab-operations" role="tab" aria-selected="false" onclick="switchModuleSubTab('property', 'operations')">Fire Surveys &amp; Property Claims</button>
+          </div>
+
+          <div class="ins-subtab-panel active" id="ins-property-panel-ledger">
+            <div class="ins-kpi-grid">
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">Active Property &amp; CAR Policies</div>
+                <div class="ins-kpi-val" id="ins-property-kpi-active">0</div>
+                <div class="ins-kpi-sub">Commercial, county &amp; domestic risks</div>
+              </div>
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">Total Insured Asset Value</div>
+                <div class="ins-kpi-val" id="ins-property-kpi-exposure">KSh 0</div>
+                <div class="ins-kpi-sub">Buildings, plant, stock &amp; civil works</div>
+              </div>
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">Property Gross Written Premium</div>
+                <div class="ins-kpi-val accent" id="ins-property-kpi-gwp">KSh 0</div>
+                <div class="ins-kpi-sub">Fire, IAR, CAR &amp; PVT endorsements</div>
+              </div>
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">Certified Fire Risk Surveys</div>
+                <div class="ins-kpi-val success" id="ins-property-kpi-ops">0</div>
+                <div class="ins-kpi-sub">Hydrant, sprinkler &amp; PML graded</div>
+              </div>
+            </div>
+
+            <div class="dashboard-card" style="padding:20px;">
+              <div class="ins-ledger-toolbar">
+                <div>
+                  <h3 style="font-size:15px; font-weight:700; margin:0;">Property, Fire &amp; Engineering Policy Ledger</h3>
+                  <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Mint Fire/Engineering Policy Certificates, manage treaty retention, or file peril claims</div>
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                  <select class="form-control" id="ins-property-status-filter" onchange="renderInsuranceLineModule('property')" style="width:160px; padding:6px 10px; font-size:12px;">
+                    <option value="ALL">All Statuses</option>
+                    <option value="Active">Active</option>
+                    <option value="Pending">Pending SLA</option>
+                    <option value="Suspended">Suspended</option>
+                  </select>
+                  <input type="text" class="form-control" id="ins-property-search" oninput="renderInsuranceLineModule('property')" placeholder="Search LR plot, client, policy..." style="width:230px; padding:6px 12px; font-size:12px;">
+                </div>
+              </div>
+              <div class="claims-table-wrapper">
+                <table class="claims-table">
+                  <thead>
+                    <tr>
+                      <th>Policy No</th>
+                      <th>Insured Property Owner</th>
+                      <th>Asset / Plot LR &amp; Class</th>
+                      <th>Sum Insured</th>
+                      <th>Gross Premium</th>
+                      <th>Cert / Bond No</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ins-property-ledger-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="ins-subtab-panel" id="ins-property-panel-underwrite" style="display:none;">
+            <div class="ins-uw-grid">
+              <div class="dashboard-card" style="padding:22px;">
+                <h3 style="font-size:16px; font-weight:700; margin-bottom:6px;">Fire, Industrial All Risks (IAR) &amp; Engineering Tariff Calculator</h3>
+                <p style="font-size:12.5px; color:var(--text-secondary); margin-bottom:18px;">Applies construction class mill-rates, fire suppression discounts, Political Violence &amp; Terrorism (PVT), and statutory levies.</p>
+                <div class="ins-form-grid">
+                  <div class="form-group">
+                    <label for="uw-property-client">Insured Entity / Property Owner</label>
+                    <input type="text" class="form-control" id="uw-property-client" value="Nakuru County Referral Complex &amp; Solar Plant" oninput="calculateInsuranceLineQuote('property')">
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-property-subclass">Property &amp; Engineering Class</label>
+                    <select class="form-control" id="uw-property-subclass" onchange="calculateInsuranceLineQuote('property')">
+                      <option value="Fire &amp; Special Perils">Fire &amp; Special Allied Perils (Commercial)</option>
+                      <option value="Industrial All Risks (IAR)">Industrial All Risks (IAR) &amp; Business Interruption</option>
+                      <option value="Contractors All Risks (CAR)">Contractors All Risks (CAR) &amp; Infrastructure</option>
+                      <option value="Machinery Breakdown &amp; Electronic">Machinery Breakdown &amp; Electronic Equipment</option>
+                      <option value="Domestic Package (Homeowners)">Domestic Package (Buildings, Contents &amp; All Risks)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-property-subject">LR / Plot Number &amp; Risk Location</label>
+                    <input type="text" class="form-control" id="uw-property-subject" value="LR No. 209/11842 • Nakuru Municipality Block 12" oninput="calculateInsuranceLineQuote('property')">
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-property-sum">Total Building, Plant &amp; Stock Sum Insured (KSh)</label>
+                    <input type="number" class="form-control" id="uw-property-sum" min="250000" value="180000000" oninput="calculateInsuranceLineQuote('property')">
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-property-grade">Construction &amp; Fire Protection Grade</label>
+                    <select class="form-control" id="uw-property-grade" onchange="calculateInsuranceLineQuote('property')">
+                      <option value="0.0022">Class I Stone/Concrete + Sprinklers &amp; Hydrants (0.22%)</option>
+                      <option value="0.0030">Standard Commercial Masonry + Extinguishers (0.30%)</option>
+                      <option value="0.0045">Industrial Warehouse / Civil Works Site (0.45%)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-property-rider">Political Violence, Terrorism &amp; Sabotage (PVT)</label>
+                    <select class="form-control" id="uw-property-rider" onchange="calculateInsuranceLineQuote('property')">
+                      <option value="0.0015">Include PVT &amp; Riots/Strikes Extension (+0.15%)</option>
+                      <option value="0.0005">Include Earthquake &amp; Flood Perils Only (+0.05%)</option>
+                      <option value="0">Standard Fire Perils Only (0.00%)</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; margin-top:18px;">
+                  <button class="btn btn-primary" onclick="submitInsuranceLinePolicy('property')">Bind Property Policy &amp; Issue Fire Certificate</button>
+                </div>
+              </div>
+
+              <div class="dashboard-card ins-quote-summary-card" id="ins-property-quote-card">
+                <div class="ins-quote-header">PROPERTY &amp; ENGINEERING DEBIT SUMMARY</div>
+                <div id="ins-property-quote-breakdown"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ins-subtab-panel" id="ins-property-panel-operations" style="display:none;">
+            <div class="ins-uw-grid">
+              <div class="dashboard-card" style="padding:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+                  <div>
+                    <h3 style="font-size:15px; font-weight:700; margin:0;">Engineering Risk Surveys &amp; Probable Maximum Loss (PML) Desk</h3>
+                    <div style="font-size:12px; color:var(--text-secondary);">Statutory fire brigade compliance &amp; Africa Re facultative ceding triggers</div>
+                  </div>
+                  <button class="btn btn-secondary" onclick="executeLineSpecialOperation('property')" style="font-size:12px;">+ Log Certified Fire Survey</button>
+                </div>
+                <div class="claims-table-wrapper">
+                  <table class="claims-table">
+                    <thead>
+                      <tr>
+                        <th>Survey ID</th>
+                        <th>Site / LR Ref</th>
+                        <th>Surveyor</th>
+                        <th>PML %</th>
+                        <th>Fire Grade</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="ins-property-ops-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="dashboard-card" style="padding:20px;">
+                <h3 style="font-size:15px; font-weight:700; margin-bottom:8px;">Register Fire, Peril or Engineering Claim</h3>
+                <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">Appoints loss adjuster and syncs to Master Claims Directory &amp; SLA Watchdog.</p>
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label for="clm-property-policy">Select Active Property / CAR Policy</label>
+                  <select class="form-control" id="clm-property-policy"></select>
+                </div>
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label for="clm-property-claimant">Insured Claimant / Site Facility</label>
+                  <input type="text" class="form-control" id="clm-property-claimant" value="Mombasa County Cold Storage Facility">
+                </div>
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label for="clm-property-amount">Estimated Peril / Repair Loss (KSh)</label>
+                  <input type="number" class="form-control" id="clm-property-amount" value="1450000">
+                </div>
+                <div class="form-group" style="margin-bottom:14px;">
+                  <label for="clm-property-desc">Peril Cause &amp; Loss Adjuster Note</label>
+                  <input type="text" class="form-control" id="clm-property-desc" value="Electrical Surge &amp; Transformer Fire • Cunningham Lindsey Assigned">
+                </div>
+                <button class="btn btn-primary" onclick="submitInsuranceLineClaim('property')" style="width:100%;">Register Property Claim</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= DEDICATED MODULE: LIFE, GROUP LIFE & PENSION ================= -->
+        <section class="app-view" id="view-ins-life">
+          <div class="view-title-block">
+            <div>
+              <div class="ins-module-kicker">LONG-TERM ASSURANCE BUSINESS (IRA CAP 487 &amp; RBA) • KRA 15% TAX RELIEF</div>
+              <h1>Life, Group Life &amp; Pension Assurance Module</h1>
+              <p>Group Life Assurance (GLA 3x–5x Salary), Individual Term &amp; Endowment, Credit Life Mortgage Protection, 48-Hour Last Expense &amp; Umbrella Pension</p>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button class="btn btn-secondary" onclick="switchModuleSubTab('life', 'operations')">Beneficiary &amp; RBA Desk</button>
+              <button class="btn btn-primary" onclick="switchModuleSubTab('life', 'underwrite')">+ Underwrite Life / GLA Policy</button>
+            </div>
+          </div>
+
+          <div class="ins-module-subtabs" role="tablist" aria-label="Life Module Workspace Tabs">
+            <button class="ins-subtab-btn active" id="ins-life-subtab-ledger" role="tab" aria-selected="true" onclick="switchModuleSubTab('life', 'ledger')">Portfolio &amp; Policy Ledger</button>
+            <button class="ins-subtab-btn" id="ins-life-subtab-underwrite" role="tab" aria-selected="false" onclick="switchModuleSubTab('life', 'underwrite')">Actuarial Mortality &amp; Quote Engine</button>
+            <button class="ins-subtab-btn" id="ins-life-subtab-operations" role="tab" aria-selected="false" onclick="switchModuleSubTab('life', 'operations')">Beneficiary Trusts &amp; Maturity Claims</button>
+          </div>
+
+          <div class="ins-subtab-panel active" id="ins-life-panel-ledger">
+            <div class="ins-kpi-grid">
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">In-Force Life &amp; GLA Policies</div>
+                <div class="ins-kpi-val" id="ins-life-kpi-active">0</div>
+                <div class="ins-kpi-sub">Group schemes, term, education &amp; funeral</div>
+              </div>
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">Total Sum Assured</div>
+                <div class="ins-kpi-val" id="ins-life-kpi-exposure">KSh 0</div>
+                <div class="ins-kpi-sub">KE 2010-2014 mortality table backed</div>
+              </div>
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">Annualized Life Premium</div>
+                <div class="ins-kpi-val accent" id="ins-life-kpi-gwp">KSh 0</div>
+                <div class="ins-kpi-sub">Eligible for 15% KRA Insurance Relief</div>
+              </div>
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">Registered Beneficiary Deeds</div>
+                <div class="ins-kpi-val success" id="ins-life-kpi-ops">0</div>
+                <div class="ins-kpi-sub">48-hour Last Expense fast-track ready</div>
+              </div>
+            </div>
+
+            <div class="dashboard-card" style="padding:20px;">
+              <div class="ins-ledger-toolbar">
+                <div>
+                  <h3 style="font-size:15px; font-weight:700; margin:0;">Long-Term Life, Group Life &amp; Pension Ledger</h3>
+                  <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Issue Life Assurance Policy Bonds, KRA Tax Relief Certificates, or settle Last Expense &amp; Maturity claims</div>
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                  <select class="form-control" id="ins-life-status-filter" onchange="renderInsuranceLineModule('life')" style="width:160px; padding:6px 10px; font-size:12px;">
+                    <option value="ALL">All Statuses</option>
+                    <option value="Active">Active</option>
+                    <option value="Pending">Pending SLA</option>
+                    <option value="Suspended">Paid-Up / Suspended</option>
+                  </select>
+                  <input type="text" class="form-control" id="ins-life-search" oninput="renderInsuranceLineModule('life')" placeholder="Search assured, scheme, policy..." style="width:230px; padding:6px 12px; font-size:12px;">
+                </div>
+              </div>
+              <div class="claims-table-wrapper">
+                <table class="claims-table">
+                  <thead>
+                    <tr>
+                      <th>Policy Bond No</th>
+                      <th>Assured / Employer Scheme</th>
+                      <th>Assurance Class &amp; Term</th>
+                      <th>Sum Assured</th>
+                      <th>Annual Premium</th>
+                      <th>Policy Bond Ref</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ins-life-ledger-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="ins-subtab-panel" id="ins-life-panel-underwrite" style="display:none;">
+            <div class="ins-uw-grid">
+              <div class="dashboard-card" style="padding:22px;">
+                <h3 style="font-size:16px; font-weight:700; margin-bottom:6px;">KE 2010–2014 Mortality &amp; Long-Term Assurance Underwriter</h3>
+                <p style="font-size:12.5px; color:var(--text-secondary); margin-bottom:18px;">Calculates GLA salary-multiple mortality rates, critical illness/PTD riders, and KRA 15% Insurance Tax Relief (capped at KSh 60,000 p.a.).</p>
+                <div class="ins-form-grid">
+                  <div class="form-group">
+                    <label for="uw-life-client">Assured Person / Employer Scheme Name</label>
+                    <input type="text" class="form-control" id="uw-life-client" value="Uasin Gishu County Executive Group Life (GLA)" oninput="calculateInsuranceLineQuote('life')">
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-life-subclass">Long-Term Assurance Product</label>
+                    <select class="form-control" id="uw-life-subclass" onchange="calculateInsuranceLineQuote('life')">
+                      <option value="Group Life Assurance (GLA 3x Salary)">Group Life Assurance (GLA — 3x to 5x Annual Salary)</option>
+                      <option value="Education Endowment Policy">Elixir Education Endowment + Bonus</option>
+                      <option value="Individual Term &amp; Whole Life">Individual Term &amp; Whole Life Protection</option>
+                      <option value="Credit Life &amp; Mortgage Protection">Credit Life &amp; Sacco Loan/Mortgage Protection</option>
+                      <option value="Last Expense / Funeral Cover (48h)">Heshima Last Expense / 48-Hour Funeral Cover</option>
+                      <option value="Umbrella Deposit Administration Pension">RBA Umbrella Pension &amp; Annuity Fund</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-life-subject">Beneficiary / Census Schedule Reference</label>
+                    <input type="text" class="form-control" id="uw-life-subject" value="410 Staff Lives • 3x Basic Salary + Critical Illness" oninput="calculateInsuranceLineQuote('life')">
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-life-sum">Total Sum Assured / Benefit Pool (KSh)</label>
+                    <input type="number" class="form-control" id="uw-life-sum" min="100000" value="95000000" oninput="calculateInsuranceLineQuote('life')">
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-life-term">Policy Term (Years) / Renewal Cycle</label>
+                    <select class="form-control" id="uw-life-term" onchange="calculateInsuranceLineQuote('life')">
+                      <option value="1">1 Year Renewable Group Scheme</option>
+                      <option value="10">10-Year Endowment / Mortgage Term</option>
+                      <option value="15">15-Year Education Maturity Term</option>
+                      <option value="20">20-Year Whole/Long-Term Protection</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-life-rider">Permanent Total Disability (PTD) &amp; Critical Illness Rider</label>
+                    <select class="form-control" id="uw-life-rider" onchange="calculateInsuranceLineQuote('life')">
+                      <option value="1.20">Include PTD + 13 Critical Illnesses + Funeral (+20%)</option>
+                      <option value="1.10">Include Accidental Death Double Indemnity (+10%)</option>
+                      <option value="1.00">Core Mortality Benefit Only (Base)</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; margin-top:18px;">
+                  <button class="btn btn-primary" onclick="submitInsuranceLinePolicy('life')">Bind Life Policy &amp; Issue Assurance Bond</button>
+                </div>
+              </div>
+
+              <div class="dashboard-card ins-quote-summary-card" id="ins-life-quote-card">
+                <div class="ins-quote-header">ACTUARIAL LIFE &amp; KRA TAX RELIEF SUMMARY</div>
+                <div id="ins-life-quote-breakdown"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ins-subtab-panel" id="ins-life-panel-operations" style="display:none;">
+            <div class="ins-uw-grid">
+              <div class="dashboard-card" style="padding:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+                  <div>
+                    <h3 style="font-size:15px; font-weight:700; margin:0;">Beneficiary Nominations, Surrender Values &amp; KRA Relief Desk</h3>
+                    <div style="font-size:12px; color:var(--text-secondary);">Section 111 Cap 487 direct nomination deeds bypassing probate delays</div>
+                  </div>
+                  <button class="btn btn-secondary" onclick="executeLineSpecialOperation('life')" style="font-size:12px;">+ Seal Beneficiary Nomination Deed</button>
+                </div>
+                <div class="claims-table-wrapper">
+                  <table class="claims-table">
+                    <thead>
+                      <tr>
+                        <th>Deed Ref</th>
+                        <th>Policy / Scheme</th>
+                        <th>Nominated Beneficiary</th>
+                        <th>Allocation</th>
+                        <th>KRA Relief Cert</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="ins-life-ops-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="dashboard-card" style="padding:20px;">
+                <h3 style="font-size:15px; font-weight:700; margin-bottom:8px;">Log Last Expense (48h), Death or Maturity Claim</h3>
+                <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">Dispatches priority beneficiary payout alert and syncs with Claims Directory.</p>
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label for="clm-life-policy">Select Active Life / GLA Policy</label>
+                  <select class="form-control" id="clm-life-policy"></select>
+                </div>
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label for="clm-life-claimant">Beneficiary / Trustee Claimant Name</label>
+                  <input type="text" class="form-control" id="clm-life-claimant" value="Grace Wanjiku Njoroge (Nominated Spouse)">
+                </div>
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label for="clm-life-amount">Benefit Payout Amount (KSh)</label>
+                  <input type="number" class="form-control" id="clm-life-amount" value="350000">
+                </div>
+                <div class="form-group" style="margin-bottom:14px;">
+                  <label for="clm-life-desc">Claim Trigger &amp; Civil Registry Verification</label>
+                  <input type="text" class="form-control" id="clm-life-desc" value="48-Hour Last Expense Payout • CRS Burial Permit Verified">
+                </div>
+                <button class="btn btn-primary" onclick="submitInsuranceLineClaim('life')" style="width:100%;">Register Life / Funeral Claim</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= DEDICATED MODULE: WIBA, LIABILITY & FIDELITY ================= -->
+        <section class="app-view" id="view-ins-wiba">
+          <div class="view-title-block">
+            <div>
+              <div class="ins-module-kicker">WORK INJURY BENEFITS ACT (WIBA 2007) &amp; CASUALTY • DOSHS INTEGRATED</div>
+              <h1>WIBA, Liability &amp; Fidelity Guarantee Module</h1>
+              <p>Compulsory WIBA (96 Months Earnings), Employers Common Law Liability, Public &amp; Products Liability, Professional Indemnity (PI), D&amp;O &amp; Fidelity Guarantee</p>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button class="btn btn-secondary" onclick="switchModuleSubTab('wiba', 'operations')">DOSHS Form 1 Desk</button>
+              <button class="btn btn-primary" onclick="switchModuleSubTab('wiba', 'underwrite')">+ Underwrite WIBA / Liability</button>
+            </div>
+          </div>
+
+          <div class="ins-module-subtabs" role="tablist" aria-label="WIBA Module Workspace Tabs">
+            <button class="ins-subtab-btn active" id="ins-wiba-subtab-ledger" role="tab" aria-selected="true" onclick="switchModuleSubTab('wiba', 'ledger')">Portfolio &amp; Policy Ledger</button>
+            <button class="ins-subtab-btn" id="ins-wiba-subtab-underwrite" role="tab" aria-selected="false" onclick="switchModuleSubTab('wiba', 'underwrite')">Underwrite &amp; Wage-Roll Tariff</button>
+            <button class="ins-subtab-btn" id="ins-wiba-subtab-operations" role="tab" aria-selected="false" onclick="switchModuleSubTab('wiba', 'operations')">DOSHS Occupational Notices &amp; Claims</button>
+          </div>
+
+          <div class="ins-subtab-panel active" id="ins-wiba-panel-ledger">
+            <div class="ins-kpi-grid">
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">Active WIBA &amp; Liability Policies</div>
+                <div class="ins-kpi-val" id="ins-wiba-kpi-active">0</div>
+                <div class="ins-kpi-sub">Statutory WIBA, PI, Public Liability &amp; D&amp;O</div>
+              </div>
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">Insured Wage-Roll &amp; Indemnity</div>
+                <div class="ins-kpi-val" id="ins-wiba-kpi-exposure">KSh 0</div>
+                <div class="ins-kpi-sub">Aggregate statutory &amp; common law limits</div>
+              </div>
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">Casualty Gross Written Premium</div>
+                <div class="ins-kpi-val accent" id="ins-wiba-kpi-gwp">KSh 0</div>
+                <div class="ins-kpi-sub">Includes occupational hazard loadings</div>
+              </div>
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">DOSHS Form 1 Assessments</div>
+                <div class="ins-kpi-val success" id="ins-wiba-kpi-ops">0</div>
+                <div class="ins-kpi-sub">Directorate of Occupational Safety synced</div>
+              </div>
+            </div>
+
+            <div class="dashboard-card" style="padding:20px;">
+              <div class="ins-ledger-toolbar">
+                <div>
+                  <h3 style="font-size:15px; font-weight:700; margin:0;">WIBA, Public Liability, Professional Indemnity &amp; Fidelity Ledger</h3>
+                  <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Mint Statutory Employer WIBA Display Certificates (for tender compliance), PI certificates, or process DOSHS claims</div>
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                  <select class="form-control" id="ins-wiba-status-filter" onchange="renderInsuranceLineModule('wiba')" style="width:160px; padding:6px 10px; font-size:12px;">
+                    <option value="ALL">All Statuses</option>
+                    <option value="Active">Active</option>
+                    <option value="Pending">Pending SLA</option>
+                    <option value="Suspended">Suspended</option>
+                  </select>
+                  <input type="text" class="form-control" id="ins-wiba-search" oninput="renderInsuranceLineModule('wiba')" placeholder="Search employer, tender cert, policy..." style="width:230px; padding:6px 12px; font-size:12px;">
+                </div>
+              </div>
+              <div class="claims-table-wrapper">
+                <table class="claims-table">
+                  <thead>
+                    <tr>
+                      <th>Policy No</th>
+                      <th>Employer / Insured Practice</th>
+                      <th>Liability Class &amp; Headcount</th>
+                      <th>Wage Roll / Limit</th>
+                      <th>Gross Premium</th>
+                      <th>Compliance Cert</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ins-wiba-ledger-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="ins-subtab-panel" id="ins-wiba-panel-underwrite" style="display:none;">
+            <div class="ins-uw-grid">
+              <div class="dashboard-card" style="padding:22px;">
+                <h3 style="font-size:16px; font-weight:700; margin-bottom:6px;">Statutory WIBA (2007), Liability &amp; Professional Indemnity Underwriter</h3>
+                <p style="font-size:12.5px; color:var(--text-secondary); margin-bottom:18px;">Rates annual payroll by DOSHS occupational hazard class + Employers Liability common-law extension and PPRA tender compliance certificate.</p>
+                <div class="ins-form-grid">
+                  <div class="form-group">
+                    <label for="uw-wiba-client">Employer / Professional Practice / County Agency</label>
+                    <input type="text" class="form-control" id="uw-wiba-client" value="Kisumu Water &amp; Sanitation Company (KIWASCO)" oninput="calculateInsuranceLineQuote('wiba')">
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-wiba-subclass">Casualty &amp; Liability Class</label>
+                    <select class="form-control" id="uw-wiba-subclass" onchange="calculateInsuranceLineQuote('wiba')">
+                      <option value="WIBA + Employers Liability Combined">Compulsory WIBA (2007) + Employers Liability</option>
+                      <option value="Public &amp; Products Liability">Public &amp; Products Liability (Premises &amp; Operations)</option>
+                      <option value="Professional Indemnity (Doctors/Engineers/Law)">Professional Indemnity (Medical, Engineering, Legal, ICT)</option>
+                      <option value="Directors &amp; Officers (D&amp;O) Liability">Directors &amp; Officers (D&amp;O) Governance Liability</option>
+                      <option value="Fidelity Guarantee &amp; Cash-in-Transit">Fidelity Guarantee &amp; Revenue Cash-in-Transit</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-wiba-subject">Staff Census / Tender Reference</label>
+                    <input type="text" class="form-control" id="uw-wiba-subject" value="285 Technical &amp; Clerical Staff • DOSHS Reg #KE-8841" oninput="calculateInsuranceLineQuote('wiba')">
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-wiba-sum">Annual Gross Wage Roll / Indemnity Limit (KSh)</label>
+                    <input type="number" class="form-control" id="uw-wiba-sum" min="500000" value="68000000" oninput="calculateInsuranceLineQuote('wiba')">
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-wiba-hazard">Occupational Hazard &amp; Exposure Class</label>
+                    <select class="form-control" id="uw-wiba-hazard" onchange="calculateInsuranceLineQuote('wiba')">
+                      <option value="0.0045">Class I — Clerical, ICT, Advisory &amp; Professional (0.45%)</option>
+                      <option value="0.0085" selected>Class II — Field Utility, Healthcare &amp; Inspectorate (0.85%)</option>
+                      <option value="0.0145">Class III — Civil Engineering, Plant &amp; Enforcement (1.45%)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-wiba-rider">24-Hour GPA &amp; Common Law Extension</label>
+                    <select class="form-control" id="uw-wiba-rider" onchange="calculateInsuranceLineQuote('wiba')">
+                      <option value="1.22">24-Hour Group Personal Accident (GPA) + Common Law (+22%)</option>
+                      <option value="1.10">Employers Liability Common Law KSh 10M Limit (+10%)</option>
+                      <option value="1.00">Strict Statutory WIBA Schedule Only (Base)</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; margin-top:18px;">
+                  <button class="btn btn-primary" onclick="submitInsuranceLinePolicy('wiba')">Bind WIBA / Liability Policy &amp; Mint Compliance Cert</button>
+                </div>
+              </div>
+
+              <div class="dashboard-card ins-quote-summary-card" id="ins-wiba-quote-card">
+                <div class="ins-quote-header">WIBA &amp; CASUALTY TARIFF SUMMARY</div>
+                <div id="ins-wiba-quote-breakdown"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ins-subtab-panel" id="ins-wiba-panel-operations" style="display:none;">
+            <div class="ins-uw-grid">
+              <div class="dashboard-card" style="padding:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+                  <div>
+                    <h3 style="font-size:15px; font-weight:700; margin:0;">DOSHS Form 1 Occupational Injury &amp; PD% Assessment Desk</h3>
+                    <div style="font-size:12px; color:var(--text-secondary);">Tracks Temporary Disablement weekly wages &amp; Permanent Disablement 96-month awards</div>
+                  </div>
+                  <button class="btn btn-secondary" onclick="executeLineSpecialOperation('wiba')" style="font-size:12px;">+ File DOSHS Form 1 Notice</button>
+                </div>
+                <div class="claims-table-wrapper">
+                  <table class="claims-table">
+                    <thead>
+                      <tr>
+                        <th>DOSHS Ref</th>
+                        <th>Employer</th>
+                        <th>Injured Worker / Claimant</th>
+                        <th>PD %</th>
+                        <th>Statutory Award</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="ins-wiba-ops-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="dashboard-card" style="padding:20px;">
+                <h3 style="font-size:15px; font-weight:700; margin-bottom:8px;">Register WIBA, Public Liability or Fidelity Claim</h3>
+                <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">Syncs DOSHS medical assessment into Master Claims Directory &amp; SLA Watchdog.</p>
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label for="clm-wiba-policy">Select Active WIBA / Liability Policy</label>
+                  <select class="form-control" id="clm-wiba-policy"></select>
+                </div>
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label for="clm-wiba-claimant">Employee / Third-Party Claimant</label>
+                  <input type="text" class="form-control" id="clm-wiba-claimant" value="eng. Peter Ochieng Otieno (Field Technician)">
+                </div>
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label for="clm-wiba-amount">Assessed Compensation / Reserve (KSh)</label>
+                  <input type="number" class="form-control" id="clm-wiba-amount" value="420000">
+                </div>
+                <div class="form-group" style="margin-bottom:14px;">
+                  <label for="clm-wiba-desc">DOSHS Form 1 &amp; Medical Board Reference</label>
+                  <input type="text" class="form-control" id="clm-wiba-desc" value="DOSHS/NBI/2026/1104 • 15% Permanent Disablement Award">
+                </div>
+                <button class="btn btn-primary" onclick="submitInsuranceLineClaim('wiba')" style="width:100%;">Register WIBA / Liability Claim</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= DEDICATED MODULE: MARINE, AVIATION & TRANSIT ================= -->
+        <section class="app-view" id="view-ins-marine">
+          <div class="view-title-block">
+            <div>
+              <div class="ins-module-kicker">SECTION 20 INSURANCE ACT (CAP 487) • KRA ICMS &amp; KENTRADE SINGLE WINDOW</div>
+              <h1>Marine Cargo, Transit (GIT) &amp; Aviation Module</h1>
+              <p>Compulsory Local Marine Cargo Insurance (MCI), SGR &amp; Northern Corridor Goods in Transit (GIT), Marine Hull &amp; County Drone/Aviation Hull</p>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button class="btn btn-secondary" onclick="switchModuleSubTab('marine', 'operations')">KRA ICMS Single Window</button>
+              <button class="btn btn-primary" onclick="switchModuleSubTab('marine', 'underwrite')">+ Issue Marine / GIT Cover</button>
+            </div>
+          </div>
+
+          <div class="ins-module-subtabs" role="tablist" aria-label="Marine Module Workspace Tabs">
+            <button class="ins-subtab-btn active" id="ins-marine-subtab-ledger" role="tab" aria-selected="true" onclick="switchModuleSubTab('marine', 'ledger')">Portfolio &amp; MCI Ledger</button>
+            <button class="ins-subtab-btn" id="ins-marine-subtab-underwrite" role="tab" aria-selected="false" onclick="switchModuleSubTab('marine', 'underwrite')">CIF + 10% Marine &amp; GIT Calculator</button>
+            <button class="ins-subtab-btn" id="ins-marine-subtab-operations" role="tab" aria-selected="false" onclick="switchModuleSubTab('marine', 'operations')">KRA ICMS Manifests &amp; Cargo Claims</button>
+          </div>
+
+          <div class="ins-subtab-panel active" id="ins-marine-panel-ledger">
+            <div class="ins-kpi-grid">
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">Active Marine, GIT &amp; Hull Policies</div>
+                <div class="ins-kpi-val" id="ins-marine-kpi-active">0</div>
+                <div class="ins-kpi-sub">Sea, airfreight, SGR &amp; Northern Corridor</div>
+              </div>
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">Insured CIF + 10% Cargo Value</div>
+                <div class="ins-kpi-val" id="ins-marine-kpi-exposure">KSh 0</div>
+                <div class="ins-kpi-sub">Mombasa Port, JKIA &amp; ICD Embakasi</div>
+              </div>
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">Marine &amp; Transit GWP</div>
+                <div class="ins-kpi-val accent" id="ins-marine-kpi-gwp">KSh 0</div>
+                <div class="ins-kpi-sub">ICC (A)/(B)/(C), GIT &amp; War/SRCC</div>
+              </div>
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">KRA ICMS Digital MCI Certs</div>
+                <div class="ins-kpi-val success" id="ins-marine-kpi-ops">0</div>
+                <div class="ins-kpi-sub">Cleared on KenTrade TradeNet</div>
+              </div>
+            </div>
+
+            <div class="dashboard-card" style="padding:20px;">
+              <div class="ins-ledger-toolbar">
+                <div>
+                  <h3 style="font-size:15px; font-weight:700; margin:0;">Marine Cargo (MCI), Goods in Transit &amp; Aviation Ledger</h3>
+                  <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Download KRA ICMS Marine Certificates for customs clearance, manage open covers, or file port survey claims</div>
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                  <select class="form-control" id="ins-marine-status-filter" onchange="renderInsuranceLineModule('marine')" style="width:160px; padding:6px 10px; font-size:12px;">
+                    <option value="ALL">All Statuses</option>
+                    <option value="Active">Active</option>
+                    <option value="Pending">Pending SLA</option>
+                    <option value="Suspended">Suspended</option>
+                  </select>
+                  <input type="text" class="form-control" id="ins-marine-search" oninput="renderInsuranceLineModule('marine')" placeholder="Search IDF, B/L, importer, policy..." style="width:230px; padding:6px 12px; font-size:12px;">
+                </div>
+              </div>
+              <div class="claims-table-wrapper">
+                <table class="claims-table">
+                  <thead>
+                    <tr>
+                      <th>Policy No</th>
+                      <th>Importer / Assured</th>
+                      <th>Voyage / IDF / Clauses</th>
+                      <th>CIF + 10% Sum Insured</th>
+                      <th>Gross Premium</th>
+                      <th>KRA MCI Cert</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ins-marine-ledger-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="ins-subtab-panel" id="ins-marine-panel-underwrite" style="display:none;">
+            <div class="ins-uw-grid">
+              <div class="dashboard-card" style="padding:22px;">
+                <h3 style="font-size:16px; font-weight:700; margin-bottom:6px;">Compulsory Kenyan Marine Cargo (MCI), GIT &amp; Aviation Underwriter</h3>
+                <p style="font-size:12.5px; color:var(--text-secondary); margin-bottom:18px;">Automatically applies statutory CIF + 10% uplift, Institute Cargo Clauses (ICC A/B/C), War &amp; Strikes (SRCC), and KRA ICMS certificate transmission.</p>
+                <div class="ins-form-grid">
+                  <div class="form-group">
+                    <label for="uw-marine-client">Importer / Consignee / Logistics Carrier</label>
+                    <input type="text" class="form-control" id="uw-marine-client" value="KEMSA &amp; Coast County Medical Supplies Consortium" oninput="calculateInsuranceLineQuote('marine')">
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-marine-subclass">Marine, Transit &amp; Aviation Class</label>
+                    <select class="form-control" id="uw-marine-subclass" onchange="calculateInsuranceLineQuote('marine')">
+                      <option value="Marine Cargo Sea Import — ICC (A)">Marine Cargo Sea Import — Institute Cargo Clauses (A)</option>
+                      <option value="Marine Airfreight Import (JKIA)">Marine Airfreight Import — ICC (Air) JKIA</option>
+                      <option value="Goods in Transit (GIT — SGR &amp; Highway)">Goods in Transit (GIT) — SGR &amp; Northern Corridor</option>
+                      <option value="Marine Hull &amp; Blue Economy Vessels">Marine Hull &amp; Lake/Coastal Patrol Vessels</option>
+                      <option value="Aviation &amp; GIS Survey Drone Hull">Aviation &amp; County Mapping Drone Hull + Liability</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-marine-subject">IDF Number / Bill of Lading / Route</label>
+                    <input type="text" class="form-control" id="uw-marine-subject" value="IDF-26KE0098412 • Shanghai -> Port of Mombasa -> Nairobi ICD" oninput="calculateInsuranceLineQuote('marine')">
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-marine-sum">Cargo CIF Value (Auto +10% Uplift Applied) (KSh)</label>
+                    <input type="number" class="form-control" id="uw-marine-sum" min="200000" value="52000000" oninput="calculateInsuranceLineQuote('marine')">
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-marine-clauses">Institute Clauses &amp; Packaging Tariff</label>
+                    <select class="form-control" id="uw-marine-clauses" onchange="calculateInsuranceLineQuote('marine')">
+                      <option value="0.0045">ICC (A) All Risks — Containerized Cargo (0.45%)</option>
+                      <option value="0.0032">ICC (B) Named Perils — Bulk / Machinery (0.32%)</option>
+                      <option value="0.0080">GIT Annual / Fragile Cold-Chain Pharmaceuticals (0.80%)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-marine-rider">War, Strikes, Riots &amp; Red Sea Corridor (SRCC)</label>
+                    <select class="form-control" id="uw-marine-rider" onchange="calculateInsuranceLineQuote('marine')">
+                      <option value="0.0012">Include Institute War &amp; Strikes SRCC (+0.12%)</option>
+                      <option value="0.0005">Include Inland SGR/Road On-Carriage Extension (+0.05%)</option>
+                      <option value="0">Port-to-Port Base Clauses Only (0.00%)</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; margin-top:18px;">
+                  <button class="btn btn-primary" onclick="submitInsuranceLinePolicy('marine')">Bind Marine Cover &amp; Transmit KRA ICMS Cert</button>
+                </div>
+              </div>
+
+              <div class="dashboard-card ins-quote-summary-card" id="ins-marine-quote-card">
+                <div class="ins-quote-header">MARINE CIF+10% &amp; KRA ICMS SUMMARY</div>
+                <div id="ins-marine-quote-breakdown"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ins-subtab-panel" id="ins-marine-panel-operations" style="display:none;">
+            <div class="ins-uw-grid">
+              <div class="dashboard-card" style="padding:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+                  <div>
+                    <h3 style="font-size:15px; font-weight:700; margin:0;">KRA ICMS &amp; KenTrade Single-Window MCI Clearance Feed</h3>
+                    <div style="font-size:12px; color:var(--text-secondary);">Real-time Section 20 customs validation for Mombasa Port, ICD &amp; JKIA entries</div>
+                  </div>
+                  <button class="btn btn-secondary" onclick="executeLineSpecialOperation('marine')" style="font-size:12px;">+ Transmit KRA ICMS MCI Cert</button>
+                </div>
+                <div class="claims-table-wrapper">
+                  <table class="claims-table">
+                    <thead>
+                      <tr>
+                        <th>MCI Cert</th>
+                        <th>IDF / Entry</th>
+                        <th>Vessel / Flight</th>
+                        <th>Port of Discharge</th>
+                        <th>CIF + 10%</th>
+                        <th>Customs Sync</th>
+                      </tr>
+                    </thead>
+                    <tbody id="ins-marine-ops-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="dashboard-card" style="padding:20px;">
+                <h3 style="font-size:15px; font-weight:700; margin-bottom:8px;">Log Marine Shortage, Wet Damage or GIT Transit Claim</h3>
+                <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">Attaches Lloyd's / KPA outturn survey &amp; routes to Subrogation &amp; Claims Directory.</p>
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label for="clm-marine-policy">Select Active Marine / GIT Policy</label>
+                  <select class="form-control" id="clm-marine-policy"></select>
+                </div>
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label for="clm-marine-claimant">Consignee / Importer Claimant</label>
+                  <input type="text" class="form-control" id="clm-marine-claimant" value="Mombasa Tea &amp; Grain Logistics Ltd">
+                </div>
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label for="clm-marine-amount">Surveyed Cargo Loss Amount (KSh)</label>
+                  <input type="number" class="form-control" id="clm-marine-amount" value="690000">
+                </div>
+                <div class="form-group" style="margin-bottom:14px;">
+                  <label for="clm-marine-desc">Bill of Lading &amp; KPA Outturn Report</label>
+                  <input type="text" class="form-control" id="clm-marine-desc" value="Berth 16 Container Seal Breach &amp; Sea-Water Ingress Survey">
+                </div>
+                <button class="btn btn-primary" onclick="submitInsuranceLineClaim('marine')" style="width:100%;">Register Marine / GIT Claim</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= DEDICATED MODULE: AGRICULTURE, LIVESTOCK & CLIMATE ================= -->
+        <section class="app-view" id="view-ins-agri">
+          <div class="view-title-block">
+            <div>
+              <div class="ins-module-kicker">PARAMETRIC SATELLITE NDVI &amp; KLIP / DRIVE SUBSIDY • AGRI-CLIMATE RISK</div>
+              <h1>Agriculture, Livestock &amp; Climate Index Module</h1>
+              <p>Area Yield &amp; Weather Index Crop Cover, Multi-Peril Crop (MPCI), Livestock Mortality &amp; Drought Index, Greenhouse All Risks &amp; County Subsidy Co-Financing</p>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button class="btn btn-secondary" onclick="switchModuleSubTab('agri', 'operations')">NDVI Satellite Triggers</button>
+              <button class="btn btn-primary" onclick="switchModuleSubTab('agri', 'underwrite')">+ Underwrite Crop / Livestock</button>
+            </div>
+          </div>
+
+          <div class="ins-module-subtabs" role="tablist" aria-label="Agriculture Module Workspace Tabs">
+            <button class="ins-subtab-btn active" id="ins-agri-subtab-ledger" role="tab" aria-selected="true" onclick="switchModuleSubTab('agri', 'ledger')">Portfolio &amp; Cooperative Ledger</button>
+            <button class="ins-subtab-btn" id="ins-agri-subtab-underwrite" role="tab" aria-selected="false" onclick="switchModuleSubTab('agri', 'underwrite')">Subsidy &amp; Parametric Tariff Engine</button>
+            <button class="ins-subtab-btn" id="ins-agri-subtab-operations" role="tab" aria-selected="false" onclick="switchModuleSubTab('agri', 'operations')">Satellite NDVI Triggers &amp; Agri Claims</button>
+          </div>
+
+          <div class="ins-subtab-panel active" id="ins-agri-panel-ledger">
+            <div class="ins-kpi-grid">
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">Active Agri &amp; Livestock Policies</div>
+                <div class="ins-kpi-val" id="ins-agri-kpi-active">0</div>
+                <div class="ins-kpi-sub">Farmer cooperatives, ranches &amp; greenhouses</div>
+              </div>
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">Insured Crop &amp; Herd Value</div>
+                <div class="ins-kpi-val" id="ins-agri-kpi-exposure">KSh 0</div>
+                <div class="ins-kpi-sub">Maize, tea, coffee, dairy &amp; pastoralist TLU</div>
+              </div>
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">Gross Agri Premium (Incl. Subsidy)</div>
+                <div class="ins-kpi-val accent" id="ins-agri-kpi-gwp">KSh 0</div>
+                <div class="ins-kpi-sub">Farmer net + County/MoALD co-financing</div>
+              </div>
+              <div class="dashboard-card ins-kpi-card">
+                <div class="ins-kpi-label">Monitored NDVI Agro-Zones</div>
+                <div class="ins-kpi-val success" id="ins-agri-kpi-ops">0</div>
+                <div class="ins-kpi-sub">Automated M-PESA drought/flood triggers</div>
+              </div>
+            </div>
+
+            <div class="dashboard-card" style="padding:20px;">
+              <div class="ins-ledger-toolbar">
+                <div>
+                  <h3 style="font-size:15px; font-weight:700; margin:0;">Agriculture, Livestock &amp; Climate Resilience Policy Ledger</h3>
+                  <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Issue Cooperative Crop/Livestock Certificates, track County 50% subsidy share, or trigger index payouts</div>
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                  <select class="form-control" id="ins-agri-status-filter" onchange="renderInsuranceLineModule('agri')" style="width:160px; padding:6px 10px; font-size:12px;">
+                    <option value="ALL">All Statuses</option>
+                    <option value="Active">Active</option>
+                    <option value="Pending">Pending SLA</option>
+                    <option value="Suspended">Off-Season / Suspended</option>
+                  </select>
+                  <input type="text" class="form-control" id="ins-agri-search" oninput="renderInsuranceLineModule('agri')" placeholder="Search cooperative, ward, policy..." style="width:230px; padding:6px 12px; font-size:12px;">
+                </div>
+              </div>
+              <div class="claims-table-wrapper">
+                <table class="claims-table">
+                  <thead>
+                    <tr>
+                      <th>Policy No</th>
+                      <th>Farmer Coop / Ranch</th>
+                      <th>Agro-Zone &amp; Commodity</th>
+                      <th>Insured Value</th>
+                      <th>Gross Premium</th>
+                      <th>Agri Cert No</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ins-agri-ledger-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="ins-subtab-panel" id="ins-agri-panel-underwrite" style="display:none;">
+            <div class="ins-uw-grid">
+              <div class="dashboard-card" style="padding:22px;">
+                <h3 style="font-size:16px; font-weight:700; margin-bottom:6px;">Crop, Livestock &amp; Parametric Climate Subsidy Underwriter</h3>
+                <p style="font-size:12.5px; color:var(--text-secondary); margin-bottom:18px;">Splits gross premium between Farmer Contribution and County/National Government KLIP/DRIVE Subsidy, with NDVI index trigger calibration.</p>
+                <div class="ins-form-grid">
+                  <div class="form-group">
+                    <label for="uw-agri-client">Cooperative Society / Ranch / Agribusiness</label>
+                    <input type="text" class="form-control" id="uw-agri-client" value="Trans Nzoia Smallholder Maize &amp; Dairy Union" oninput="calculateInsuranceLineQuote('agri')">
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-agri-subclass">Agriculture &amp; Climate Cover Type</label>
+                    <select class="form-control" id="uw-agri-subclass" onchange="calculateInsuranceLineQuote('agri')">
+                      <option value="Weather &amp; NDVI Satellite Crop Index">Area Yield &amp; NDVI Satellite Weather Index</option>
+                      <option value="Multi-Peril Crop Insurance (MPCI)">Multi-Peril Crop Insurance (Hail, Frost, Flood, Pest)</option>
+                      <option value="Livestock Mortality &amp; Pastoralist TLU">Livestock Mortality, East Coast Fever &amp; Drought TLU</option>
+                      <option value="Greenhouse, Floriculture &amp; Solar Irrigation">Greenhouse, Floriculture &amp; Solar Irrigation All Risks</option>
+                      <option value="Aquaculture Cage &amp; Apiculture Cover">Lake Basin Aquaculture &amp; Apiculture Cover</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-agri-subject">Agro-Ecological Zone, Ward &amp; Acreage/Herd</label>
+                    <input type="text" class="form-control" id="uw-agri-subject" value="Kiminini UAI-04 • 1,450 Acres Hybrid Maize + 320 Fresians" oninput="calculateInsuranceLineQuote('agri')">
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-agri-sum">Total Input / Harvest / Herd Sum Insured (KSh)</label>
+                    <input type="number" class="form-control" id="uw-agri-sum" min="100000" value="36000000" oninput="calculateInsuranceLineQuote('agri')">
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-agri-subsidy">Government / County Premium Subsidy Share</label>
+                    <select class="form-control" id="uw-agri-subsidy" onchange="calculateInsuranceLineQuote('agri')">
+                      <option value="0.50" selected>50% County &amp; MoALD KLIP/DRIVE Co-Subsidy</option>
+                      <option value="0.40">40% Smallholder Fertilizer &amp; Seed Subsidy</option>
+                      <option value="0">0% Commercial Estate (100% Private Debit)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="uw-agri-rider">Parametric NDVI / Veterinary Extension</label>
+                    <select class="form-control" id="uw-agri-rider" onchange="calculateInsuranceLineQuote('agri')">
+                      <option value="0.042">Season Long-Rains NDVI &lt; 0.32 Auto-Trigger (4.20%)</option>
+                      <option value="0.035">Dairy Livestock + RFID Ear-Tag Vet Cover (3.50%)</option>
+                      <option value="0.024">Greenhouse Plastic, Drip &amp; Cold-Room Cover (2.40%)</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; margin-top:18px;">
+                  <button class="btn btn-primary" onclick="submitInsuranceLinePolicy('agri')">Bind Agri Policy &amp; Mint Cooperative Certificate</button>
+                </div>
+              </div>
+
+              <div class="dashboard-card ins-quote-summary-card" id="ins-agri-quote-card">
+                <div class="ins-quote-header">AGRI-CLIMATE &amp; SUBSIDY SPLIT SUMMARY</div>
+                <div id="ins-agri-quote-breakdown"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ins-subtab-panel" id="ins-agri-panel-operations" style="display:none;">
+            <div class="ins-uw-grid">
+              <div class="dashboard-card" style="padding:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+                  <div>
+                    <h3 style="font-size:15px; font-weight:700; margin:0;">MODIS / Sentinel-2 NDVI Vegetation &amp; Rainfall Telemetry</h3>
+                    <div style="font-size:12px; color:var(--text-secondary);">Automated parametric drought &amp; excess-rain index evaluation across County Unit Areas of Insurance (UAIs)</div>
+                  </div>
+                  <button class="btn btn-secondary" onclick="executeLineSpecialOperation('agri')" style="font-size:12px;">+ Run NDVI Telemetry Trigger</button>
+                </div>
+                <div class="claims-table-wrapper">
+                  <table class="claims-table">
+                    <thead>
+                      <tr>
+                        <th>UAI Zone</th>
+                        <th>County / Ward</th>
+                        <th>Live NDVI</th>
+                        <th>Strike Threshold</th>
+                        <th>Insured Farmers</th>
+                        <th>Trigger Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="ins-agri-ops-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="dashboard-card" style="padding:20px;">
+                <h3 style="font-size:15px; font-weight:700; margin-bottom:8px;">Log Crop Failure, Livestock Mortality or Index Claim</h3>
+                <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">Verifies e-Voucher / RFID ear-tag or NDVI anomaly &amp; routes to Claims Directory.</p>
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label for="clm-agri-policy">Select Active Agriculture / Livestock Policy</label>
+                  <select class="form-control" id="clm-agri-policy"></select>
+                </div>
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label for="clm-agri-claimant">Farmer Cooperative / Pastoralist Group</label>
+                  <input type="text" class="form-control" id="clm-agri-claimant" value="Laikipia North Pastoralist TLU Group">
+                </div>
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label for="clm-agri-amount">Parametric / Vet Assessed Payout (KSh)</label>
+                  <input type="number" class="form-control" id="clm-agri-amount" value="540000">
+                </div>
+                <div class="form-group" style="margin-bottom:14px;">
+                  <label for="clm-agri-desc">NDVI Anomaly / Veterinary Post-Mortem Ref</label>
+                  <input type="text" class="form-control" id="clm-agri-desc" value="Sentinel-2 NDVI 0.24 Drought Breach • Automated M-PESA Batch">
+                </div>
+                <button class="btn btn-primary" onclick="submitInsuranceLineClaim('agri')" style="width:100%;">Register Agri / Livestock Claim</button>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </main>
   </div>
@@ -5707,17 +6968,23 @@
               <option value="Motor">Motor Comprehensive (Private &amp; Commercial)</option>
               <option value="Electric Vehicle">Electric Vehicle EV (AKI Standard)</option>
               <option value="County Fleet">County Government Fleet (47 Counties)</option>
+              <option value="Medical &amp; Health">Medical &amp; Health (Corporate / Family / SHA Top-Up)</option>
+              <option value="Property &amp; Fire">Property, Fire &amp; Engineering (IAR / CAR)</option>
+              <option value="Life &amp; Pension">Life, Group Life &amp; Umbrella Pension</option>
+              <option value="WIBA &amp; Liability">WIBA, Public Liability, PI &amp; Fidelity</option>
+              <option value="Marine &amp; Transit">Marine Cargo (KRA ICMS), GIT &amp; Aviation</option>
+              <option value="Agriculture &amp; Livestock">Agriculture, Livestock &amp; Climate Index</option>
               <option value="Non-Motor">Non-Motor Fire &amp; Engineering</option>
             </select>
           </div>
 
           <div class="form-group">
             <label for="modal-policy-make">Make &amp; Model / Asset Desc</label>
-            <input type="text" class="form-control" id="modal-policy-make" value="Toyota Prado TX (2022)" placeholder="e.g. Toyota Hilux Double Cab">
+            <input type="text" class="form-control" id="modal-policy-make" value="Toyota Prado TX (2022)" placeholder="e.g. Toyota Hilux / Commercial Complex / 250 Staff">
           </div>
 
           <div class="form-group">
-            <label for="modal-policy-suminsured">Vehicle Sum Insured (KSh)</label>
+            <label for="modal-policy-suminsured">Sum Insured / Annual Limit (KSh)</label>
             <input type="number" class="form-control" id="modal-policy-suminsured" value="3500000" oninput="calculateModalPolicyPremium()">
           </div>
         </div>
@@ -5776,7 +7043,7 @@
         <div class="form-group" style="margin-bottom:20px;">
           <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:12.5px; color:var(--text-primary);">
             <input type="checkbox" id="modal-policy-issue-cert" checked style="width:16px; height:16px; accent-color:#c89565;">
-            Generate &amp; Issue Official AKI Digital QR Certificate (CERT-2026)
+            Generate &amp; Issue Official AKI / IRA Digital QR Certificate (CERT-2026)
           </label>
         </div>
 
@@ -5935,6 +7202,90 @@
     </div>
   </div>
 
+  <!-- ================= OFFICIAL IRA MULTI-LINE DIGITAL CERTIFICATE / POLICY BOND MODAL ================= -->
+  <div class="modal-overlay" id="multiline-cert-modal">
+    <div class="modal-window" style="max-width:780px; background:#151210; border:1px solid #8b5a2b; box-shadow:0 24px 60px rgba(0,0,0,0.75);">
+      <div class="modal-header" style="border-bottom:1px solid rgba(139, 90, 43, 0.3); padding-bottom:14px;">
+        <div>
+          <h3 id="ml-cert-modal-heading" style="font-size:17px; font-weight:800; color:#ffffff; margin:0;">Official IRA Digital Insurance Certificate &amp; Policy Schedule</h3>
+          <div id="ml-cert-modal-sub" style="font-size:12px; color:#c89565; margin-top:3px;">Insurance Act (Cap 487 Laws of Kenya) • Cryptographically Signed &amp; QR Verifiable</div>
+        </div>
+        <button class="modal-close-btn" onclick="closeMultiLineCertModal()">×</button>
+      </div>
+      <div class="modal-body" style="padding:22px;">
+        <div id="multiline-cert-card" class="multiline-cert-document">
+          <div class="ml-cert-banner">
+            <div>
+              <div class="ml-cert-kicker" id="ml-cert-regulator-tag">REPUBLIC OF KENYA • INSURANCE REGULATORY AUTHORITY (CAP 487)</div>
+              <h2 class="ml-cert-title" id="ml-cert-doc-title">DIGITAL MEDICAL &amp; HEALTH INSURANCE CERTIFICATE</h2>
+              <div class="ml-cert-issuer" id="ml-cert-underwriter">Issued by EIMS Composite Assurance Kenya Ltd • IRA License No. IRA/04/089/2026</div>
+            </div>
+            <div class="ml-cert-status-seal" id="ml-cert-status-badge">IN-FORCE</div>
+          </div>
+
+          <div class="ml-cert-grid">
+            <div class="ml-cert-details">
+              <div class="ml-cert-field">
+                <span class="ml-cert-label">Certificate / Bond No.</span>
+                <span class="ml-cert-val mono" id="ml-cert-no">CERT-MED-2026-4012</span>
+              </div>
+              <div class="ml-cert-field">
+                <span class="ml-cert-label">Master Policy Number</span>
+                <span class="ml-cert-val mono" id="ml-cert-policy-no">POL-MED-4012-2026</span>
+              </div>
+              <div class="ml-cert-field">
+                <span class="ml-cert-label">Insured / Policyholder</span>
+                <span class="ml-cert-val" id="ml-cert-client">Nairobi City County Civil Servants Scheme</span>
+              </div>
+              <div class="ml-cert-field">
+                <span class="ml-cert-label">Class &amp; Sub-Class of Risk</span>
+                <span class="ml-cert-val" id="ml-cert-class">Medical &amp; Health • Corporate Inpatient/Outpatient</span>
+              </div>
+              <div class="ml-cert-field">
+                <span class="ml-cert-label">Insured Subject / Schedule Ref</span>
+                <span class="ml-cert-val" id="ml-cert-subject">380 Principal Lives + Dependants (SHA/SHIF Augmented)</span>
+              </div>
+              <div class="ml-cert-field">
+                <span class="ml-cert-label">Sum Insured / Annual Benefit Limit</span>
+                <span class="ml-cert-val highlight" id="ml-cert-sum-insured">KSh 150,000,000</span>
+              </div>
+              <div class="ml-cert-field">
+                <span class="ml-cert-label">Gross Annual Premium (Incl. PHCF/ITL)</span>
+                <span class="ml-cert-val" id="ml-cert-premium">KSh 2,480,000</span>
+              </div>
+              <div class="ml-cert-field">
+                <span class="ml-cert-label">Period of Insurance</span>
+                <span class="ml-cert-val" id="ml-cert-period">01 Jan 2026 to 31 Dec 2026 (23:59 EAT)</span>
+              </div>
+              <div class="ml-cert-field" style="grid-column: 1 / -1;">
+                <span class="ml-cert-label">Special Clauses, Statutory Endorsements &amp; Cover Scope</span>
+                <span class="ml-cert-val" id="ml-cert-clauses">24/7 Biometric Smart Card Hospital Access • Cashless Pre-Authorization GOP Desk • Roaming East Africa Panel</span>
+              </div>
+            </div>
+
+            <div class="ml-cert-qr-panel">
+              <div id="ml-cert-qr-box" class="ml-cert-qr-box"></div>
+              <div class="ml-cert-qr-caption">Scan to Verify Live Status</div>
+              <div class="ml-cert-hash-label">SHA-256 Digital Seal</div>
+              <div class="ml-cert-hash-val" id="ml-cert-hash">8f91d4c2...a91e330b</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:18px;">
+          <div style="font-size:11.5px; color:var(--text-secondary);">
+            Statutory Levies Remitted: PHCF (0.25%) • Training Levy (0.20%) • Stamp Duty (KSh 40)
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn btn-secondary" onclick="closeMultiLineCertModal()">Close</button>
+            <button class="btn btn-secondary" onclick="downloadMultiLineCertificateHTML()" style="border-color:rgba(200,149,101,0.45); color:#dfc09f;">Download Digital Cert (.HTML)</button>
+            <button class="btn btn-primary" onclick="printMultiLineCertificate()" style="background:linear-gradient(135deg, #8b5a2b, #6f4722); font-weight:700;">Print A4 Policy Certificate</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast alert placement -->
   <div id="toast-container"></div>
   
@@ -5947,7 +7298,7 @@
   <script src="qrcode.min.js?v=20260817b"></script>
 
   <!-- EIMS application logic -->
-  <script src="app.js?v=20261108f"></script>
+  <script src="app.js?v=20261108g"></script>
 </body>
 </html>
 

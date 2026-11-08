@@ -485,6 +485,13 @@ function navigateToView(viewId) {
     if (typeof updateSubscriptionUI === "function") updateSubscriptionUI();
   } else if (viewId === "god-mode") {
     if (typeof renderGodModeView === "function") renderGodModeView();
+  } else if (viewId.startsWith("ins-")) {
+    const lineKey = viewId.slice(4);
+    if (typeof renderInsuranceLineModule === "function") renderInsuranceLineModule(lineKey);
+  }
+
+  if (typeof syncInsuranceLinesTabBar === "function") {
+    syncInsuranceLinesTabBar(viewId);
   }
 
   // Sync top header module quick-jump selector
@@ -1520,10 +1527,12 @@ function saveFNOLClaim() {
 // ================= CLAIMS DIRECTORY VIEW =================
 function setupClaimsDirectory() {
   const searchInput = document.getElementById("directory-search-input");
+  const lineSelect = document.getElementById("directory-line-select");
   const statusSelect = document.getElementById("directory-status-select");
   const triageSelect = document.getElementById("directory-triage-select");
   
   if (searchInput) searchInput.addEventListener("input", renderClaimsDirectory);
+  if (lineSelect) lineSelect.addEventListener("change", renderClaimsDirectory);
   if (statusSelect) statusSelect.addEventListener("change", renderClaimsDirectory);
   if (triageSelect) triageSelect.addEventListener("change", renderClaimsDirectory);
   
@@ -1536,17 +1545,27 @@ function setupClaimsDirectory() {
 
 function renderClaimsDirectory() {
   const tbody = document.querySelector("#directory-claims-table tbody");
+  if (!tbody) return;
   tbody.innerHTML = "";
   
-  const query = document.getElementById("directory-search-input").value.toLowerCase();
-  const statusFilter = document.getElementById("directory-status-select").value;
-  const triageFilter = document.getElementById("directory-triage-select").value;
+  const query = (document.getElementById("directory-search-input")?.value || "").toLowerCase();
+  const lineFilter = document.getElementById("directory-line-select")?.value || "ALL";
+  const statusFilter = document.getElementById("directory-status-select")?.value || "ALL";
+  const triageFilter = document.getElementById("directory-triage-select")?.value || "ALL";
   
   const filtered = claims.filter(c => {
-    const matchesQuery = c.owner.toLowerCase().includes(query) || c.plate.toLowerCase().includes(query) || c.id.toLowerCase().includes(query);
+    const claimLine = c.insuranceLine || "Motor";
+    const matchesQuery =
+      (c.owner || "").toLowerCase().includes(query) ||
+      (c.plate || "").toLowerCase().includes(query) ||
+      (c.id || "").toLowerCase().includes(query) ||
+      claimLine.toLowerCase().includes(query);
+    const matchesLine = lineFilter === "ALL"
+      ? true
+      : (lineFilter === "Motor" ? isMotorUnderwritingLine(claimLine, c.plate) : claimLine === lineFilter);
     const matchesStatus = statusFilter === "ALL" || c.status === statusFilter;
     const matchesTriage = triageFilter === "ALL" || c.triage === triageFilter;
-    return matchesQuery && matchesStatus && matchesTriage;
+    return matchesQuery && matchesLine && matchesStatus && matchesTriage;
   });
   
   if (filtered.length === 0) {
@@ -1556,12 +1575,16 @@ function renderClaimsDirectory() {
   
   filtered.forEach(c => {
     const tr = document.createElement("tr");
+    const claimLine = c.insuranceLine || "Motor";
+    const lineSub = claimLine !== "Motor"
+      ? `<div style="font-size:10.5px; color:#c89565; font-weight:700; margin-top:2px;">${escapeHTML(claimLine)}</div>`
+      : "";
     tr.innerHTML = `
-      <td><strong>${c.id}</strong></td>
-      <td><code>${c.plate}</code></td>
-      <td>${c.owner}</td>
-      <td>${c.date}</td>
-      <td>KSh ${c.cost.toLocaleString()}</td>
+      <td><strong>${escapeHTML(c.id)}</strong></td>
+      <td><code>${escapeHTML(c.plate)}</code>${lineSub}</td>
+      <td>${escapeHTML(c.owner)}</td>
+      <td>${escapeHTML(c.date)}</td>
+      <td>KSh ${Number(c.cost || 0).toLocaleString()}</td>
       <td><span class="fraud-pill ${getFraudClass(c.fraudScore)}">${c.fraudScore}%</span></td>
       <td><span class="status-badge ${c.triage.toLowerCase()}">${c.triage}</span></td>
       <td><span class="status-badge ${getStatusClass(c.status)}">${c.status}</span></td>
@@ -2483,11 +2506,29 @@ function closeNewPolicyModal() {
   if (modal) modal.classList.remove("active");
 }
 
+function isMotorUnderwritingLine(line, plateHint = "") {
+  const l = String(line || "").trim();
+  if (l === "Motor" || l === "Electric Vehicle" || l === "County Fleet" || l === "PSV") {
+    return true;
+  }
+  if (l === "Non-Motor" && /^K[A-Z0-9]{2,4}\s?\d{3}[A-Z]$/i.test(String(plateHint || "").trim())) {
+    return true;
+  }
+  return false;
+}
+window.isMotorUnderwritingLine = isMotorUnderwritingLine;
+
 function getUnderwritingLineTariffRate(line) {
-  if (line === "Electric Vehicle") return 0.025; // 2.50% EV green tariff
-  if (line === "County Fleet") return 0.028;     // 2.80% county fleet tariff
-  if (line === "Non-Motor") return 0.015;        // 1.50% fire & engineering
-  return 0.035;                                  // 3.50% motor comprehensive
+  if (line === "Electric Vehicle") return 0.025;           // 2.50% EV green tariff
+  if (line === "County Fleet") return 0.028;               // 2.80% county fleet tariff
+  if (line === "Medical & Health") return 0.048;           // 4.80% medical benefit rate
+  if (line === "Property & Fire") return 0.0035;           // 0.35% fire & industrial all risks
+  if (line === "Life & Pension") return 0.012;             // 1.20% group life / term mortality
+  if (line === "WIBA & Liability") return 0.0085;          // 0.85% WIBA wage-roll tariff
+  if (line === "Marine & Transit") return 0.0055;          // 0.55% marine cargo ICC(A) / GIT
+  if (line === "Agriculture & Livestock") return 0.042;    // 4.20% crop NDVI & livestock
+  if (line === "Non-Motor") return 0.015;                  // 1.50% general non-motor
+  return 0.035;                                            // 3.50% motor comprehensive
 }
 
 function calculateModalPolicyPremium() {
@@ -2527,9 +2568,30 @@ function confirmCreateNewPolicy() {
   const { totalLevies } = computeIRALeviesForPremium(basic, 1);
   const totalDebit = basic + totalLevies;
 
-  const prefix = line === "Electric Vehicle" ? "POL-EV-" : (line === "County Fleet" ? "POL-FLT-" : (line === "Non-Motor" ? "POL-GEN-" : "POL-MOT-"));
+  const prefixMap = {
+    "Electric Vehicle": "POL-EV-",
+    "County Fleet": "POL-FLT-",
+    "Medical & Health": "POL-MED-",
+    "Property & Fire": "POL-PRP-",
+    "Life & Pension": "POL-LIF-",
+    "WIBA & Liability": "POL-WIB-",
+    "Marine & Transit": "POL-MAR-",
+    "Agriculture & Livestock": "POL-AGR-",
+    "Non-Motor": "POL-GEN-"
+  };
+  const prefix = prefixMap[line] || "POL-MOT-";
   const newPolNo = prefix + Math.floor(1000 + Math.random() * 9000) + "-2026";
-  const newCert = issueCert ? "CERT-" + Math.floor(1000 + Math.random() * 9000) + "-2026" : null;
+  const motorLine = isMotorUnderwritingLine(line, plate);
+  let newCert = null;
+  if (issueCert) {
+    if (motorLine) {
+      newCert = "CERT-" + Math.floor(1000 + Math.random() * 9000) + "-2026";
+    } else if (typeof mintMultiLineCertId === "function") {
+      newCert = mintMultiLineCertId(line, "2026");
+    } else {
+      newCert = "CERT-IRA-" + Math.floor(1000 + Math.random() * 9000) + "-2026";
+    }
+  }
 
   const newPol = {
     policyNo: newPolNo,
@@ -2538,6 +2600,7 @@ function confirmCreateNewPolicy() {
     makeModel: makeModel,
     sumInsured: sumInsured,
     line: line,
+    subClass: makeModel,
     broker: broker,
     paymentTerm: paymentTerm,
     premium: totalDebit,
@@ -2551,13 +2614,15 @@ function confirmCreateNewPolicy() {
   };
 
   policies.unshift(newPol);
-  registerVehicleInNTSA(plate, {
-    make: makeModel,
-    year: 2024,
-    valuation: sumInsured,
-    policy: newPolNo,
-    owner: clientName
-  });
+  if (motorLine) {
+    registerVehicleInNTSA(plate, {
+      make: makeModel,
+      year: 2024,
+      valuation: sumInsured,
+      policy: newPolNo,
+      owner: clientName
+    });
+  }
 
   // If underwritten under County Fleet scope, also mirror in countyFleets ledger
   if (line === "County Fleet" && typeof countyFleets !== "undefined" && Array.isArray(countyFleets)) {
@@ -2596,6 +2661,9 @@ function confirmCreateNewPolicy() {
     showToast("Policy Underwritten", `New policy file ${newPolNo} for ${clientName} (${plate}) assigned to ${broker}. Total Debit: KSh ${totalDebit.toLocaleString()}`, "success");
   }
   renderPolicyRegistry();
+  if (typeof renderAllInsuranceLineModules === "function") {
+    renderAllInsuranceLineModules();
+  }
   if (typeof renderOverdueApprovalsDashboard === "function") {
     renderOverdueApprovalsDashboard();
   }
@@ -2737,6 +2805,10 @@ function openAKICertModal(policyOrNo) {
 function triggerCertPolicy(policyNo) {
   const p = policies.find(pol => pol.policyNo === policyNo);
   if (!p) return;
+  if (!isMotorUnderwritingLine(p.line, p.plate) && typeof openMultiLineCertModal === "function") {
+    openMultiLineCertModal(p.policyNo);
+    return;
+  }
   if (!p.certId) {
     p.certId = "CERT-" + Math.floor(1000 + Math.random() * 9000) + "-2026";
     renderPolicyRegistry();
@@ -3170,21 +3242,32 @@ function updateUnderwritingKPIs() {
 
 function renderPolicyRegistry() {
   updateUnderwritingKPIs();
+  if (typeof updateInsuranceTabCounts === "function") updateInsuranceTabCounts();
   const tbody = document.querySelector("#policy-ledger-table tbody");
   if (!tbody) return;
   
   tbody.innerHTML = "";
   const query = (document.getElementById("policy-search-input")?.value || "").toLowerCase();
   const statusFilter = document.getElementById("policy-status-filter")?.value || "ALL";
+  const lineFilter = document.getElementById("policy-line-filter")?.value || "ALL";
   
   const filtered = policies.filter(p => {
     const matchesText =
       (p.clientName || "").toLowerCase().includes(query) ||
       (p.plate || "").toLowerCase().includes(query) ||
       (p.policyNo || "").toLowerCase().includes(query) ||
+      (p.line || "").toLowerCase().includes(query) ||
       (p.certId || "").toLowerCase().includes(query);
     const matchesStatus = statusFilter === "ALL" ? true : p.status === statusFilter;
-    return matchesText && matchesStatus;
+    let matchesLine = true;
+    if (lineFilter === "MOTOR_ALL") {
+      matchesLine = typeof isMotorUnderwritingLine === "function"
+        ? isMotorUnderwritingLine(p.line, p.plate)
+        : (p.line === "Motor" || p.line === "Electric Vehicle" || p.line === "County Fleet");
+    } else if (lineFilter !== "ALL") {
+      matchesLine = p.line === lineFilter;
+    }
+    return matchesText && matchesStatus && matchesLine;
   });
   
   if (filtered.length === 0) {
@@ -3207,7 +3290,10 @@ function renderPolicyRegistry() {
     const approveBtn = p.status === "Pending"
       ? `<button class="btn btn-primary" onclick="approvePendingItem('POLICY', '${p.policyNo}')" style="padding:4px 9px; font-size:11px;">Approve</button>`
       : "";
-    const certBtnLabel = p.certId ? "AKI Cert" : "Issue Cert";
+    const isMotor = typeof isMotorUnderwritingLine === "function"
+      ? isMotorUnderwritingLine(p.line, p.plate)
+      : true;
+    const certBtnLabel = p.certId ? (isMotor ? "AKI Cert" : "IRA Cert") : "Issue Cert";
     
     tr.innerHTML = `
       <td><strong>${escapeHTML(p.policyNo)}</strong></td>
@@ -3254,7 +3340,8 @@ function toggleSuspendPolicy(policyNo) {
     const linkedFleet = countyFleets.find(f => f.id === p.fleetId);
     if (linkedFleet) linkedFleet.status = p.status;
   }
-  if (typeof recordAKIAuditEvent === "function" && p.certId) {
+  const isMotor = typeof isMotorUnderwritingLine === "function" ? isMotorUnderwritingLine(p.line, p.plate) : true;
+  if (isMotor && typeof recordAKIAuditEvent === "function" && p.certId) {
     recordAKIAuditEvent(
       p.status === "Suspended" ? "SUSPENDED" : "REINSTATED",
       p.certId,
@@ -3266,6 +3353,7 @@ function toggleSuspendPolicy(policyNo) {
   renderPolicyRegistry();
   if (typeof renderAKICertificatesHub === "function") renderAKICertificatesHub();
   if (typeof renderFleetUnderwriting === "function") renderFleetUnderwriting();
+  if (typeof renderAllInsuranceLineModules === "function") renderAllInsuranceLineModules();
   if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
 }
 
@@ -3280,7 +3368,8 @@ function cancelPolicy(policyNo) {
     if (linkedFleet) linkedFleet.status = "Cancelled";
   }
   p.revokedAt = new Date().toISOString().slice(0, 10);
-  if (typeof recordAKIAuditEvent === "function" && p.certId) {
+  const isMotor = typeof isMotorUnderwritingLine === "function" ? isMotorUnderwritingLine(p.line, p.plate) : true;
+  if (isMotor && typeof recordAKIAuditEvent === "function" && p.certId) {
     recordAKIAuditEvent(
       "REVOKED_CANCELLED",
       p.certId,
@@ -3288,10 +3377,11 @@ function cancelPolicy(policyNo) {
       `Statutory Cap 405 revocation executed for ${p.policyNo} (${p.clientName}).`
     );
   }
-  showToast("Policy Cancelled", `Policy ${p.policyNo} and AKI Certificate ${p.certId || ""} revoked.`, "danger");
+  showToast("Policy Cancelled", `Policy ${p.policyNo} and Certificate ${p.certId || ""} revoked.`, "danger");
   renderPolicyRegistry();
   if (typeof renderAKICertificatesHub === "function") renderAKICertificatesHub();
   if (typeof renderFleetUnderwriting === "function") renderFleetUnderwriting();
+  if (typeof renderAllInsuranceLineModules === "function") renderAllInsuranceLineModules();
   if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
 }
 
@@ -3486,7 +3576,11 @@ function dispatchRenewalNotices() {
   let renewedCerts = 0;
   selected.forEach(cb => {
     const pol = policies.find(p => p.policyNo === cb.value);
-    if (pol && pol.line !== "Non-Motor") {
+    if (!pol) return;
+    const isMotor = typeof isMotorUnderwritingLine === "function"
+      ? isMotorUnderwritingLine(pol.line, pol.plate)
+      : pol.line !== "Non-Motor";
+    if (isMotor) {
       const oldCert = pol.certId || "UNISSUED";
       pol.commencingDate = "2027-01-01";
       pol.expiryDate = "2027-12-31";
@@ -3497,12 +3591,20 @@ function dispatchRenewalNotices() {
       if (typeof recordAKIAuditEvent === "function") {
         recordAKIAuditEvent("RENEWED_REISSUED", pol.certId, pol.plate, `Renewed ${pol.policyNo} for 2027 term (superseded ${oldCert}) via ${broker}.`);
       }
+    } else if (pol.line !== "Non-Motor") {
+      pol.commencingDate = "2027-01-01";
+      pol.expiryDate = "2027-12-31";
+      pol.certId = typeof mintMultiLineCertId === "function"
+        ? mintMultiLineCertId(pol.line, "2027")
+        : `CERT-IRA-2027-${Math.floor(1000 + Math.random() * 9000)}`;
+      renewedCerts++;
     }
   });
   if (typeof renderPolicyRegistry === "function") renderPolicyRegistry();
   if (typeof renderAKICertificatesHub === "function") renderAKICertificatesHub();
+  if (typeof renderAllInsuranceLineModules === "function") renderAllInsuranceLineModules();
   closeRenewalModal();
-  showToast("Renewal Batch Dispatched", `Dispatched ${selected.length} renewal notices to ${broker} and minted ${renewedCerts} renewed 2027 AKI Digital Certificates.`, "success");
+  showToast("Renewal Batch Dispatched", `Dispatched ${selected.length} renewal notices to ${broker} and minted ${renewedCerts} renewed 2027 Digital Certificates.`, "success");
 }
 
 // ================= AI REPORT ASSISTANT ENGINE =================
@@ -10276,6 +10378,7 @@ function approvePendingItem(type, id) {
   if (typeof renderPolicyRegistry === "function") renderPolicyRegistry();
   if (typeof renderFleetUnderwriting === "function") renderFleetUnderwriting();
   if (typeof renderIRACompliance === "function") renderIRACompliance();
+  if (typeof renderAllInsuranceLineModules === "function") renderAllInsuranceLineModules();
 }
 
 function approveAllOverdueItems() {
@@ -10305,6 +10408,7 @@ function approveAllOverdueItems() {
   if (typeof renderPolicyRegistry === "function") renderPolicyRegistry();
   if (typeof renderFleetUnderwriting === "function") renderFleetUnderwriting();
   if (typeof renderIRACompliance === "function") renderIRACompliance();
+  if (typeof renderAllInsuranceLineModules === "function") renderAllInsuranceLineModules();
   showToast("All Pending Approvals Cleared", `Approved ${pending.length} pending claim & underwriting files.`, "success");
 }
 
@@ -10885,7 +10989,11 @@ function getUnifiedAKICertificateLedger() {
   if (typeof policies !== "undefined" && Array.isArray(policies)) {
     for (const p of policies) {
       if (p.fleetId || String(p.policyNo || "").startsWith("POL-FLT-")) continue;
-      if (p.line === "Non-Motor" && !/^K[A-Z0-9]{2,4}\s?\d{3}[A-Z]$/i.test(String(p.plate || "").trim())) continue;
+      if (typeof isMotorUnderwritingLine === "function") {
+        if (!isMotorUnderwritingLine(p.line, p.plate)) continue;
+      } else if (p.line === "Non-Motor" && !/^K[A-Z0-9]{2,4}\s?\d{3}[A-Z]$/i.test(String(p.plate || "").trim())) {
+        continue;
+      }
 
       const plateClean = String(p.plate || "").trim().toUpperCase();
       const ntsaRec = ntsaDatabase[plateClean] || {};
@@ -12041,7 +12149,10 @@ function batchMintAllUncertifiedAKICerts() {
   let minted = 0;
   if (Array.isArray(policies)) {
     policies.forEach(p => {
-      if (p.fleetId || String(p.policyNo || "").startsWith("POL-FLT-") || p.line === "Non-Motor" || p.status === "Cancelled") return;
+      const motorEligible = typeof isMotorUnderwritingLine === "function"
+        ? isMotorUnderwritingLine(p.line, p.plate)
+        : p.line !== "Non-Motor";
+      if (p.fleetId || String(p.policyNo || "").startsWith("POL-FLT-") || !motorEligible || p.status === "Cancelled") return;
       if (!p.certId) {
         const cls = classifyAKICertificateType(p).code;
         p.certId = mintNextAKICertId(cls, "2026");
@@ -12167,3 +12278,1089 @@ function runUSSD352Simulation() {
   }
 }
 window.runUSSD352Simulation = runUSSD352Simulation;
+
+// ============================================================================
+// COMPOSITE MULTI-LINE INSURANCE MODULES & TAB NAVIGATION ENGINE (CAP 487)
+// Covers: Medical & Health, Property & Fire, Life & Pension, WIBA & Liability,
+// Marine Cargo/GIT/Aviation, and Agriculture/Livestock/Climate Index.
+// ============================================================================
+
+const MULTI_LINE_CONFIG = {
+  medical: {
+    key: "medical",
+    viewId: "ins-medical",
+    lineName: "Medical & Health",
+    polPrefix: "POL-MED-",
+    certPrefix: "CERT-MED",
+    claimPrefix: "CLM-MED-",
+    docTitle: "DIGITAL MEDICAL & HEALTH INSURANCE CERTIFICATE",
+    regulatorTag: "REPUBLIC OF KENYA • IRA CLASS 08 & SHIF COMPLEMENTARY COVER",
+    clauses: "24/7 Biometric Smart Card Cashless Hospital Access • Pre-Authorization GOP Desk • SHA/SHIF Supra Offset • Roaming East Africa Panel"
+  },
+  property: {
+    key: "property",
+    viewId: "ins-property",
+    lineName: "Property & Fire",
+    polPrefix: "POL-PRP-",
+    certPrefix: "CERT-PRP",
+    claimPrefix: "CLM-PRP-",
+    docTitle: "PROPERTY, FIRE & ENGINEERING POLICY CERTIFICATE",
+    regulatorTag: "REPUBLIC OF KENYA • IRA CLASSES 03, 04 & 05 (FIRE, IAR & CAR)",
+    clauses: "Reinstatement Value Memorandum • Fire & Allied Perils • Africa Re Compulsory Treaty Backed • Certified Fire Protection Grade"
+  },
+  life: {
+    key: "life",
+    viewId: "ins-life",
+    lineName: "Life & Pension",
+    polPrefix: "POL-LIF-",
+    certPrefix: "BOND-LIF",
+    claimPrefix: "CLM-LIF-",
+    docTitle: "LONG-TERM LIFE ASSURANCE & PENSION POLICY BOND",
+    regulatorTag: "REPUBLIC OF KENYA • LONG-TERM ASSURANCE (IRA CAP 487 & RBA)",
+    clauses: "KE 2010-2014 Mortality Backed • Section 111 Direct Beneficiary Nomination • 48-Hour Last Expense Rider • 15% KRA Insurance Tax Relief Eligible"
+  },
+  wiba: {
+    key: "wiba",
+    viewId: "ins-wiba",
+    lineName: "WIBA & Liability",
+    polPrefix: "POL-WIB-",
+    certPrefix: "CERT-WIB",
+    claimPrefix: "CLM-WIB-",
+    docTitle: "STATUTORY WIBA (2007) & CASUALTY COMPLIANCE CERTIFICATE",
+    regulatorTag: "REPUBLIC OF KENYA • WORK INJURY BENEFITS ACT (WIBA 2007) & DOSHS",
+    clauses: "96 Months Earnings Death/PTD Statutory Schedule • Common Law Employers Liability • Valid for PPRA Public Procurement & County Tender Compliance"
+  },
+  marine: {
+    key: "marine",
+    viewId: "ins-marine",
+    lineName: "Marine & Transit",
+    polPrefix: "POL-MAR-",
+    certPrefix: "MCI-KRA",
+    claimPrefix: "CLM-MAR-",
+    docTitle: "KENYA LOCAL MARINE CARGO (MCI) & TRANSIT CERTIFICATE",
+    regulatorTag: "SECTION 20 INSURANCE ACT (CAP 487) • KRA ICMS & KENTRADE SINGLE WINDOW",
+    clauses: "Institute Cargo Clauses ICC (A) Warehouse-to-Warehouse • CIF + 10% Uplift • Synced Live with KRA ICMS & KenTrade TradeNet Customs Clearance"
+  },
+  agri: {
+    key: "agri",
+    viewId: "ins-agri",
+    lineName: "Agriculture & Livestock",
+    polPrefix: "POL-AGR-",
+    certPrefix: "CERT-AGR",
+    claimPrefix: "CLM-AGR-",
+    docTitle: "AGRICULTURE, LIVESTOCK & PARAMETRIC CLIMATE CERTIFICATE",
+    regulatorTag: "REPUBLIC OF KENYA • KLIP / DRIVE SUBSIDY & SATELLITE NDVI INDEX",
+    clauses: "MODIS / Sentinel-2 NDVI Parametric Drought & Excess Rain Trigger • RFID Livestock Vet Verification • Automated M-PESA Smallholder Payout"
+  }
+};
+
+let multiLineSerialCounter = 4120;
+let currentActiveMultiLinePolicy = null;
+let multiLineSeedInitialized = false;
+
+function getMultiLineConfigByLineName(lineName) {
+  const clean = String(lineName || "").trim().toLowerCase();
+  for (const cfg of Object.values(MULTI_LINE_CONFIG)) {
+    if (cfg.lineName.toLowerCase() === clean || cfg.key === clean) return cfg;
+  }
+  if (clean.includes("med") || clean.includes("health")) return MULTI_LINE_CONFIG.medical;
+  if (clean.includes("prop") || clean.includes("fire") || clean.includes("eng") || clean === "non-motor") return MULTI_LINE_CONFIG.property;
+  if (clean.includes("life") || clean.includes("pension")) return MULTI_LINE_CONFIG.life;
+  if (clean.includes("wiba") || clean.includes("liab") || clean.includes("fidel")) return MULTI_LINE_CONFIG.wiba;
+  if (clean.includes("marine") || clean.includes("transit") || clean.includes("avia")) return MULTI_LINE_CONFIG.marine;
+  if (clean.includes("agri") || clean.includes("crop") || clean.includes("live")) return MULTI_LINE_CONFIG.agri;
+  return MULTI_LINE_CONFIG.property;
+}
+
+function mintMultiLineCertId(lineNameOrKey, year = "2026") {
+  const cfg = getMultiLineConfigByLineName(lineNameOrKey);
+  multiLineSerialCounter += 1;
+  return `${cfg.certPrefix}-${year}-${multiLineSerialCounter}`;
+}
+window.mintMultiLineCertId = mintMultiLineCertId;
+
+// Specialized Operational Queues for Each Dedicated Non-Motor Module
+const multiLineOpsQueues = {
+  medical: [
+    { c1: "GOP-2026-881", c2: "Nairobi Hospital", c3: "Nairobi County Civil Servants (POL-MED-4011-2026)", c4: "ICD-11 Orthopedic Admission", c5: "KSh 340,000", status: "Approved" },
+    { c1: "GOP-2026-882", c2: "Aga Khan Hospital Kisumu", c3: "Lake Basin Teachers Afya (POL-MED-4012-2026)", c4: "Maternity & Neonatal Package", c5: "KSh 165,000", status: "Approved" },
+    { c1: "GOP-2026-883", c2: "Moi Teaching & Referral", c3: "Nairobi County Civil Servants (POL-MED-4011-2026)", c4: "MRI & Oncology Day-Care", c5: "KSh 92,000", status: "Pending" }
+  ],
+  property: [
+    { c1: "SRV-FIRE-301", c2: "LR 209/8841 • City Hall Annex", c3: "Eng. K. Mutua (Q-Risk)", c4: "28% PML", c5: "Grade A Sprinkler", status: "Approved" },
+    { c1: "SRV-CAR-302", c2: "Thika Industrial Park Cold-Room", c3: "McLarens Kenya Survey", c4: "34% PML", c5: "Grade B Hydrant", status: "Approved" }
+  ],
+  life: [
+    { c1: "NOM-SEC111-01", c2: "POL-LIF-4031-2026 (County GLA)", c3: "Spouse & Children Education Trust", c4: "100% Split", c5: "KRA-REL-2026-A", status: "Approved" },
+    { c1: "NOM-SEC111-02", c2: "POL-LIF-4032-2026 (Elixir Edu)", c3: "Mary Wambui Kamau (Guardian)", c4: "100% Direct", c5: "KRA-REL-2026-B", status: "Approved" }
+  ],
+  wiba: [
+    { c1: "DOSHS-F1-771", c2: "Nairobi Water & Sewerage", c3: "Josephat Kiprop (Line Tech)", c4: "12% PD", c5: "KSh 384,000", status: "Approved" },
+    { c1: "DOSHS-F1-772", c2: "Mombasa Port Logistics Contractors", c3: "Hassan Omar Bakari", c4: "8% PD", c5: "KSh 218,500", status: "Pending" }
+  ],
+  marine: [
+    { c1: "MCI-KRA-2026-4051", c2: "IDF-26KE0041902", c3: "MV Maersk Mombasa V.412", c4: "Port of Mombasa -> ICD", c5: "KSh 92,400,000", status: "Approved" },
+    { c1: "MCI-KRA-2026-4052", c2: "IDF-26KE0042188", c3: "KQ Cargo B787 Freighter", c4: "JKIA Nairobi Air Cargo", c5: "KSh 26,400,000", status: "Approved" }
+  ],
+  agri: [
+    { c1: "UAI-UASINGISHU-02", c2: "Moiben & Soy Maize Belt", c3: "NDVI 0.64", c4: "Strike < 0.32", c5: "1,840 Farmers", status: "Approved" },
+    { c1: "UAI-LAIKIPIA-05", c2: "Laikipia North Pastoralist TLU", c3: "NDVI 0.29", c4: "Strike < 0.32", c5: "620 Herders", status: "Pending" }
+  ]
+};
+
+function seedCompositeInsurancePortfolio() {
+  if (multiLineSeedInitialized || typeof policies === "undefined" || !Array.isArray(policies)) return;
+  multiLineSeedInitialized = true;
+
+  const seededPolicies = [
+    // Medical & Health
+    {
+      policyNo: "POL-MED-4011-2026",
+      clientName: "Nairobi City County Civil Servants Medical",
+      plate: "380 Principal Lives + Dependants",
+      makeModel: "Corporate Inpatient/Outpatient + SHA Supra",
+      subClass: "Corporate & County Scheme",
+      sumInsured: 150000000,
+      line: "Medical & Health",
+      broker: "Minet Kenya Insurance Brokers",
+      paymentTerm: "County Warrant",
+      premium: 4860000,
+      debited: 4860000,
+      status: "Active",
+      approvalStatus: "Approved",
+      commencingDate: "2026-01-01",
+      expiryDate: "2026-12-31",
+      certId: "CERT-MED-2026-4011",
+      branch: "HQ"
+    },
+    {
+      policyNo: "POL-MED-4012-2026",
+      clientName: "Lake Basin Teachers & Family Afya Cover",
+      plate: "95 Family Units (Smart Card)",
+      makeModel: "Family Comprehensive + Maternity/Optical",
+      subClass: "Individual & Family Health",
+      sumInsured: 38000000,
+      line: "Medical & Health",
+      broker: "AON Kenya Risk Solutions",
+      paymentTerm: "M-PESA IPF",
+      premium: 1425000,
+      debited: 1425000,
+      status: "Active",
+      approvalStatus: "Approved",
+      commencingDate: "2026-01-01",
+      expiryDate: "2026-12-31",
+      certId: "CERT-MED-2026-4012",
+      branch: "Kisumu"
+    },
+    // Property, Fire & Engineering
+    {
+      policyNo: "POL-PRP-4021-2026",
+      clientName: "County Administrative Headquarters & Solar Grid",
+      plate: "LR No. 209/8841 • Buildings & Plant",
+      makeModel: "Industrial All Risks (IAR) + PVT Extension",
+      subClass: "Industrial All Risks (IAR)",
+      sumInsured: 420000000,
+      line: "Property & Fire",
+      broker: "EIMS Insurance",
+      paymentTerm: "Full Debit",
+      premium: 1561040,
+      debited: 1561040,
+      status: "Active",
+      approvalStatus: "Approved",
+      commencingDate: "2026-01-01",
+      expiryDate: "2026-12-31",
+      certId: "CERT-PRP-2026-4021",
+      branch: "HQ"
+    },
+    {
+      policyNo: "POL-PRP-4022-2026",
+      clientName: "Thika Agro-Processing & Cold Storage Complex",
+      plate: "LR No. 4953/1102 • CAR & Machinery",
+      makeModel: "Contractors All Risks (CAR) & Machinery Breakdown",
+      subClass: "Contractors All Risks (CAR)",
+      sumInsured: 165000000,
+      line: "Property & Fire",
+      broker: "AON Kenya Risk Solutions",
+      paymentTerm: "Full Debit",
+      premium: 745840,
+      debited: 745840,
+      status: "Active",
+      approvalStatus: "Approved",
+      commencingDate: "2026-01-01",
+      expiryDate: "2026-12-31",
+      certId: "CERT-PRP-2026-4022",
+      branch: "HQ"
+    },
+    // Life, Group Life & Pension
+    {
+      policyNo: "POL-LIF-4031-2026",
+      clientName: "Nakuru County Staff Group Life Assurance (GLA)",
+      plate: "520 Staff • 3x Salary + Critical Illness",
+      makeModel: "Group Life Assurance (GLA 3x Salary) + 48h Funeral",
+      subClass: "Group Life Assurance (GLA 3x Salary)",
+      sumInsured: 210000000,
+      line: "Life & Pension",
+      broker: "Minet Kenya Insurance Brokers",
+      paymentTerm: "Annual Scheme",
+      premium: 2380000,
+      debited: 2380000,
+      status: "Active",
+      approvalStatus: "Approved",
+      commencingDate: "2026-01-01",
+      expiryDate: "2026-12-31",
+      certId: "BOND-LIF-2026-4031",
+      branch: "Nakuru"
+    },
+    {
+      policyNo: "POL-LIF-4032-2026",
+      clientName: "Dr. Samuel Kamau & Family Education Endowment",
+      plate: "15-Yr Maturity + KRA 15% Tax Relief",
+      makeModel: "Elixir Education Endowment + Life Waiver",
+      subClass: "Education Endowment Policy",
+      sumInsured: 12000000,
+      line: "Life & Pension",
+      broker: "EIMS Insurance",
+      paymentTerm: "Monthly Check-Off",
+      premium: 288000,
+      debited: 288000,
+      status: "Active",
+      approvalStatus: "Approved",
+      commencingDate: "2026-01-01",
+      expiryDate: "2026-12-31",
+      certId: "BOND-LIF-2026-4032",
+      branch: "HQ"
+    },
+    // WIBA, Liability & Fidelity
+    {
+      policyNo: "POL-WIB-4041-2026",
+      clientName: "Nairobi City Water & Sewerage Company",
+      plate: "640 Technical & Field Staff (DOSHS)",
+      makeModel: "Compulsory WIBA (2007) + Employers Liability",
+      subClass: "WIBA + Employers Liability Combined",
+      sumInsured: 145000000,
+      line: "WIBA & Liability",
+      broker: "Minet Kenya Insurance Brokers",
+      paymentTerm: "Full Debit",
+      premium: 1368400,
+      debited: 1368400,
+      status: "Active",
+      approvalStatus: "Approved",
+      commencingDate: "2026-01-01",
+      expiryDate: "2026-12-31",
+      certId: "CERT-WIB-2026-4041",
+      branch: "HQ"
+    },
+    {
+      policyNo: "POL-WIB-4042-2026",
+      clientName: "Savannah Consulting Engineers & Surgeons LLP",
+      plate: "PPRA Tender & Medical Malpractice PI",
+      makeModel: "Professional Indemnity + Public Liability + Fidelity",
+      subClass: "Professional Indemnity (Doctors/Engineers/Law)",
+      sumInsured: 80000000,
+      line: "WIBA & Liability",
+      broker: "AON Kenya Risk Solutions",
+      paymentTerm: "Full Debit",
+      premium: 642900,
+      debited: 642900,
+      status: "Active",
+      approvalStatus: "Approved",
+      commencingDate: "2026-01-01",
+      expiryDate: "2026-12-31",
+      certId: "CERT-WIB-2026-4042",
+      branch: "Mombasa"
+    },
+    // Marine Cargo, Transit & Aviation
+    {
+      policyNo: "POL-MAR-4051-2026",
+      clientName: "Coast Inter-County Medical & Solar Imports",
+      plate: "IDF-26KE0041902 • Port of Mombasa",
+      makeModel: "Local Marine Cargo ICC (A) + SGR On-Carriage",
+      subClass: "Marine Cargo Sea Import — ICC (A)",
+      sumInsured: 92400000,
+      line: "Marine & Transit",
+      broker: "EIMS Insurance",
+      paymentTerm: "Full Debit",
+      premium: 528980,
+      debited: 528980,
+      status: "Active",
+      approvalStatus: "Approved",
+      commencingDate: "2026-01-01",
+      expiryDate: "2026-12-31",
+      certId: "MCI-KRA-2026-4051",
+      branch: "Mombasa"
+    },
+    {
+      policyNo: "POL-MAR-4052-2026",
+      clientName: "Northern Corridor SGR & Cold-Chain Freight Ltd",
+      plate: "GIT Open Cover + 4 GIS Survey Drones",
+      makeModel: "Goods in Transit (GIT) + County GIS Drone Hull",
+      subClass: "Goods in Transit (GIT — SGR & Highway)",
+      sumInsured: 26400000,
+      line: "Marine & Transit",
+      broker: "Rift Valley Agencies",
+      paymentTerm: "Full Debit",
+      premium: 224800,
+      debited: 224800,
+      status: "Active",
+      approvalStatus: "Approved",
+      commencingDate: "2026-01-01",
+      expiryDate: "2026-12-31",
+      certId: "MCI-KRA-2026-4052",
+      branch: "HQ"
+    },
+    // Agriculture, Livestock & Climate
+    {
+      policyNo: "POL-AGR-4061-2026",
+      clientName: "Uasin Gishu Grain & Dairy Farmers Union",
+      plate: "Moiben UAI-02 • 1,840 Acres + 410 Dairy",
+      makeModel: "Area Yield NDVI Crop Index + 50% KLIP Subsidy",
+      subClass: "Weather & NDVI Satellite Crop Index",
+      sumInsured: 64000000,
+      line: "Agriculture & Livestock",
+      broker: "Grassroots Financial Services",
+      paymentTerm: "50% County Co-Subsidy",
+      premium: 2698000,
+      debited: 1349000,
+      status: "Active",
+      approvalStatus: "Approved",
+      commencingDate: "2026-01-01",
+      expiryDate: "2026-12-31",
+      certId: "CERT-AGR-2026-4061",
+      branch: "Nakuru"
+    },
+    {
+      policyNo: "POL-AGR-4062-2026",
+      clientName: "Laikipia & Isiolo Pastoralist Livestock Coop",
+      plate: "Laikipia UAI-05 • 1,200 TLU Cattle/Camels",
+      makeModel: "DRIVE Drought Index + RFID Livestock Mortality",
+      subClass: "Livestock Mortality & Pastoralist TLU",
+      sumInsured: 42000000,
+      line: "Agriculture & Livestock",
+      broker: "Grassroots Financial Services",
+      paymentTerm: "50% DRIVE Co-Subsidy",
+      premium: 1476650,
+      debited: 738325,
+      status: "Active",
+      approvalStatus: "Approved",
+      commencingDate: "2026-01-01",
+      expiryDate: "2026-12-31",
+      certId: "CERT-AGR-2026-4062",
+      branch: "Nakuru"
+    }
+  ];
+
+  // Append with push so original motor policies remain at indices 0..8
+  seededPolicies.forEach(sp => {
+    if (!policies.some(existing => existing.policyNo === sp.policyNo)) {
+      policies.push(sp);
+    }
+  });
+}
+
+// Top-Level Insurance Lines Tab Bar Navigation & Sync
+function switchInsuranceLineTab(targetViewId) {
+  navigateToView(targetViewId);
+  syncInsuranceLinesTabBar(targetViewId);
+}
+window.switchInsuranceLineTab = switchInsuranceLineTab;
+
+function syncInsuranceLinesTabBar(viewId) {
+  const motorViews = ["policy-registry", "aki-certificates", "fleet-underwriting", "ev-underwriting", "reinsurance-ceding"];
+  const isMotorGroup = motorViews.includes(viewId);
+
+  const tabMap = {
+    "dashboard": "instab-dashboard",
+    "ins-medical": "instab-medical",
+    "ins-property": "instab-property",
+    "ins-life": "instab-life",
+    "ins-wiba": "instab-wiba",
+    "ins-marine": "instab-marine",
+    "ins-agri": "instab-agri"
+  };
+  const activeTabId = isMotorGroup ? "instab-motor" : (tabMap[viewId] || null);
+
+  const tabIds = [
+    "instab-dashboard",
+    "instab-motor",
+    "instab-medical",
+    "instab-property",
+    "instab-life",
+    "instab-wiba",
+    "instab-marine",
+    "instab-agri"
+  ];
+  tabIds.forEach(tId => {
+    const btn = document.getElementById(tId);
+    if (!btn) return;
+    const isMatch = tId === activeTabId;
+    btn.classList.toggle("active", isMatch);
+    btn.setAttribute("aria-selected", isMatch ? "true" : "false");
+  });
+
+  // Show contextual Motor & Fleet Sub-Tabs Strip whenever user is in Motor & Fleet module group
+  const motorStrip = document.getElementById("motor-subtabs-strip");
+  if (motorStrip) {
+    motorStrip.style.display = isMotorGroup ? "flex" : "none";
+    if (isMotorGroup) {
+      ["policy-registry", "aki-certificates", "fleet-underwriting", "ev-underwriting"].forEach(subView => {
+        const pill = document.getElementById(`motorsub-${subView}`);
+        if (pill) pill.classList.toggle("active", viewId === subView);
+      });
+    }
+  }
+
+  updateInsuranceTabCounts();
+}
+window.syncInsuranceLinesTabBar = syncInsuranceLinesTabBar;
+
+function updateInsuranceTabCounts() {
+  if (typeof policies === "undefined" || !Array.isArray(policies)) return;
+  const activeOrPending = policies.filter(p => p.status !== "Cancelled");
+  const motorCount = activeOrPending.filter(p => isMotorUnderwritingLine(p.line, p.plate)).length;
+
+  const setBadge = (id, count) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = String(count);
+  };
+  setBadge("instab-count-motor", motorCount);
+
+  Object.values(MULTI_LINE_CONFIG).forEach(cfg => {
+    const cnt = activeOrPending.filter(p => p.line === cfg.lineName).length;
+    setBadge(`instab-count-${cfg.key}`, cnt);
+  });
+}
+window.updateInsuranceTabCounts = updateInsuranceTabCounts;
+
+// Internal 3-Sub-Tab Switcher inside each Dedicated Insurance Module
+function switchModuleSubTab(lineKey, subTab) {
+  const cfg = MULTI_LINE_CONFIG[lineKey];
+  if (!cfg) return;
+
+  ["ledger", "underwrite", "operations"].forEach(tab => {
+    const btn = document.getElementById(`ins-${lineKey}-subtab-${tab}`);
+    const panel = document.getElementById(`ins-${lineKey}-panel-${tab}`);
+    const isActive = tab === subTab;
+    if (btn) {
+      btn.classList.toggle("active", isActive);
+      btn.setAttribute("aria-selected", isActive ? "true" : "false");
+    }
+    if (panel) {
+      panel.classList.toggle("active", isActive);
+      panel.style.display = isActive ? "block" : "none";
+    }
+  });
+
+  if (subTab === "underwrite") {
+    calculateInsuranceLineQuote(lineKey);
+  } else if (subTab === "operations") {
+    populateLineClaimPolicySelect(lineKey);
+  }
+}
+window.switchModuleSubTab = switchModuleSubTab;
+
+// Actuarial Tariff & Statutory Levy Calculator per Dedicated Insurance Class
+function calculateInsuranceLineQuote(lineKey) {
+  const cfg = MULTI_LINE_CONFIG[lineKey];
+  if (!cfg) return null;
+
+  const rawSum = Math.max(50000, parseFloat(document.getElementById(`uw-${lineKey}-sum`)?.value) || 10000000);
+  const subClass = document.getElementById(`uw-${lineKey}-subclass`)?.value || cfg.lineName;
+  let effectiveSumInsured = rawSum;
+  let basicPremium = 0;
+  let rateDescription = "";
+  let extraRowsHTML = "";
+  let clientPayableOverride = null;
+
+  if (lineKey === "medical") {
+    const lives = Math.max(1, parseInt(document.getElementById("uw-medical-lives")?.value || "10", 10));
+    const riderMult = parseFloat(document.getElementById("uw-medical-rider")?.value || "1.28");
+    const capitationPerUnit = Math.max(14500, Math.round((rawSum / Math.max(1, lives)) * 0.038));
+    basicPremium = Math.round(lives * capitationPerUnit * riderMult);
+    rateDescription = `${lives.toLocaleString()} Units × KSh ${capitationPerUnit.toLocaleString()} × ${riderMult.toFixed(2)}x Rider`;
+    extraRowsHTML = `<div class="ins-quote-row"><span>Covered Principal Units</span><strong>${lives.toLocaleString()} Lives / Families</strong></div>`;
+  } else if (lineKey === "property") {
+    const baseMillRate = parseFloat(document.getElementById("uw-property-grade")?.value || "0.0022");
+    const pvtRate = parseFloat(document.getElementById("uw-property-rider")?.value || "0.0015");
+    const combinedRate = baseMillRate + pvtRate;
+    basicPremium = Math.round(rawSum * combinedRate);
+    rateDescription = `Mill Rate ${(baseMillRate * 100).toFixed(2)}% + PVT/Peril ${(pvtRate * 100).toFixed(2)}%`;
+    extraRowsHTML = `<div class="ins-quote-row"><span>Africa Re Treaty Ceding (20%)</span><strong>KSh ${Math.round(rawSum * 0.2).toLocaleString()}</strong></div>`;
+  } else if (lineKey === "life") {
+    const termYears = parseInt(document.getElementById("uw-life-term")?.value || "1", 10);
+    const riderMult = parseFloat(document.getElementById("uw-life-rider")?.value || "1.20");
+    const baseMortality = termYears > 1 ? 0.0185 : 0.0095;
+    basicPremium = Math.round(rawSum * baseMortality * riderMult);
+    const kraTaxRelief = Math.min(60000, Math.round(basicPremium * 0.15));
+    rateDescription = `KE 2010-2014 Mortality (${(baseMortality * 100).toFixed(2)}%) × ${riderMult.toFixed(2)}x`;
+    extraRowsHTML = `<div class="ins-quote-row"><span>Eligible KRA 15% Tax Relief</span><strong style="color:#10b981;">KSh ${kraTaxRelief.toLocaleString()} / yr</strong></div>`;
+  } else if (lineKey === "wiba") {
+    const hazardRate = parseFloat(document.getElementById("uw-wiba-hazard")?.value || "0.0085");
+    const extMult = parseFloat(document.getElementById("uw-wiba-rider")?.value || "1.22");
+    basicPremium = Math.round(rawSum * hazardRate * extMult);
+    rateDescription = `DOSHS Hazard ${(hazardRate * 100).toFixed(2)}% × ${extMult.toFixed(2)}x Common Law`;
+    extraRowsHTML = `<div class="ins-quote-row"><span>Statutory Death / PTD Cap</span><strong>96 Months Earnings</strong></div>`;
+  } else if (lineKey === "marine") {
+    effectiveSumInsured = Math.round(rawSum * 1.10); // Statutory CIF + 10% Uplift
+    const clauseRate = parseFloat(document.getElementById("uw-marine-clauses")?.value || "0.0045");
+    const srccRate = parseFloat(document.getElementById("uw-marine-rider")?.value || "0.0012");
+    basicPremium = Math.round(effectiveSumInsured * (clauseRate + srccRate));
+    rateDescription = `CIF+10% × (${(clauseRate * 100).toFixed(2)}% ICC + ${(srccRate * 100).toFixed(2)}% SRCC)`;
+    extraRowsHTML = `<div class="ins-quote-row"><span>CIF + 10% Statutory Uplift</span><strong>KSh ${effectiveSumInsured.toLocaleString()}</strong></div>`;
+  } else if (lineKey === "agri") {
+    const perilRate = parseFloat(document.getElementById("uw-agri-rider")?.value || "0.042");
+    const subsidyShare = parseFloat(document.getElementById("uw-agri-subsidy")?.value || "0.50");
+    basicPremium = Math.round(rawSum * perilRate);
+    const govSubsidyAmt = Math.round(basicPremium * subsidyShare);
+    rateDescription = `Agri-Climate Tariff ${(perilRate * 100).toFixed(2)}% (${Math.round(subsidyShare * 100)}% Co-Subsidy)`;
+    extraRowsHTML = `<div class="ins-quote-row"><span>County / MoALD Subsidy (${Math.round(subsidyShare * 100)}%)</span><strong style="color:#10b981;">- KSh ${govSubsidyAmt.toLocaleString()}</strong></div>`;
+    clientPayableOverride = Math.max(0, basicPremium - govSubsidyAmt);
+  }
+
+  const phcf = Math.round(basicPremium * 0.0025);
+  const itl = Math.round(basicPremium * 0.0020);
+  const stampDuty = 40;
+  const totalLevies = phcf + itl + stampDuty;
+  const grossAnnualPremium = basicPremium + totalLevies;
+  const netClientDebit = clientPayableOverride !== null ? (clientPayableOverride + totalLevies) : grossAnnualPremium;
+
+  const breakdownEl = document.getElementById(`ins-${lineKey}-quote-breakdown`);
+  if (breakdownEl) {
+    breakdownEl.innerHTML = `
+      <div class="ins-quote-row"><span>Product Class</span><strong>${escapeHTML(subClass)}</strong></div>
+      <div class="ins-quote-row"><span>Insured Limit / Value</span><strong>KSh ${effectiveSumInsured.toLocaleString()}</strong></div>
+      <div class="ins-quote-row"><span>Rating Basis</span><span style="color:var(--text-secondary); font-size:11.5px;">${escapeHTML(rateDescription)}</span></div>
+      <div class="ins-quote-row"><span>Basic Risk Premium</span><strong>KSh ${basicPremium.toLocaleString()}</strong></div>
+      ${extraRowsHTML}
+      <div class="ins-quote-row"><span>PHCF (0.25%) + ITL (0.20%) + Stamp</span><strong style="color:#c89565;">KSh ${totalLevies.toLocaleString()}</strong></div>
+      <div class="ins-quote-row total"><span>Total Policyholder Debit</span><span>KSh ${netClientDebit.toLocaleString()}</span></div>
+    `;
+  }
+
+  return {
+    lineKey,
+    lineName: cfg.lineName,
+    subClass,
+    sumInsured: effectiveSumInsured,
+    basicPremium,
+    phcf,
+    itl,
+    stampDuty,
+    totalLevies,
+    grossAnnualPremium,
+    netClientDebit
+  };
+}
+window.calculateInsuranceLineQuote = calculateInsuranceLineQuote;
+
+// Bind New Policy from any Dedicated Insurance Module
+function submitInsuranceLinePolicy(lineKey) {
+  const cfg = MULTI_LINE_CONFIG[lineKey];
+  if (!cfg) return null;
+
+  const quote = calculateInsuranceLineQuote(lineKey);
+  const clientName = (document.getElementById(`uw-${lineKey}-client`)?.value || "").trim() || `${cfg.lineName} Policyholder`;
+  const subjectRef = (document.getElementById(`uw-${lineKey}-subject`)?.value || "").trim() || `${cfg.lineName} Schedule`;
+  const polNo = `${cfg.polPrefix}${Math.floor(1000 + Math.random() * 9000)}-2026`;
+  const certId = mintMultiLineCertId(cfg.lineName, "2026");
+
+  const newPolicy = {
+    policyNo: polNo,
+    clientName,
+    plate: subjectRef,
+    makeModel: quote.subClass,
+    subClass: quote.subClass,
+    sumInsured: quote.sumInsured,
+    line: cfg.lineName,
+    broker: "EIMS Composite Assurance",
+    paymentTerm: lineKey === "agri" && quote.netClientDebit < quote.grossAnnualPremium ? "Co-Subsidy Split" : "Full Annual Debit",
+    premium: quote.grossAnnualPremium,
+    debited: quote.netClientDebit,
+    status: "Pending",
+    approvalStatus: "Pending Approval",
+    submittedAt: Date.now(),
+    commencingDate: "2026-01-01",
+    expiryDate: "2026-12-31",
+    certId,
+    isNew: true,
+    branch: "HQ"
+  };
+
+  policies.unshift(newPolicy);
+
+  // Also mirror Marine Cargo certificates into the KRA ICMS clearance feed
+  if (lineKey === "marine") {
+    multiLineOpsQueues.marine.unshift({
+      c1: certId,
+      c2: subjectRef.split("•")[0].trim() || "IDF-26KE-LIVE",
+      c3: quote.subClass,
+      c4: "Mombasa / JKIA Single Window",
+      c5: `KSh ${quote.sumInsured.toLocaleString()}`,
+      status: "Approved"
+    });
+  }
+
+  if (typeof dispatchDesignatedEmailAlert === "function") {
+    dispatchDesignatedEmailAlert("NEW_UNDERWRITING", newPolicy);
+  }
+
+  renderInsuranceLineModule(lineKey);
+  renderPolicyRegistry();
+  if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
+  if (typeof renderIRACompliance === "function") renderIRACompliance();
+
+  switchModuleSubTab(lineKey, "ledger");
+  openMultiLineCertModal(newPolicy);
+  showToast(
+    `${cfg.lineName} Policy Bound`,
+    `Issued ${polNo} (${certId}) for ${clientName}. Queued in 60-Minute SLA Watchdog.`,
+    "success"
+  );
+  return newPolicy;
+}
+window.submitInsuranceLinePolicy = submitInsuranceLinePolicy;
+
+// Specialized Operational Desk Action per Insurance Module
+function executeLineSpecialOperation(lineKey) {
+  const cfg = MULTI_LINE_CONFIG[lineKey];
+  if (!cfg) return null;
+
+  const stamp = Math.floor(100 + Math.random() * 899);
+  let newOp = null;
+  let toastTitle = "";
+  let toastMsg = "";
+
+  if (lineKey === "medical") {
+    newOp = {
+      c1: `GOP-2026-${stamp}`,
+      c2: "Kenyatta University Referral Hospital",
+      c3: "Smart Card Biometric Member",
+      c4: "Cashless Inpatient Pre-Authorization",
+      c5: "KSh 225,000",
+      status: "Approved"
+    };
+    toastTitle = "Cashless Hospital GOP Issued";
+    toastMsg = `Dispatched ${newOp.c1} (${newOp.c5}) to ${newOp.c2} Smart Panel.`;
+  } else if (lineKey === "property") {
+    newOp = {
+      c1: `SRV-FIRE-${stamp}`,
+      c2: "County Industrial Park Warehouse B4",
+      c3: "EIMS Risk Engineering Unit",
+      c4: "24% PML",
+      c5: "Grade A Sprinkler Certified",
+      status: "Approved"
+    };
+    toastTitle = "Fire Risk Survey Certified";
+    toastMsg = `Logged ${newOp.c1} with 24% PML & Grade A fire suppression discount.`;
+  } else if (lineKey === "life") {
+    newOp = {
+      c1: `NOM-SEC111-${stamp}`,
+      c2: "Active Group Life / Endowment Bond",
+      c3: "Direct Family Trust Nominee",
+      c4: "100% Probate-Exempt",
+      c5: `KRA-REL-2026-${stamp}`,
+      status: "Approved"
+    };
+    toastTitle = "Beneficiary Nomination Sealed";
+    toastMsg = `Registered Section 111 nomination ${newOp.c1} & KRA 15% tax relief certificate.`;
+  } else if (lineKey === "wiba") {
+    newOp = {
+      c1: `DOSHS-F1-${stamp}`,
+      c2: "County Roads & Water Directorate",
+      c3: "Field Engineering Crew Member",
+      c4: "10% PD",
+      c5: "KSh 295,000",
+      status: "Approved"
+    };
+    toastTitle = "DOSHS Form 1 Assessment Logged";
+    toastMsg = `Recorded ${newOp.c1} occupational injury assessment under WIBA 2007.`;
+  } else if (lineKey === "marine") {
+    newOp = {
+      c1: mintMultiLineCertId("Marine & Transit", "2026"),
+      c2: `IDF-26KE009${stamp}`,
+      c3: "MV Kotaigh / SGR Freight",
+      c4: "Port of Mombasa -> Nairobi ICD",
+      c5: "KSh 48,400,000",
+      status: "Approved"
+    };
+    toastTitle = "KRA ICMS Marine Certificate Synced";
+    toastMsg = `Transmitted ${newOp.c1} (${newOp.c2}) to KRA ICMS & KenTrade Single Window.`;
+  } else if (lineKey === "agri") {
+    newOp = {
+      c1: `UAI-KENYA-${stamp}`,
+      c2: "Rift Valley & Eastern Smallholder Zone",
+      c3: "NDVI 0.27",
+      c4: "Strike < 0.32 (BREACHED)",
+      c5: "410 Smallholders",
+      status: "Approved"
+    };
+    toastTitle = "NDVI Parametric Trigger Executed";
+    toastMsg = `Detected NDVI 0.27 (< 0.32 strike) in ${newOp.c1}; flagged automated M-PESA smallholder payout.`;
+  }
+
+  if (newOp) {
+    multiLineOpsQueues[lineKey].unshift(newOp);
+    renderInsuranceLineModule(lineKey);
+    showToast(toastTitle, toastMsg, "success");
+  }
+  return newOp;
+}
+window.executeLineSpecialOperation = executeLineSpecialOperation;
+
+function populateLineClaimPolicySelect(lineKey) {
+  const cfg = MULTI_LINE_CONFIG[lineKey];
+  const select = document.getElementById(`clm-${lineKey}-policy`);
+  if (!cfg || !select || typeof policies === "undefined") return;
+
+  const linePolicies = policies.filter(p => p.line === cfg.lineName && p.status !== "Cancelled");
+  select.innerHTML = linePolicies.map(p =>
+    `<option value="${escapeHTML(p.policyNo)}">${escapeHTML(p.policyNo)} — ${escapeHTML(p.clientName)} (${escapeHTML(p.plate)})</option>`
+  ).join("");
+}
+
+function prefillLineClaimFromPolicy(lineKey, policyNo) {
+  switchModuleSubTab(lineKey, "operations");
+  const select = document.getElementById(`clm-${lineKey}-policy`);
+  if (select) select.value = policyNo;
+  const p = policies.find(item => item.policyNo === policyNo);
+  const claimantInput = document.getElementById(`clm-${lineKey}-claimant`);
+  if (p && claimantInput) claimantInput.value = p.clientName;
+}
+window.prefillLineClaimFromPolicy = prefillLineClaimFromPolicy;
+
+// Submit a Line-Specific Claim synced with Master Claims Directory & 60-Min SLA Watchdog
+function submitInsuranceLineClaim(lineKey) {
+  const cfg = MULTI_LINE_CONFIG[lineKey];
+  if (!cfg) return null;
+
+  const polNo = document.getElementById(`clm-${lineKey}-policy`)?.value || `${cfg.polPrefix}4011-2026`;
+  const pol = policies.find(p => p.policyNo === polNo);
+  const claimant = (document.getElementById(`clm-${lineKey}-claimant`)?.value || "").trim() || (pol ? pol.clientName : "Policyholder");
+  const amount = Math.max(5000, parseFloat(document.getElementById(`clm-${lineKey}-amount`)?.value) || 150000);
+  const desc = (document.getElementById(`clm-${lineKey}-desc`)?.value || "").trim() || `${cfg.lineName} Claim Assessment`;
+
+  const claimId = `${cfg.claimPrefix}2026-${Math.floor(100 + Math.random() * 899)}`;
+  const fraudScore = amount > 2000000 ? 38 : 12;
+  const triage = amount <= 250000 ? "Green" : (amount <= 1500000 ? "Yellow" : "Red");
+
+  const newClaim = {
+    id: claimId,
+    plate: `${polNo} • ${pol ? pol.plate.slice(0, 22) : cfg.lineName}`,
+    owner: claimant,
+    phone: "+254 712 400 800",
+    date: new Date().toISOString().slice(0, 10),
+    cost: amount,
+    fraudScore,
+    triage,
+    status: "Pending",
+    approvalStatus: "Awaiting Approval",
+    submittedAt: Date.now(),
+    insuranceLine: cfg.lineName,
+    policyNo: polNo,
+    description: desc,
+    aiConfidence: 96,
+    severity: amount > 1000000 ? "Major" : "Moderate"
+  };
+
+  claims.unshift(newClaim);
+
+  if (typeof dispatchDesignatedEmailAlert === "function") {
+    dispatchDesignatedEmailAlert("CLAIM_AWAITING_APPROVAL", newClaim);
+  }
+
+  renderClaimsDirectory();
+  renderDashboard();
+  renderInsuranceLineModule(lineKey);
+  if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
+
+  showToast(
+    `${cfg.lineName} Claim Registered`,
+    `Claim ${claimId} (KSh ${amount.toLocaleString()}) synced to Master Claims Directory & 60-Min SLA Watchdog.`,
+    "success"
+  );
+  return newClaim;
+}
+window.submitInsuranceLineClaim = submitInsuranceLineClaim;
+
+// Render Dedicated Insurance Module (KPIs, Policy Ledger, Quote Engine & Specialized Ops Desk)
+function renderInsuranceLineModule(lineKey) {
+  seedCompositeInsurancePortfolio();
+  const cfg = MULTI_LINE_CONFIG[lineKey];
+  if (!cfg) return;
+
+  const linePolicies = policies.filter(p => p.line === cfg.lineName);
+  const inForce = linePolicies.filter(p => p.status !== "Cancelled");
+  const activeCount = linePolicies.filter(p => p.status === "Active" || p.status === "Pending").length;
+  const totalExposure = inForce.reduce((s, p) => s + (Number(p.sumInsured) || 0), 0);
+  const totalGwp = inForce.reduce((s, p) => s + (Number(p.premium) || 0), 0);
+  const opsList = multiLineOpsQueues[lineKey] || [];
+
+  const setKpi = (suffix, text) => {
+    const el = document.getElementById(`ins-${lineKey}-kpi-${suffix}`);
+    if (el) el.innerText = text;
+  };
+  setKpi("active", activeCount.toLocaleString());
+  setKpi("exposure", `KSh ${totalExposure.toLocaleString()}`);
+  setKpi("gwp", `KSh ${totalGwp.toLocaleString()}`);
+  setKpi("ops", opsList.length.toLocaleString());
+
+  // Render Policy Ledger Table
+  const tbody = document.getElementById(`ins-${lineKey}-ledger-tbody`);
+  if (tbody) {
+    const search = (document.getElementById(`ins-${lineKey}-search`)?.value || "").trim().toLowerCase();
+    const statusFilter = document.getElementById(`ins-${lineKey}-status-filter`)?.value || "ALL";
+
+    const filtered = linePolicies.filter(p => {
+      if (statusFilter !== "ALL" && p.status !== statusFilter) return false;
+      if (search) {
+        const hay = `${p.policyNo} ${p.clientName} ${p.plate} ${p.makeModel || ""} ${p.certId || ""}`.toLowerCase();
+        if (!hay.includes(search)) return false;
+      }
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-muted);">No ${escapeHTML(cfg.lineName)} policies matched your filter.</td></tr>`;
+    } else {
+      tbody.innerHTML = filtered.map(p => {
+        let badge = `<span class="status-badge approved">Active</span>`;
+        if (p.status === "Pending") badge = `<span class="status-badge pending">Pending SLA</span>`;
+        else if (p.status === "Suspended") badge = `<span class="status-badge pending">Suspended</span>`;
+        else if (p.status === "Cancelled") badge = `<span class="status-badge investigation">Cancelled</span>`;
+
+        const approveBtn = p.status === "Pending"
+          ? `<button class="btn btn-primary" onclick="approvePendingItem('POLICY', '${escapeHTML(p.policyNo)}')" style="padding:4px 8px; font-size:11px;">Approve</button>`
+          : "";
+
+        return `
+          <tr>
+            <td><strong>${escapeHTML(p.policyNo)}</strong></td>
+            <td>
+              <div style="font-weight:600;">${escapeHTML(p.clientName)}</div>
+              <div style="font-size:11px; color:var(--text-muted);">${escapeHTML(p.broker || "EIMS Assurance")}</div>
+            </td>
+            <td>
+              <div>${escapeHTML(p.makeModel || p.subClass || cfg.lineName)}</div>
+              <div style="font-size:11px; color:#c89565;"><code>${escapeHTML(p.plate)}</code></div>
+            </td>
+            <td style="white-space:nowrap; font-weight:600;">KSh ${Number(p.sumInsured || 0).toLocaleString()}</td>
+            <td style="white-space:nowrap;"><strong style="color:#dfc09f;">KSh ${Number(p.premium || 0).toLocaleString()}</strong></td>
+            <td><code style="color:#c89565;">${escapeHTML(p.certId || "UNISSUED")}</code></td>
+            <td>${badge}</td>
+            <td>
+              <div style="display:flex; gap:5px; justify-content:flex-end; flex-wrap:nowrap;">
+                ${approveBtn}
+                <button class="btn btn-secondary" onclick="openMultiLineCertModal('${escapeHTML(p.policyNo)}')" style="padding:4px 8px; font-size:11px;">Digital Cert</button>
+                <button class="btn btn-secondary" onclick="prefillLineClaimFromPolicy('${lineKey}', '${escapeHTML(p.policyNo)}')" style="padding:4px 8px; font-size:11px;">File Claim</button>
+                <button class="btn btn-secondary" onclick="toggleSuspendPolicy('${escapeHTML(p.policyNo)}')" style="padding:4px 8px; font-size:11px;">${p.status === "Suspended" ? "Reinstate" : "Suspend"}</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+  }
+
+  // Render Specialized Operational Desk Table
+  const opsTbody = document.getElementById(`ins-${lineKey}-ops-tbody`);
+  if (opsTbody) {
+    opsTbody.innerHTML = opsList.map(op => {
+      const sBadge = op.status === "Approved"
+        ? `<span class="status-badge approved">Verified</span>`
+        : `<span class="status-badge pending">Pending</span>`;
+      return `
+        <tr>
+          <td><strong><code>${escapeHTML(op.c1)}</code></strong></td>
+          <td>${escapeHTML(op.c2)}</td>
+          <td>${escapeHTML(op.c3)}</td>
+          <td>${escapeHTML(op.c4)}</td>
+          <td><strong style="color:#dfc09f;">${escapeHTML(op.c5)}</strong></td>
+          <td>${sBadge}</td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  populateLineClaimPolicySelect(lineKey);
+  calculateInsuranceLineQuote(lineKey);
+  updateInsuranceTabCounts();
+}
+window.renderInsuranceLineModule = renderInsuranceLineModule;
+
+function renderAllInsuranceLineModules() {
+  seedCompositeInsurancePortfolio();
+  Object.keys(MULTI_LINE_CONFIG).forEach(k => renderInsuranceLineModule(k));
+  updateInsuranceTabCounts();
+}
+window.renderAllInsuranceLineModules = renderAllInsuranceLineModules;
+
+// Official IRA Cap 487 Multi-Line Digital Certificate / Smart Card / Policy Bond Modal
+function generateMultiLineCertHash(policy) {
+  const raw = `${policy.certId || "UNISSUED"}|${policy.policyNo}|${policy.line}|${policy.clientName}|${policy.sumInsured || 0}|${policy.status || "Active"}|IRA-CAP487-KENYA-SEAL`;
+  let h1 = 0x811c9dc5;
+  let h2 = 0x27d4eb2d;
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 0x01000193);
+    h2 = Math.imul(h2 ^ (c + i), 0x165667b1);
+  }
+  const p1 = (h1 >>> 0).toString(16).padStart(8, "0").toUpperCase();
+  const p2 = (h2 >>> 0).toString(16).padStart(8, "0").toUpperCase();
+  return `SHA256-${p1}${p2}-IRA-CAP487`;
+}
+window.generateMultiLineCertHash = generateMultiLineCertHash;
+
+function openMultiLineCertModal(policyOrNo) {
+  seedCompositeInsurancePortfolio();
+  const policy = typeof policyOrNo === "object" && policyOrNo !== null
+    ? policyOrNo
+    : policies.find(p => p.policyNo === policyOrNo || p.certId === policyOrNo);
+  if (!policy) return;
+
+  const cfg = getMultiLineConfigByLineName(policy.line);
+  if (!policy.certId) {
+    policy.certId = mintMultiLineCertId(cfg.lineName, "2026");
+    renderPolicyRegistry();
+    renderInsuranceLineModule(cfg.key);
+  }
+
+  currentActiveMultiLinePolicy = policy;
+  const hashSeal = generateMultiLineCertHash(policy);
+  const startVal = policy.commencingDate || "2026-01-01";
+  const expiryVal = policy.expiryDate || "2026-12-31";
+  const statusText = policy.status === "Active"
+    ? "IN-FORCE & VERIFIED"
+    : (policy.status === "Pending" ? "PENDING SLA SIGN-OFF" : String(policy.status || "ACTIVE").toUpperCase());
+
+  const setEl = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  };
+
+  setEl("ml-cert-regulator-tag", cfg.regulatorTag);
+  setEl("ml-cert-doc-title", cfg.docTitle);
+  setEl("ml-cert-status-badge", statusText);
+  setEl("ml-cert-no", policy.certId);
+  setEl("ml-cert-policy-no", policy.policyNo);
+  setEl("ml-cert-client", policy.clientName);
+  setEl("ml-cert-class", `${policy.line} • ${policy.makeModel || policy.subClass || "Standard Cover"}`);
+  setEl("ml-cert-subject", policy.plate || "As per Policy Schedule");
+  setEl("ml-cert-sum-insured", `KSh ${Number(policy.sumInsured || 0).toLocaleString()}`);
+  setEl("ml-cert-premium", `KSh ${Number(policy.premium || 0).toLocaleString()}`);
+  setEl("ml-cert-period", `${startVal} to ${expiryVal} (23:59 EAT)`);
+  setEl("ml-cert-clauses", cfg.clauses);
+  setEl("ml-cert-hash", hashSeal);
+
+  const qrBox = document.getElementById("ml-cert-qr-box");
+  if (qrBox && typeof renderStandardQRCodeContainer === "function") {
+    const originUrl = (typeof window !== "undefined" && window.location && window.location.origin && window.location.origin !== "null")
+      ? window.location.origin
+      : "https://eims-prosystem.web.app";
+    const verifyUrl = `${originUrl}/?verifyMultiLine=true&certId=${encodeURIComponent(policy.certId)}&policy=${encodeURIComponent(policy.policyNo)}&line=${encodeURIComponent(policy.line)}&hash=${encodeURIComponent(hashSeal)}`;
+    renderStandardQRCodeContainer(qrBox, verifyUrl, {
+      fgColor: "#151210",
+      bgColor: "#ffffff",
+      size: 108,
+      padding: "4px",
+      logoType: "none"
+    });
+  }
+
+  const modal = document.getElementById("multiline-cert-modal");
+  if (modal) modal.classList.add("active");
+}
+window.openMultiLineCertModal = openMultiLineCertModal;
+
+function closeMultiLineCertModal() {
+  const modal = document.getElementById("multiline-cert-modal");
+  if (modal) modal.classList.remove("active");
+}
+window.closeMultiLineCertModal = closeMultiLineCertModal;
+
+function downloadMultiLineCertificateHTML() {
+  const pol = currentActiveMultiLinePolicy || policies.find(p => !isMotorUnderwritingLine(p.line, p.plate));
+  if (!pol) return;
+
+  const cfg = getMultiLineConfigByLineName(pol.line);
+  const hashSeal = generateMultiLineCertHash(pol);
+  const qrMarkup = document.getElementById("ml-cert-qr-box")?.innerHTML || "";
+  const docHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>${escapeHTML(cfg.docTitle)} - ${escapeHTML(pol.certId)}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5efe6; padding: 28px; color: #151210; }
+    .bond { max-width: 820px; margin: 0 auto; background: #faf6f0; border: 2px solid #8b5a2b; border-radius: 12px; padding: 26px; }
+    .hdr { display: flex; justify-content: space-between; border-bottom: 2px solid #8b5a2b; padding-bottom: 12px; margin-bottom: 16px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px; }
+    .cell { background: #fff; border: 1px solid #d6c3ad; border-radius: 6px; padding: 10px; }
+    .lbl { font-size: 10px; text-transform: uppercase; color: #6f4722; font-weight: 700; display: block; }
+  </style>
+</head>
+<body>
+  <div class="bond">
+    <div class="hdr">
+      <div>
+        <div style="font-size:10px; font-weight:800; color:#6f4722;">${escapeHTML(cfg.regulatorTag)}</div>
+        <h2 style="margin:4px 0;">${escapeHTML(cfg.docTitle)}</h2>
+        <div style="font-size:12px;">EIMS Composite Assurance Kenya Ltd • IRA Cap 487</div>
+      </div>
+      <div style="text-align:right;">
+        <strong>${escapeHTML(pol.certId)}</strong><br>
+        <span style="font-size:11px;">Status: ${escapeHTML(pol.status || "Active")}</span>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="cell"><span class="lbl">Policy Number</span><strong>${escapeHTML(pol.policyNo)}</strong></div>
+      <div class="cell"><span class="lbl">Insured / Policyholder</span><strong>${escapeHTML(pol.clientName)}</strong></div>
+      <div class="cell"><span class="lbl">Class &amp; Sub-Class</span><strong>${escapeHTML(pol.line)} — ${escapeHTML(pol.makeModel || "")}</strong></div>
+      <div class="cell"><span class="lbl">Insured Subject / Schedule</span><strong>${escapeHTML(pol.plate || "")}</strong></div>
+      <div class="cell"><span class="lbl">Sum Insured / Benefit Limit</span><strong>KSh ${Number(pol.sumInsured || 0).toLocaleString()}</strong></div>
+      <div class="cell"><span class="lbl">Gross Annual Premium</span><strong>KSh ${Number(pol.premium || 0).toLocaleString()}</strong></div>
+      <div class="cell" style="grid-column:1 / -1;"><span class="lbl">Endorsements &amp; Statutory Clauses</span>${escapeHTML(cfg.clauses)}</div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:18px; padding-top:12px; border-top:1px dashed #8b5a2b; font-size:11px;">
+      <div><strong>SHA-256 Digital Seal:</strong> <code>${escapeHTML(hashSeal)}</code></div>
+      <div>${qrMarkup}</div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const blob = new Blob([docHTML], { type: "text/html;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `IRA_Certificate_${pol.certId}_${pol.policyNo}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showToast("Digital Policy Certificate Downloaded", `Saved ${pol.certId} (${pol.line}) printable HTML certificate.`, "success");
+}
+window.downloadMultiLineCertificateHTML = downloadMultiLineCertificateHTML;
+
+function printMultiLineCertificate() {
+  document.body.classList.add("printing-multiline-cert");
+  window.print();
+  setTimeout(() => {
+    document.body.classList.remove("printing-multiline-cert");
+  }, 500);
+}
+window.printMultiLineCertificate = printMultiLineCertificate;
+
+// Auto-initialize Composite Multi-Line Portfolio & Tab Badges
+function initCompositeInsuranceSystem() {
+  seedCompositeInsurancePortfolio();
+  renderAllInsuranceLineModules();
+  renderPolicyRegistry();
+  syncInsuranceLinesTabBar(typeof activeView === "string" && activeView ? activeView : "dashboard");
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initCompositeInsuranceSystem);
+} else {
+  initCompositeInsuranceSystem();
+}
+
