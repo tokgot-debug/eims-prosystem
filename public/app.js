@@ -700,12 +700,12 @@ function renderDashboardChart() {
     <svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" style="overflow:visible;">
       <defs>
         <linearGradient id="curve-gradient" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#ff6b00" stop-opacity="0.45"/>
-          <stop offset="60%" stop-color="#ff8533" stop-opacity="0.12"/>
-          <stop offset="100%" stop-color="#ff8533" stop-opacity="0.0"/>
+          <stop offset="0%" stop-color="#8b5a2b" stop-opacity="0.42"/>
+          <stop offset="60%" stop-color="#c89565" stop-opacity="0.12"/>
+          <stop offset="100%" stop-color="#c89565" stop-opacity="0.0"/>
         </linearGradient>
         <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#ff6b00" flood-opacity="0.5"/>
+          <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#8b5a2b" flood-opacity="0.45"/>
         </filter>
       </defs>
       
@@ -1351,8 +1351,8 @@ function redrawCanvas() {
       annotationCtx.fillStyle = "rgba(245, 158, 11, 0.4)";
       annotationCtx.strokeStyle = "#f59e0b";
     } else {
-      annotationCtx.fillStyle = "rgba(59, 130, 246, 0.4)";
-      annotationCtx.strokeStyle = "#3b82f6";
+      annotationCtx.fillStyle = "rgba(164, 106, 52, 0.4)";
+      annotationCtx.strokeStyle = "#a46a34";
     }
     
     annotationCtx.lineWidth = 3;
@@ -1677,8 +1677,8 @@ function openAuditModal(claimId) {
       dot.style.backgroundColor = "rgba(245, 158, 11, 0.7)";
       dot.style.border = "2px solid #f59e0b";
     } else {
-      dot.style.backgroundColor = "rgba(59, 130, 246, 0.7)";
-      dot.style.border = "2px solid #3b82f6";
+      dot.style.backgroundColor = "rgba(164, 106, 52, 0.7)";
+      dot.style.border = "2px solid #a46a34";
     }
     
     annotationBox.appendChild(dot);
@@ -1720,8 +1720,8 @@ function printKIRADocument(claim) {
       <title>KIRA Regulatory Report - ${claim.id}</title>
       <style>
         body { font-family: Arial, sans-serif; padding: 40px; color: #333; line-height: 1.5; }
-        .header { text-align: center; border-bottom: 3px double #0056b3; padding-bottom: 20px; }
-        .logo { font-size: 24px; font-weight: bold; color: #0056b3; text-transform: uppercase; }
+        .header { text-align: center; border-bottom: 3px double #6f4520; padding-bottom: 20px; }
+        .logo { font-size: 24px; font-weight: bold; color: #6f4520; text-transform: uppercase; }
         .doc-title { font-size: 18px; font-weight: bold; margin-top: 10px; }
         .meta-table { width: 100%; border-collapse: collapse; margin-top: 30px; }
         .meta-table td { padding: 8px 12px; border: 1px solid #ddd; }
@@ -2430,7 +2430,7 @@ function openAKICertModal(policyNo) {
   if (qrContainer) {
     const certURL = `${window.location.origin}/?verifyCert=true&certId=${refVal}&policy=${policy.policyNo}&plate=${plateVal}&owner=${encodeURIComponent(ownerVal)}&hash=${hashSeal}`;
     renderStandardQRCodeContainer(qrContainer, certURL, {
-      fgColor: "#0f172a",
+      fgColor: "#1c1613",
       bgColor: "#ffffff",
       size: 77,
       padding: "4px",
@@ -2573,7 +2573,7 @@ function addNewUserSeat() {
   const tr = document.createElement("tr");
   tr.innerHTML = `
     <td style="padding:8px;"><strong>${randomName}</strong></td>
-    <td style="padding:8px;"><span class="badge" style="background:rgba(234,88,12,0.15); color:#ea580c;">${randomRole}</span></td>
+    <td style="padding:8px;"><span class="badge" style="background:rgba(139, 90, 43,0.15); color:#c89565;">${randomRole}</span></td>
     <td style="padding:8px;">${randomBranch}</td>
     <td style="padding:8px;"><span style="color:var(--success);">Active</span></td>
     <td style="padding:8px;"><button class="btn btn-secondary" style="padding:2px 8px; font-size:10px;">Edit</button></td>
@@ -2595,18 +2595,18 @@ function switchMobileAppMode(mode) {
     clientView.style.display = "none";
     workshopView.style.display = "block";
     clientBtn.style.background = "transparent";
-    clientBtn.style.color = "#94a3b8";
-    workshopBtn.style.background = "#ff6b00";
+    clientBtn.style.color = "#b5a99f";
+    workshopBtn.style.background = "#8b5a2b";
     workshopBtn.style.color = "#ffffff";
     onWorkshopGarageChange();
     showToast(" Workshop Mode Active", "Accredited repairer mobile app interface loaded.", "info");
   } else {
     clientView.style.display = "block";
     workshopView.style.display = "none";
-    clientBtn.style.background = "#ea580c";
+    clientBtn.style.background = "#8b5a2b";
     clientBtn.style.color = "#ffffff";
     workshopBtn.style.background = "transparent";
-    workshopBtn.style.color = "#94a3b8";
+    workshopBtn.style.color = "#b5a99f";
   }
 }
 
@@ -2741,7 +2741,7 @@ function renderScheduledPayouts() {
       <td><code>${s.id}</code></td>
       <td><strong>${s.claimId}</strong><br><span style="font-size:10px; color:var(--text-secondary);">${s.plate}</span></td>
       <td>${s.claimant}<br><span style="font-size:10px; color:var(--text-muted);">${s.phone}</span></td>
-      <td><span class="badge" style="background:rgba(234,88,12,0.15); color:#ea580c;">${s.channel}</span></td>
+      <td><span class="badge" style="background:rgba(139, 90, 43,0.15); color:#c89565;">${s.channel}</span></td>
       <td><strong>${s.releaseDate}</strong></td>
       <td><strong style="color:var(--success);">KSh ${s.amount.toLocaleString()}</strong></td>
       <td><span style="font-size:11px; color:var(--text-secondary);">${s.note}</span></td>
@@ -2913,7 +2913,7 @@ function triggerCertPolicy(policyNo) {
   if (certQRBox) {
     const certURL = `https://eims.go.ke/verify-cert?certId=${p.certId}&policy=${p.policyNo}&plate=${p.plate}&hash=SHA256-D7F8A92B-AKI-VERIFIED-2026`;
     renderStandardQRCodeContainer(certQRBox, certURL, {
-      fgColor: "#0f172a",
+      fgColor: "#1c1613",
       bgColor: "#ffffff",
       size: 70,
       logoType: "none"
@@ -2992,7 +2992,7 @@ function renderProductionReports() {
   
   if (interval === "daily") {
     banner.style.display = "block";
-    banner.style.backgroundColor = "rgba(234, 88, 12, 0.1)";
+    banner.style.backgroundColor = "rgba(139, 90, 43, 0.1)";
     banner.style.borderColor = "var(--primary)";
     banner.style.color = "var(--primary-light)";
     banner.innerHTML = ` <strong>Daily Real-Time Production Log Active:</strong> Displaying today's 24-hour acquisition audit log for <strong>${branchFilter === "ALL"? "All Offices": branchFilter}</strong> (${line} Line).`;
@@ -3143,7 +3143,7 @@ function openAIAssistantModal() {
   if (messagesContainer) {
     messagesContainer.innerHTML = `
       <div style="display:flex; gap:12px; align-items:flex-start;">
-        <div style="width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg, #1e40af, #3b82f6); color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; flex-shrink:0;">G</div>
+        <div style="width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg, #6f4722, #8b5a2b); color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; flex-shrink:0;">G</div>
         <div style="background-color:var(--bg-surface); border:1px solid var(--border-color); padding:14px 16px; border-radius:14px; font-size:13px; line-height:1.5; color:var(--text-primary); max-width:90%;">
           <strong>Jambo! I am your dedicated Google Gemini Assistant.</strong><br>
           I can analyze all system data including monthly branch production, claims telemetry, fraud indexes, and underwriting ledgers. Click a quick prompt above or type your question below to generate a report.
@@ -3250,7 +3250,7 @@ function processAIQuery(queryText) {
     aiDiv.style.alignItems = "flex-start";
     
     aiDiv.innerHTML = `
-      <div style="width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg, #1e40af, #3b82f6); color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; flex-shrink:0;">G</div>
+      <div style="width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg, #6f4722, #8b5a2b); color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; flex-shrink:0;">G</div>
       <div style="background-color:var(--bg-surface); border:1px solid var(--border-color); padding:16px; border-radius:14px; font-size:13px; line-height:1.6; color:var(--text-primary); max-width:90%;">
         <div style="font-size:11px; text-transform:uppercase; color:var(--primary); font-weight:800; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
           <span class="status-dot green"></span> Google Gemini 2.5 Flash Response
@@ -3492,17 +3492,17 @@ function exportAIBriefPDF() {
     <head>
       <title>EIMS AI Executive Report Brief</title>
       <style>
-        body { font-family: Arial, sans-serif; padding: 40px; color: #1e293b; line-height: 1.6; }
-        .header { border-bottom: 2px solid #0266cc; padding-bottom: 12px; margin-bottom: 24px; }
-        .logo { font-size: 20px; font-weight: bold; color: #0266cc; }
+        body { font-family: Arial, sans-serif; padding: 40px; color: #211b17; line-height: 1.6; }
+        .header { border-bottom: 2px solid #6f4520; padding-bottom: 12px; margin-bottom: 24px; }
+        .logo { font-size: 20px; font-weight: bold; color: #6f4520; }
         .report-box { background: #f8fafc; border: 1px solid #cbd5e1; padding: 20px; border-radius: 8px; margin-top: 20px; }
-        .footer { margin-top: 40px; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+        .footer { margin-top: 40px; font-size: 11px; color: #84776d; border-top: 1px solid #e2e8f0; padding-top: 10px; }
       </style>
     </head>
     <body>
       <div class="header">
         <div class="logo"> EIMS AI Executive Report Brief</div>
-        <p style="font-size:12px; color:#64748b; margin-top:4px;">Synthesized for Insurance ProSystem | August 2026</p>
+        <p style="font-size:12px; color:#84776d; margin-top:4px;">Synthesized for Insurance ProSystem | August 2026</p>
       </div>
       
       <div class="report-box">
@@ -4119,12 +4119,12 @@ function renderGeoMapCenter() {
     { type: "claim", lat: -0.0517, lng: 37.6456, title: " CLM-2026-010 (Meru Mall Junction)", desc: "KDB 991S | Damage KSh 310,000 | Pending OB", color: "#ef4444" },
     
     // Accredited Garages
-    { type: "garage", lat: -1.3000, lng: 36.8350, title: " Nairobi Auto Care Panel Beaters", desc: "Industrial Area, Nairobi | Rating: 4.9 | SLA 98%", color: "#ff6b00" },
-    { type: "garage", lat: -4.0500, lng: 39.6500, title: " Coast Breakdown & Refinishing", desc: "Shimanzi, Mombasa | Rating: 4.8 | SLA 96%", color: "#ff6b00" },
-    { type: "garage", lat: -0.1000, lng: 34.7500, title: " Lakeside Motor Body Works", desc: "Kisumu Industrial Zone | Rating: 4.7 | SLA 94%", color: "#ff6b00" },
-    { type: "garage", lat: -0.2900, lng: 36.0700, title: " Rift Valley Panel Clinic", desc: "Nakuru Town West | Rating: 4.8 | SLA 97%", color: "#ff6b00" },
-    { type: "garage", lat: 0.5200, lng: 35.2800, title: " Highland Auto Repairs", desc: "Eldoret Highway Zone | Rating: 4.9 | SLA 96%", color: "#ff6b00" },
-    { type: "garage", lat: -0.4100, lng: 36.9500, title: " Mount Kenya Motor Works", desc: "Nyeri King'ong'o Area | Rating: 4.7 | SLA 93%", color: "#ff6b00" },
+    { type: "garage", lat: -1.3000, lng: 36.8350, title: " Nairobi Auto Care Panel Beaters", desc: "Industrial Area, Nairobi | Rating: 4.9 | SLA 98%", color: "#8b5a2b" },
+    { type: "garage", lat: -4.0500, lng: 39.6500, title: " Coast Breakdown & Refinishing", desc: "Shimanzi, Mombasa | Rating: 4.8 | SLA 96%", color: "#8b5a2b" },
+    { type: "garage", lat: -0.1000, lng: 34.7500, title: " Lakeside Motor Body Works", desc: "Kisumu Industrial Zone | Rating: 4.7 | SLA 94%", color: "#8b5a2b" },
+    { type: "garage", lat: -0.2900, lng: 36.0700, title: " Rift Valley Panel Clinic", desc: "Nakuru Town West | Rating: 4.8 | SLA 97%", color: "#8b5a2b" },
+    { type: "garage", lat: 0.5200, lng: 35.2800, title: " Highland Auto Repairs", desc: "Eldoret Highway Zone | Rating: 4.9 | SLA 96%", color: "#8b5a2b" },
+    { type: "garage", lat: -0.4100, lng: 36.9500, title: " Mount Kenya Motor Works", desc: "Nyeri King'ong'o Area | Rating: 4.7 | SLA 93%", color: "#8b5a2b" },
 
     // County Branch Offices
     { type: "branch", lat: -1.2830, lng: 36.8200, title: " EIMS Head Office Nairobi", desc: "429 New Policies | KSh 37.28M Gross Premium", color: "#10b981" },
@@ -4148,8 +4148,8 @@ function renderGeoMapCenter() {
     circle.bindPopup(`
       <div style="font-family:sans-serif; font-size:12px; line-height:1.4;">
         <strong style="color:${item.color}; font-size:13px;">${item.title}</strong><br/>
-        <span style="color:#64748b;">${item.desc}</span><br/>
-        <small style="color:#94a3b8;">GPS: ${item.lat.toFixed(4)}, ${item.lng.toFixed(4)}</small>
+        <span style="color:#84776d;">${item.desc}</span><br/>
+        <small style="color:#b5a99f;">GPS: ${item.lat.toFixed(4)}, ${item.lng.toFixed(4)}</small>
       </div>
     `);
     
@@ -4580,25 +4580,25 @@ function saveEditedRecord() {
 // ================= LIVE CAMERA STREAM & DEMO PHOTO ENGINE =================
 
 const demoDamagedCarImage = "data:image/svg+xml;utf8," + encodeURIComponent(`
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500" style="background:#111827;">
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500" style="background:#120f0d;">
   <defs>
     <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#1e293b"/>
-      <stop offset="100%" stop-color="#0f172a"/>
+      <stop offset="0%" stop-color="#211b17"/>
+      <stop offset="100%" stop-color="#14100d"/>
     </linearGradient>
     <linearGradient id="carBody" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#dc2626"/>
       <stop offset="100%" stop-color="#991b1b"/>
     </linearGradient>
     <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.6"/>
-      <stop offset="100%" stop-color="#0266cc" stop-opacity="0.3"/>
+      <stop offset="0%" stop-color="#c89565" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#8b5a2b" stop-opacity="0.3"/>
     </linearGradient>
   </defs>
 
   <rect width="800" height="500" fill="url(#bgGrad)"/>
-  <path d="M0 380 L800 380 L800 500 L0 500 Z" fill="#090d16"/>
-  <line x1="0" y1="380" x2="800" y2="380" stroke="#ff6b00" stroke-width="3" stroke-dasharray="15,10"/>
+  <path d="M0 380 L800 380 L800 500 L0 500 Z" fill="#0c0a09"/>
+  <line x1="0" y1="380" x2="800" y2="380" stroke="#8b5a2b" stroke-width="3" stroke-dasharray="15,10"/>
   <ellipse cx="400" cy="400" rx="320" ry="45" fill="#000000" opacity="0.7"/>
 
   <g>
@@ -4606,9 +4606,9 @@ const demoDamagedCarImage = "data:image/svg+xml;utf8," + encodeURIComponent(`
     <path d="M260 170 L340 100 L500 100 L560 170 Z" fill="#7f1d1d"/>
     <path d="M275 165 L345 110 L435 110 L435 165 Z" fill="url(#glass)"/>
     <path d="M445 165 L445 110 L495 110 L545 165 Z" fill="url(#glass)"/>
-    <circle cx="230" cy="360" r="50" fill="#18181b" stroke="#3f3f46" stroke-width="8"/>
+    <circle cx="230" cy="360" r="50" fill="#161311" stroke="#3f3f46" stroke-width="8"/>
     <circle cx="230" cy="360" r="22" fill="#d4d4d8"/>
-    <circle cx="590" cy="360" r="50" fill="#18181b" stroke="#3f3f46" stroke-width="8"/>
+    <circle cx="590" cy="360" r="50" fill="#161311" stroke="#3f3f46" stroke-width="8"/>
     <circle cx="590" cy="360" r="22" fill="#d4d4d8"/>
     <path d="M700 290 Q720 300 710 320 L690 320 Z" fill="#fef08a"/>
     <path d="M130 290 Q110 300 120 320 L140 320 Z" fill="#ef4444"/>
@@ -4624,13 +4624,13 @@ const demoDamagedCarImage = "data:image/svg+xml;utf8," + encodeURIComponent(`
     <path d="M380 240 L460 270 M390 250 L470 280 M370 260 L440 285" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
     <circle cx="420" cy="260" r="28" fill="#f59e0b" fill-opacity="0.2" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,4"/>
     <text x="420" y="264" font-family="sans-serif" font-size="10" font-weight="bold" fill="#ffffff" text-anchor="middle">SCRATCHES</text>
-    <path d="M310 140 L340 120 L330 155 L360 135 M320 130 L295 145" stroke="#38bdf8" stroke-width="2" fill="none"/>
-    <circle cx="325" cy="138" r="22" fill="#38bdf8" fill-opacity="0.25" stroke="#38bdf8" stroke-width="2" stroke-dasharray="4,4"/>
+    <path d="M310 140 L340 120 L330 155 L360 135 M320 130 L295 145" stroke="#c89565" stroke-width="2" fill="none"/>
+    <circle cx="325" cy="138" r="22" fill="#c89565" fill-opacity="0.25" stroke="#c89565" stroke-width="2" stroke-dasharray="4,4"/>
     <text x="325" y="141" font-family="sans-serif" font-size="9" font-weight="bold" fill="#ffffff" text-anchor="middle">GLASS CRACK</text>
   </g>
 
-  <rect x="20" y="20" width="340" height="40" rx="8" fill="#090d16" fill-opacity="0.85" stroke="#ff6b00" stroke-width="1"/>
-  <text x="35" y="45" font-family="sans-serif" font-size="12" font-weight="bold" fill="#ff6b00"> EXIF TELEMETRY VERIFIED • NAIROBI CBD</text>
+  <rect x="20" y="20" width="340" height="40" rx="8" fill="#0c0a09" fill-opacity="0.85" stroke="#8b5a2b" stroke-width="1"/>
+  <text x="35" y="45" font-family="sans-serif" font-size="12" font-weight="bold" fill="#c89565"> EXIF TELEMETRY VERIFIED • NAIROBI CBD</text>
 </svg>
 `);
 
@@ -4960,7 +4960,7 @@ function renderVehicleLossRatios() {
       riskBadge = `<span class="status-badge pending">Moderate Risk (${lossRatio.toFixed(1)}%)</span>`;
     }
 
-    let loadingBadge = `<span class="badge" style="background:rgba(2,102,204,0.15); color:#38bdf8;">Standard Rate</span>`;
+    let loadingBadge = `<span class="badge" style="background:rgba(139, 90, 43,0.15); color:#c89565;">Standard Rate</span>`;
     if (m.loadingPct > 0) {
       loadingBadge = `<span class="badge" style="background:rgba(239,68,68,0.18); color:#f87171; font-weight:700;">+${m.loadingPct}% Surcharge</span>`;
     } else if (m.loadingPct < 0) {
@@ -5347,7 +5347,7 @@ function renderPesaFlowTransactionsTable() {
       <td><code>${t.ref}</code></td>
       <td><strong style="color:var(--primary);">${t.billNo}</strong></td>
       <td>${t.payer}</td>
-      <td><span class="badge" style="background:rgba(2,102,204,0.15); color:#38bdf8;">${t.channel}</span></td>
+      <td><span class="badge" style="background:rgba(139, 90, 43,0.15); color:#c89565;">${t.channel}</span></td>
       <td><strong style="color:var(--success);">KSh ${t.amount.toLocaleString()}</strong></td>
       <td>KSh ${t.stampDuty} (Paid)</td>
       <td><span class="status-badge approved">✓ ${t.status}</span></td>
@@ -5513,9 +5513,9 @@ function renderITaxRemittanceTable() {
   filtered.forEach(r => {
     const tr = document.createElement("tr");
     
-    let headBadge = `<span class="badge" style="background:rgba(2,102,204,0.15); color:#38bdf8;">${r.head}</span>`;
+    let headBadge = `<span class="badge" style="background:rgba(139, 90, 43,0.15); color:#c89565;">${r.head}</span>`;
     if (r.head.includes("WHT")) headBadge = `<span class="badge" style="background:rgba(16,185,129,0.15); color:#34d399;">${r.head}</span>`;
-    if (r.head.includes("Excise")) headBadge = `<span class="badge" style="background:rgba(255,107,0,0.15); color:#ff8533;">${r.head}</span>`;
+    if (r.head.includes("Excise")) headBadge = `<span class="badge" style="background:rgba(139, 90, 43,0.15); color:#c89565;">${r.head}</span>`;
     if (r.head.includes("Stamp")) headBadge = `<span class="badge" style="background:rgba(220,38,38,0.15); color:#ef4444;">${r.head}</span>`;
 
     tr.innerHTML = `
@@ -5741,7 +5741,7 @@ function renderLPRScansTable() {
     tr.innerHTML = `
       <td><span style="font-size:11.5px; color:var(--text-muted);">${s.time}</span></td>
       <td><strong style="font-family:monospace; font-size:14px; color:var(--primary);">${s.plate}</strong></td>
-      <td><span class="badge" style="background:rgba(2,102,204,0.15); color:#38bdf8;">${s.format}</span></td>
+      <td><span class="badge" style="background:rgba(139, 90, 43,0.15); color:#c89565;">${s.format}</span></td>
       <td><strong style="color:#10b981;">${s.conf}</strong></td>
       <td>${s.vehicle}</td>
       <td><span class="status-badge approved">✓ ${s.status}</span></td>
@@ -5857,7 +5857,7 @@ function initOCRCNNMatrix() {
   matrix.innerHTML = "";
   for (let i = 0; i < 32; i++) {
     const node = document.createElement("div");
-    node.style.cssText = "height:12px; background:#18181b; border:1px solid rgba(255,255,255,0.05); border-radius:3px; transition:background-color 0.2s;";
+    node.style.cssText = "height:12px; background:#161311; border:1px solid rgba(255,255,255,0.05); border-radius:3px; transition:background-color 0.2s;";
     matrix.appendChild(node);
   }
 }
@@ -5866,7 +5866,7 @@ function scrambleCNNMatrix() {
   const matrix = document.getElementById("ocr-cnn-matrix");
   if (!matrix) return;
   const nodes = matrix.children;
-  const colors = ["#ff6b00", "#ffaa00", "#10b981", "#18181b", "#18181b", "#18181b", "#ea580c"];
+  const colors = ["#8b5a2b", "#c89565", "#10b981", "#161311", "#161311", "#161311", "#8b5a2b"];
   for (let i = 0; i < nodes.length; i++) {
     nodes[i].style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
   }
@@ -5880,7 +5880,7 @@ function renderOCRTestSuiteGrid() {
     const card = document.createElement("div");
     card.style.cssText = "background:rgba(255,255,255,0.02); border:1px solid var(--border-color); border-radius:10px; padding:12px; display:flex; flex-direction:column; justify-content:space-between; gap:8px;";
     
-    let badgeColor = "#ea580c";
+    let badgeColor = "#8b5a2b";
     if (item.format === "EV Plate") badgeColor = "#10b981";
     if (item.format === "Diplomatic" || item.format === "Diplomatic Series" || item.format === "Dealer") badgeColor = "#ef4444";
     if (item.format === "Government") badgeColor = "#eab308";
@@ -6020,7 +6020,7 @@ function runOCRTestScan(index) {
       chars.forEach(c => {
         if (c.trim() === "") return;
         const box = document.createElement("span");
-        box.style.cssText = "font-size:24px; font-weight:800; font-family:monospace; border:2px solid #ff6b00; background:rgba(255,107,0,0.05); color:#ff6b00; padding:10px 14px; border-radius:6px; box-shadow:0 0 10px rgba(255,107,0,0.25);";
+        box.style.cssText = "font-size:24px; font-weight:800; font-family:monospace; border:2px solid #8b5a2b; background:rgba(139, 90, 43,0.05); color:#c89565; padding:10px 14px; border-radius:6px; box-shadow:0 0 10px rgba(139, 90, 43,0.25);";
         box.innerText = c;
         charBoxes.appendChild(box);
       });
@@ -6115,7 +6115,7 @@ function resetOCREngine() {
   if (matrix) {
     const nodes = matrix.children;
     for (let i = 0; i < nodes.length; i++) {
-      nodes[i].style.backgroundColor = "#18181b";
+      nodes[i].style.backgroundColor = "#161311";
     }
   }
 
@@ -6558,9 +6558,9 @@ function renderNotificationDispatchTable() {
   tbody.innerHTML = "";
   notificationLogs.forEach(log => {
     let channelBadge = "";
-    if (log.channel === "SMS Alert") channelBadge = `<span class="badge-tag" style="background:rgba(255,107,0,0.15); color:#ff8533;"> SMS Alert</span>`;
+    if (log.channel === "SMS Alert") channelBadge = `<span class="badge-tag" style="background:rgba(139, 90, 43,0.15); color:#c89565;"> SMS Alert</span>`;
     else if (log.channel === "WhatsApp") channelBadge = `<span class="badge-tag" style="background:rgba(16,185,129,0.15); color:#34d399;"> WhatsApp</span>`;
-    else channelBadge = `<span class="badge-tag" style="background:rgba(2,102,204,0.15); color:#38bdf8;"> Rich Email</span>`;
+    else channelBadge = `<span class="badge-tag" style="background:rgba(139, 90, 43,0.15); color:#c89565;"> Rich Email</span>`;
 
     const tr = document.createElement("tr");
     tr.style.borderBottom = "1px solid var(--border-color)";
@@ -6568,7 +6568,7 @@ function renderNotificationDispatchTable() {
       <td style="padding:10px; font-weight:600;">${log.timestamp}<br><span style="font-size:10px; color:var(--text-muted);">${log.date}</span></td>
       <td style="padding:10px;"><strong>${log.recipient}</strong><br><span style="font-size:11px; color:var(--text-secondary);">${log.phone}</span></td>
       <td style="padding:10px;">${channelBadge}</td>
-      <td style="padding:10px;"><code style="color:#38bdf8;">${log.claimId}</code><br><span style="font-size:11px; color:var(--text-muted);">${log.plate}</span></td>
+      <td style="padding:10px;"><code style="color:#c89565;">${log.claimId}</code><br><span style="font-size:11px; color:var(--text-muted);">${log.plate}</span></td>
       <td style="padding:10px; font-weight:600; color:var(--text-primary);">${log.event}</td>
       <td style="padding:10px; font-size:11.5px; color:var(--text-secondary);"><span style="color:#34d399;"></span> ${log.delivery}</td>
       <td style="padding:10px; text-align:right;">
@@ -6790,13 +6790,13 @@ function switchCameraMode(mode) {
   const stopRecBtn = document.getElementById("stop-video-rec-btn");
   
   if (mode === "photo") {
-    if (photoTab) { photoTab.style.background = "#ff6b00"; photoTab.style.color = "#fff"; }
-    if (videoTab) { videoTab.style.background = "transparent"; videoTab.style.color = "#94a3b8"; }
+    if (photoTab) { photoTab.style.background = "#8b5a2b"; photoTab.style.color = "#fff"; }
+    if (videoTab) { videoTab.style.background = "transparent"; videoTab.style.color = "#b5a99f"; }
     if (snapBtn) snapBtn.style.display = "inline-flex";
     if (startRecBtn) startRecBtn.style.display = "none";
     if (stopRecBtn) stopRecBtn.style.display = "none";
   } else {
-    if (photoTab) { photoTab.style.background = "transparent"; photoTab.style.color = "#94a3b8"; }
+    if (photoTab) { photoTab.style.background = "transparent"; photoTab.style.color = "#b5a99f"; }
     if (videoTab) { videoTab.style.background = "#ef4444"; videoTab.style.color = "#fff"; }
     if (snapBtn) snapBtn.style.display = "none";
     if (startRecBtn) startRecBtn.style.display = "inline-flex";
@@ -7340,7 +7340,7 @@ function executeReportQuery() {
           html += `<tr><td><strong>${item.ref}</strong></td><td>${item.claimant}</td><td>${item.polRef}</td><td>${item.date}</td><td>${item.branch}</td><td><strong style="color:var(--primary)">KSh ${item.amount.toLocaleString()}</strong></td><td><span class="status-badge ${item.statusType}">${item.status}</span></td></tr>`;
         });
         html += `
-          <tr style="background:rgba(255,107,0,0.08); font-weight:800; border-top:2px solid var(--primary);">
+          <tr style="background:rgba(139, 90, 43,0.08); font-weight:800; border-top:2px solid var(--primary);">
             <td colspan="5" style="text-align:right;">QUERIED TOTAL CLAIMS:</td>
             <td><strong style="color:var(--primary); font-size:14px;">KSh ${totalIncurred.toLocaleString()}</strong></td>
             <td><span class="status-badge approved">${paidItems.length} Paid | ${filtered.length - paidItems.length} Pending</span></td>
@@ -7407,7 +7407,7 @@ function executeReportQuery() {
           html += `<tr><td><strong>${item.ref}</strong></td><td>${item.holder}</td><td>${item.cat}</td><td>${item.date}</td><td>${item.branch}</td><td>KSh ${item.sumInsured.toLocaleString()}</td><td><strong style="color:var(--primary)">KSh ${item.premium.toLocaleString()}</strong></td></tr>`;
         });
         html += `
-          <tr style="background:rgba(255,107,0,0.08); font-weight:800; border-top:2px solid var(--primary);">
+          <tr style="background:rgba(139, 90, 43,0.08); font-weight:800; border-top:2px solid var(--primary);">
             <td colspan="5" style="text-align:right;">QUERIED TOTAL WRITTEN PREMIUM:</td>
             <td><strong>KSh ${totalSumInsured.toLocaleString()}</strong></td>
             <td><strong style="color:var(--primary); font-size:14px;">KSh ${totalPremium.toLocaleString()}</strong></td>
@@ -7461,7 +7461,7 @@ function executeReportQuery() {
         <tr><td><strong>African Reinsurance Corp</strong></td><td>5.0% Obligatory Cession</td><td>KSh 2,425,000</td><td>KSh 710,000</td><td>KSh 363,750</td><td>KSh 46,075,000</td><td><span class="status-badge approved">Active Treaty</span></td></tr>
         <tr><td><strong>Swiss Re (Catastrophe Cover)</strong></td><td>Excess of Loss (XOL)</td><td>KSh 1,800,000</td><td>KSh 2,120,000</td><td>KSh 270,000</td><td>KSh 150,000,000</td><td><span class="status-badge approved">Active Treaty</span></td></tr>
         <tr><td><strong>Munich Re (Aviation/Marine)</strong></td><td>Facultative Treaty</td><td>KSh 1,250,000</td><td>KSh 600,000</td><td>KSh 187,500</td><td>KSh 75,000,000</td><td><span class="status-badge approved">Active Treaty</span></td></tr>
-        <tr style="background:rgba(255,107,0,0.08); font-weight:800; border-top:2px solid var(--primary);">
+        <tr style="background:rgba(139, 90, 43,0.08); font-weight:800; border-top:2px solid var(--primary);">
           <td colspan="2" style="text-align:right;">TOTAL REINSURANCE TREATIES:</td>
           <td><strong style="color:var(--primary); font-size:14px;">KSh 22,450,000</strong></td>
           <td><strong style="color:var(--warning);">KSh 8,400,000</strong></td>
@@ -7526,7 +7526,7 @@ function executeReportQuery() {
     const grandProfit = grandGWP - grandClaims;
     
     html += `
-      <tr style="background:rgba(255,107,0,0.08); font-weight:800; border-top:2px solid var(--primary);">
+      <tr style="background:rgba(139, 90, 43,0.08); font-weight:800; border-top:2px solid var(--primary);">
         <td>GRAND TOTAL P&L:</td>
         <td><strong style="color:var(--primary); font-size:14px;">KSh ${grandGWP.toLocaleString()}</strong></td>
         <td><strong style="color:var(--warning);">KSh ${grandClaims.toLocaleString()}</strong></td>
@@ -7631,7 +7631,7 @@ function executeReportQuery() {
     });
     
     html += `
-      <tr style="background:rgba(255,107,0,0.08); font-weight:800; border-top:2px solid var(--primary);">
+      <tr style="background:rgba(139, 90, 43,0.08); font-weight:800; border-top:2px solid var(--primary);">
         <td>TOTAL ACQUISITION:</td>
         <td><strong>${totalNew} New Policies</strong></td>
         <td><strong>${totalRenewed} Renewals</strong></td>
@@ -7715,11 +7715,11 @@ function setReportChartType(type) {
   const barBtn = document.getElementById("chart-style-bar-btn");
 
   if (type === "spline") {
-    if (splineBtn) { splineBtn.style.background = "#ff6b00"; splineBtn.style.color = "#fff"; }
-    if (barBtn) { barBtn.style.background = "transparent"; barBtn.style.color = "#94a3b8"; }
+    if (splineBtn) { splineBtn.style.background = "#8b5a2b"; splineBtn.style.color = "#fff"; }
+    if (barBtn) { barBtn.style.background = "transparent"; barBtn.style.color = "#b5a99f"; }
   } else {
-    if (splineBtn) { splineBtn.style.background = "transparent"; splineBtn.style.color = "#94a3b8"; }
-    if (barBtn) { barBtn.style.background = "#3b82f6"; barBtn.style.color = "#fff"; }
+    if (splineBtn) { splineBtn.style.background = "transparent"; splineBtn.style.color = "#b5a99f"; }
+    if (barBtn) { barBtn.style.background = "#6f4722"; barBtn.style.color = "#fff"; }
   }
   renderReportTrendChart();
 }
@@ -7790,7 +7790,7 @@ function renderReportTrendChart() {
     const y = height - paddingY - (val / maxVal) * (height - paddingY * 2);
     gridLines += `
       <line x1="${paddingX}" y1="${y}" x2="${width - paddingX}" y2="${y}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="4,4"/>
-      <text x="${paddingX - 8}" y="${y + 4}" fill="#64748b" font-size="10" font-weight="600" text-anchor="end">${val}M</text>
+      <text x="${paddingX - 8}" y="${y + 4}" fill="#84776d" font-size="10" font-weight="600" text-anchor="end">${val}M</text>
     `;
   });
 
@@ -7806,7 +7806,7 @@ function renderReportTrendChart() {
     const pP = pointsPrem[idx];
     const pC = pointsClaim[idx];
 
-    xLabels += `<text x="${pP.x}" y="${height - 10}" fill="#94a3b8" font-size="11" font-weight="700" text-anchor="middle">${d.month}</text>`;
+    xLabels += `<text x="${pP.x}" y="${height - 10}" fill="#b5a99f" font-size="11" font-weight="700" text-anchor="middle">${d.month}</text>`;
 
     if (currentReportChartType === "bar") {
       const hP = (d.prem / maxVal) * (height - paddingY * 2);
@@ -7825,11 +7825,11 @@ function renderReportTrendChart() {
     } else {
       nodes += `
         <!-- Glow Circle Premium -->
-        <circle cx="${pP.x}" cy="${pP.y}" r="6" fill="#ff6b00" stroke="#ffffff" stroke-width="2.5" style="filter: drop-shadow(0 0 6px #ff6b00);">
+        <circle cx="${pP.x}" cy="${pP.y}" r="6" fill="#8b5a2b" stroke="#f5f2ef" stroke-width="2.5" style="filter: drop-shadow(0 0 6px rgba(139,90,43,0.65));">
           <title>${d.month} Premium: KSh ${d.prem}M (Loss Ratio: ${d.ratio})</title>
         </circle>
         <!-- Glow Circle Claim -->
-        <circle cx="${pC.x}" cy="${pC.y}" r="5" fill="#00f2fe" stroke="#ffffff" stroke-width="2.5" style="filter: drop-shadow(0 0 6px #00f2fe);">
+        <circle cx="${pC.x}" cy="${pC.y}" r="5" fill="#c89565" stroke="#f5f2ef" stroke-width="2.5" style="filter: drop-shadow(0 0 6px rgba(200,149,101,0.55));">
           <title>${d.month} Loss Claims: KSh ${d.claim}M</title>
         </circle>
       `;
@@ -7841,13 +7841,13 @@ function renderReportTrendChart() {
       <defs>
         <!-- Neon Orange Gradient -->
         <linearGradient id="neonOrangeGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#ff6b00" stop-opacity="0.85"/>
-          <stop offset="100%" stop-color="#ff8533" stop-opacity="0.05"/>
+          <stop offset="0%" stop-color="#8b5a2b" stop-opacity="0.75"/>
+          <stop offset="100%" stop-color="#a46a34" stop-opacity="0.05"/>
         </linearGradient>
         <!-- Neon Cyan Gradient -->
         <linearGradient id="neonCyanGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#00f2fe" stop-opacity="0.85"/>
-          <stop offset="100%" stop-color="#4facfe" stop-opacity="0.05"/>
+          <stop offset="0%" stop-color="#c89565" stop-opacity="0.65"/>
+          <stop offset="100%" stop-color="#dfc09f" stop-opacity="0.05"/>
         </linearGradient>
       </defs>
 
@@ -7860,8 +7860,8 @@ function renderReportTrendChart() {
         <path d="${areaClaim}" fill="url(#neonCyanGrad)"/>
 
         <!-- Glowing Spline Lines -->
-        <path d="${pathPrem}" fill="none" stroke="#ff6b00" stroke-width="3.5" stroke-linecap="round" style="filter: drop-shadow(0 2px 8px rgba(255,107,0,0.6));"/>
-        <path d="${pathClaim}" fill="none" stroke="#00f2fe" stroke-width="3" stroke-linecap="round" stroke-dasharray="6,3" style="filter: drop-shadow(0 2px 8px rgba(0,242,254,0.6));"/>
+        <path d="${pathPrem}" fill="none" stroke="#a46a34" stroke-width="3.5" stroke-linecap="round" style="filter: drop-shadow(0 2px 8px rgba(139,90,43,0.5));"/>
+        <path d="${pathClaim}" fill="none" stroke="#dfc09f" stroke-width="3" stroke-linecap="round" stroke-dasharray="6,3" style="filter: drop-shadow(0 2px 8px rgba(200,149,101,0.45));"/>
 
         <!-- Glow Nodes -->
         ${nodes}
@@ -7881,10 +7881,10 @@ function renderReportBranchShareChart() {
   if (!container) return;
 
   const branches = [
-    { name: "Nairobi HQ", share: 58.5, val: "KSh 28.4M", color: "#ff6b00" },
-    { name: "Mombasa Branch", share: 22.2, val: "KSh 10.8M", color: "#3b82f6" },
-    { name: "Kisumu Branch", share: 12.6, val: "KSh 6.1M", color: "#10b981" },
-    { name: "Nakuru Branch", share: 6.7, val: "KSh 3.2M", color: "#8b5cf6" }
+    { name: "Nairobi HQ", share: 58.5, val: "KSh 28.4M", color: "#8b5a2b" },
+    { name: "Mombasa Branch", share: 22.2, val: "KSh 10.8M", color: "#b07d4f" },
+    { name: "Kisumu Branch", share: 12.6, val: "KSh 6.1M", color: "#d4a373" },
+    { name: "Nakuru Branch", share: 6.7, val: "KSh 3.2M", color: "#6b4423" }
   ];
 
   let html = "";
@@ -8300,7 +8300,7 @@ function dispatchDesignatedEmailAlert(eventType, record) {
     triggerLabel = "New Policy Underwriting (Pending Approval)";
     smsSummary = `EIMS EMAIL ALERT -> [${recipientsStr}]: New Underwriting ${refId} for ${client} (${plate}, ${line}) Premium KSh ${prem} submitted.`;
     emailHtmlBody = `
-      <div style="background:#ff6b00; color:#ffffff; padding:6px 10px; border-radius:6px; font-size:11px; font-weight:800; margin-bottom:10px; display:inline-block;">
+      <div style="background:#8b5a2b; color:#ffffff; padding:6px 10px; border-radius:6px; font-size:11px; font-weight:800; margin-bottom:10px; display:inline-block;">
         NEW UNDERWRITING NOTIFICATION
       </div>
       <h2>New Policy Underwriting Registered</h2>
@@ -8308,7 +8308,7 @@ function dispatchDesignatedEmailAlert(eventType, record) {
       <p>A new policy underwriting file has been generated on <strong>${dateStr} at ${nowStr}</strong> and is queued for underwriting approval:</p>
       <table class="email-details-table">
         <tr><td class="label">Policy Number</td><td><strong>${refId}</strong></td></tr>
-        <tr><td class="label">Underwriting Status</td><td><strong style="color:#ff6b00;">PENDING APPROVAL (60-Min SLA Active)</strong></td></tr>
+        <tr><td class="label">Underwriting Status</td><td><strong style="color:#c89565;">PENDING APPROVAL (60-Min SLA Active)</strong></td></tr>
         <tr><td class="label">Policyholder</td><td>${client}</td></tr>
         <tr><td class="label">Registration / Risk</td><td>${plate} (${line})</td></tr>
         <tr><td class="label">Gross Written Premium</td><td>KSh ${prem}</td></tr>
@@ -8526,7 +8526,7 @@ function renderOverdueApprovalsDashboard() {
   const badge = document.getElementById("header-alert-badge");
   if (badge) {
     badge.style.display = allPending.length > 0 ? "block" : "none";
-    badge.style.background = "#ea580c";
+    badge.style.background = "#8b5a2b";
   }
 
   if (pill) {
@@ -8549,7 +8549,7 @@ function renderOverdueApprovalsDashboard() {
   if (allPending.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="7" style="padding:18px; text-align:center; color:#a1a1aa; font-weight:500;">
+        <td colspan="7" style="padding:18px; text-align:center; color:#b5a99f; font-weight:500;">
           Queue clear — all pending Claims and Underwriting approvals have been reviewed within the 60-minute SLA.
         </td>
       </tr>
@@ -8563,7 +8563,7 @@ function renderOverdueApprovalsDashboard() {
     // Split "Faith Wanjiku (KBA 456X)" into crisp name + subtle muted plate
     const parenIdx = item.name.indexOf(" (");
     const primaryName = parenIdx > -1 ? escapeHTML(item.name.slice(0, parenIdx)) : escapeHTML(item.name);
-    const subPlate = parenIdx > -1 ? `<span style="color:#71717a; font-size:12px; margin-left:4px;">${escapeHTML(item.name.slice(parenIdx + 1))}</span>` : "";
+    const subPlate = parenIdx > -1 ? `<span style="color:#84776d; font-size:12px; margin-left:4px;">${escapeHTML(item.name.slice(parenIdx + 1))}</span>` : "";
 
     const slaBadge = item.isOverdue60m
       ? `<span class="sla-time-pill overdue"><span class="sla-status-dot"></span>Overdue &middot; ${item.elapsedMins}m</span>`
@@ -8571,8 +8571,8 @@ function renderOverdueApprovalsDashboard() {
 
     const primaryRecipient = escapeHTML(designatedAlertEmails[0] || "approvals@eims-prosystem.go.ke");
     const emailStatus = item.isOverdue60m
-      ? `<div style="color:#d4d4d8; font-weight:500; font-size:12px;">Escalation sent</div><div style="color:#71717a; font-size:11px;">${primaryRecipient}</div>`
-      : `<div style="color:#a1a1aa; font-weight:500; font-size:12px;">Initial alert sent</div><div style="color:#71717a; font-size:11px;">Awaiting review</div>`;
+      ? `<div style="color:#d4d4d8; font-weight:500; font-size:12px;">Escalation sent</div><div style="color:#84776d; font-size:11px;">${primaryRecipient}</div>`
+      : `<div style="color:#b5a99f; font-weight:500; font-size:12px;">Initial alert sent</div><div style="color:#84776d; font-size:11px;">Awaiting review</div>`;
 
     tr.innerHTML = `
       <td><span class="sla-ref-code">${escapeHTML(item.id)}</span></td>
@@ -8738,7 +8738,7 @@ function renderGodModeView() {
   godModeAuditLogs.slice(0, 15).forEach(entry => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td><strong style="color:#ff8533;">${entry.gen}</strong></td>
+      <td><strong style="color:#c89565;">${entry.gen}</strong></td>
       <td><code>${entry.time}</code></td>
       <td><strong>${entry.subsystem}</strong></td>
       <td>${entry.action}</td>
@@ -8914,7 +8914,7 @@ function runReportsAIAnalytics(presetPrompt) {
     if (kpiAnomaly) kpiAnomaly.innerText = "PSV Matatu Drift +4.2%";
     if (kpiRec) kpiRec.innerText = "Load PSV Tariff +1.75%";
     analysisHtml = `
-      <div style="font-weight:800; color:#ff8533; margin-bottom:6px;">AI Predictive Model: 90-Day Loss Ratio &amp; GWP Trajectory</div>
+      <div style="font-weight:800; color:#c89565; margin-bottom:6px;">AI Predictive Model: 90-Day Loss Ratio &amp; GWP Trajectory</div>
       <div><strong>1. Portfolio Projection:</strong> Based on ${totalPoliciesCount} active policy files and ${totalClaimsCount} claims (KSh ${(totalClaimsCost / 1000000).toFixed(2)}M incurred), 90-day Gross Written Premium is projected to reach <strong>KSh 162.4M</strong> with a net actuarial loss ratio of <strong>${computedLR}%</strong> (well below the 55.0% IRA statutory ceiling).</div>
       <div style="margin-top:4px;"><strong>2. Segment Risk Signal:</strong> Electric Vehicle (EV) and County Fleet lines exhibit a <strong>24.6%</strong> low-loss ratio due to ADAS telematics, whereas PSV/Commercial Matatu corridors show a +4.2% severity drift.</div>
       <div style="margin-top:4px;"><strong>3. AI Prescription:</strong> Apply a <strong>+1.75%</strong> excess loading on high-mileage commercial PSV renewals while expanding the <strong>-7.5% ADAS rebate</strong> to capture corporate fleet volume.</div>
@@ -8937,8 +8937,8 @@ function runReportsAIAnalytics(presetPrompt) {
     if (kpiAnomaly) kpiAnomaly.innerText = "60-Min SLA Active";
     if (kpiRec) kpiRec.innerText = "Auto-Notify Approvers";
     analysisHtml = `
-      <div style="font-weight:800; color:#ff6b00; margin-bottom:6px;">AI 60-Minute Pending Approval SLA Bottleneck Audit</div>
-      <div><strong>1. Live Queue Telemetry:</strong> Currently tracking <strong>${pendingItems.length} pending approvals</strong> across Claims &amp; Underwriting, of which <strong style="color:#ff8533;">${overdueCount} have exceeded the 60-minute SLA threshold</strong> on the Executive Dashboard.</div>
+      <div style="font-weight:800; color:#c89565; margin-bottom:6px;">AI 60-Minute Pending Approval SLA Bottleneck Audit</div>
+      <div><strong>1. Live Queue Telemetry:</strong> Currently tracking <strong>${pendingItems.length} pending approvals</strong> across Claims &amp; Underwriting, of which <strong style="color:#c89565;">${overdueCount} have exceeded the 60-minute SLA threshold</strong> on the Executive Dashboard.</div>
       <div style="margin-top:4px;"><strong>2. Designated Email Escalation:</strong> Automated alerts are actively routing to <strong>${designatedAlertEmails.join(", ")}</strong> upon claim creation, new underwriting, and 60-minute SLA breach.</div>
       <div style="margin-top:4px;"><strong>3. AI Recommendation:</strong> Enable fast-track auto-approval for Green-Path claims under KSh 150,000 with Fraud Score &lt; 15% to cut median approval latency from 64 mins to <strong>4.2 mins</strong>.</div>
     `;
@@ -8948,7 +8948,7 @@ function runReportsAIAnalytics(presetPrompt) {
     if (kpiAnomaly) kpiAnomaly.innerText = "0 Treaty Breaches";
     if (kpiRec) kpiRec.innerText = "Cede >KSh 15M to XOL";
     analysisHtml = `
-      <div style="font-weight:800; color:#ff8533; margin-bottom:6px;">AI Reinsurance Treaty &amp; Ceding Optimization</div>
+      <div style="font-weight:800; color:#c89565; margin-bottom:6px;">AI Reinsurance Treaty &amp; Ceding Optimization</div>
       <div><strong>1. Split Efficiency:</strong> Current 3-Reinsurer split (<strong>50% Net Retention, 30% Kenya Re Mandatory Quota Share, 20% ZEP-RE / Africa Re Surplus</strong>) maintains a <strong>248% IRA Capital Adequacy Ratio</strong>.</div>
       <div style="margin-top:4px;"><strong>2. Catastrophe &amp; Fleet Protection:</strong> County Government Fleet policies exceeding KSh 15M sum insured are optimally shielded under the Working Excess of Loss (XOL) layer.</div>
     `;
@@ -8958,7 +8958,7 @@ function runReportsAIAnalytics(presetPrompt) {
     if (kpiAnomaly) kpiAnomaly.innerText = `${overdueCount} SLA Alerts`;
     if (kpiRec) kpiRec.innerText = "HQ & Mombasa Lead";
     analysisHtml = `
-      <div style="font-weight:800; color:#ff8533; margin-bottom:6px;">AI Executive Query Synthesis: "${escapeHTML(query)}"</div>
+      <div style="font-weight:800; color:#c89565; margin-bottom:6px;">AI Executive Query Synthesis: "${escapeHTML(query)}"</div>
       <div><strong>1. Cross-Branch Production:</strong> Nairobi HQ (44%) and Mombasa Branch (23%) drive 67% of gross underwriting volume, with 100% AKI digital certificate compliance and real-time KRA eTIMS tax synchronization.</div>
       <div style="margin-top:4px;"><strong>2. Claims &amp; SLA Health:</strong> ${totalClaimsCount} active claims totaling KSh ${(totalClaimsCost / 1000000).toFixed(2)}M; ${overdueCount} pending approvals >60m are highlighted on the Dashboard with email notifications sent to <strong>${designatedAlertEmails.join(", ")}</strong>.</div>
       <div style="margin-top:4px;"><strong>3. God Mode Self-Improvement:</strong> Evolution <strong>Gen #${godModeGeneration}</strong> is active at <strong>${godModeAccuracy.toFixed(2)}%</strong> precision.</div>

@@ -23,7 +23,7 @@
     }
     .deck-sidebar {
       background: #0a0806;
-      border-right: 1px solid rgba(245, 158, 11, 0.16);
+      border-right: 1px solid rgba(180, 132, 92, 0.16);
       display: flex;
       flex-direction: column;
       height: 100vh;
@@ -34,7 +34,7 @@
     .deck-brand-header {
       padding-bottom: 18px;
       margin-bottom: 18px;
-      border-bottom: 1px solid rgba(245, 158, 11, 0.16);
+      border-bottom: 1px solid rgba(180, 132, 92, 0.16);
     }
     .deck-brand-row {
       display: flex;
@@ -47,11 +47,11 @@
       height: 26px;
       border-radius: 6px;
       background: linear-gradient(180deg, #27272a, #18181b);
-      border: 1px solid rgba(245, 158, 11, 0.45);
+      border: 1px solid rgba(180, 132, 92, 0.45);
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      color: #f59e0b;
+      color: #c89565;
       font-weight: 900;
       font-size: 13px;
     }
@@ -59,7 +59,7 @@
       font-size: 21px;
       font-weight: 900;
       letter-spacing: 0.6px;
-      color: #f59e0b;
+      color: #c89565;
       text-transform: uppercase;
     }
     .deck-brand-sub {
@@ -99,21 +99,21 @@
     }
     .deck-nav-item:hover {
       background: #19140e;
-      border-color: rgba(245, 158, 11, 0.35);
+      border-color: rgba(180, 132, 92, 0.35);
       color: #ffffff;
     }
     .deck-nav-item.active {
-      background: linear-gradient(90deg, rgba(245, 158, 11, 0.16), rgba(245, 158, 11, 0.07));
-      border: 1px solid #d97706;
-      color: #f59e0b;
+      background: linear-gradient(90deg, rgba(180, 132, 92, 0.16), rgba(180, 132, 92, 0.07));
+      border: 1px solid #8b5a2b;
+      color: #c89565;
       font-weight: 700;
-      box-shadow: 0 0 20px rgba(245, 158, 11, 0.12);
+      box-shadow: 0 0 20px rgba(180, 132, 92, 0.12);
     }
     .deck-nav-num {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-size: 13px;
       font-weight: 700;
-      color: #f59e0b;
+      color: #c89565;
       letter-spacing: 0.5px;
       flex-shrink: 0;
     }
@@ -125,20 +125,20 @@
       justify-content: space-between;
       padding: 36px 48px 28px;
       background:
-        radial-gradient(circle at 85% 12%, rgba(255, 107, 0, 0.10), transparent 40%),
-        radial-gradient(circle at 15% 88%, rgba(245, 158, 11, 0.07), transparent 45%),
+        radial-gradient(circle at 85% 12%, rgba(139, 90, 43, 0.10), transparent 40%),
+        radial-gradient(circle at 15% 88%, rgba(180, 132, 92, 0.07), transparent 45%),
         #080706;
     }
     .slide-card {
       background: #110e0b;
-      border: 1px solid rgba(245, 158, 11, 0.2);
+      border: 1px solid rgba(180, 132, 92, 0.2);
       border-radius: 16px;
       padding: 20px 22px;
     }
     .kpi-pill {
-      background: rgba(245, 158, 11, 0.1);
-      border: 1px solid rgba(245, 158, 11, 0.35);
-      color: #f59e0b;
+      background: rgba(180, 132, 92, 0.1);
+      border: 1px solid rgba(180, 132, 92, 0.35);
+      color: #c89565;
       font-size: 12px;
       font-weight: 700;
       padding: 4px 12px;
@@ -150,7 +150,7 @@
     @media (max-width: 900px) {
       .deck-shell { grid-template-columns: 1fr; height: auto; }
       body { overflow: auto; }
-      .deck-sidebar { height: auto; border-right: none; border-bottom: 1px solid rgba(245, 158, 11, 0.2); }
+      .deck-sidebar { height: auto; border-right: none; border-bottom: 1px solid rgba(180, 132, 92, 0.2); }
       .deck-stage { height: auto; padding: 24px 20px; }
     }
   </style>
@@ -165,7 +165,7 @@
           <span class="deck-brand-title">EIMS PROSYSTEM</span>
         </div>
         <div class="deck-brand-sub">KENYA INSURTECH DECK · 12 SLIDES</div>
-        <a href="EIMS_ProSystem_Pitch_Deck.pptx" download="EIMS_ProSystem_Pitch_Deck.pptx" class="mt-3 flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-400 text-[11px] font-bold tracking-wider uppercase hover:bg-amber-500 hover:text-black transition-colors">
+        <a href="EIMS_ProSystem_Pitch_Deck.pptx" download="EIMS_ProSystem_Pitch_Deck.pptx" class="mt-3 flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg bg-amber-500/15 border border-[#8b5a2b]/40 text-[#dfc09f] text-[11px] font-bold tracking-wider uppercase hover:bg-amber-500 hover:text-black transition-colors">
           <span>⬇</span> Download .PPTX Deck
         </a>
       </div>
@@ -178,20 +178,20 @@
       <div id="slide-render-root"></div>
 
       <!-- Bottom Slide Controls -->
-      <footer class="flex items-center justify-between pt-6 mt-6 border-t border-amber-500/20 text-xs text-zinc-400">
+      <footer class="flex items-center justify-between pt-6 mt-6 border-t border-[#8b5a2b]/20 text-xs text-zinc-400">
         <div class="flex items-center gap-3">
-          <span class="font-mono text-amber-500 font-bold" id="footer-slide-counter">SLIDE 01 / 12</span>
+          <span class="font-mono text-[#c89565] font-bold" id="footer-slide-counter">SLIDE 01 / 12</span>
           <span>·</span>
           <span id="footer-section-title">I. VISION & DESIGN</span>
         </div>
         <div class="flex items-center gap-3">
-          <a href="EIMS_ProSystem_Pitch_Deck.pptx" download="EIMS_ProSystem_Pitch_Deck.pptx" class="px-4 py-2 rounded-lg bg-zinc-900 border border-amber-500/40 text-amber-400 font-bold hover:bg-amber-500 hover:text-black transition-colors">
+          <a href="EIMS_ProSystem_Pitch_Deck.pptx" download="EIMS_ProSystem_Pitch_Deck.pptx" class="px-4 py-2 rounded-lg bg-zinc-900 border border-[#8b5a2b]/40 text-[#dfc09f] font-bold hover:bg-amber-500 hover:text-black transition-colors">
             ⬇ Download PowerPoint (.pptx)
           </a>
-          <button onclick="prevSlide()" class="px-4 py-2 rounded-lg bg-zinc-900 border border-amber-500/30 text-amber-400 font-semibold hover:bg-amber-500/10 cursor-pointer">
+          <button onclick="prevSlide()" class="px-4 py-2 rounded-lg bg-zinc-900 border border-[#8b5a2b]/30 text-[#dfc09f] font-semibold hover:bg-[#8b5a2b]/15 cursor-pointer">
             ← Previous
           </button>
-          <button onclick="nextSlide()" class="px-4 py-2 rounded-lg bg-amber-500 text-black font-bold hover:bg-amber-400 cursor-pointer">
+          <button onclick="nextSlide()" class="px-4 py-2 rounded-lg bg-[#8b5a2b] text-white font-bold hover:bg-[#6f4722] cursor-pointer">
             Next Slide →
           </button>
         </div>
@@ -428,14 +428,14 @@
         metrics: [
           { val: "4 Layers", lbl: "SPA/Next.js, Edge CDN, Functions, Firestore" },
           { val: "3 Channels", lbl: "Rich Email, WhatsApp & SMS Telemetry" },
-          { val: "0 Idle Recalcs", lbl: "GPU-Clean Dark & Orange Theme UI" },
+          { val: "0 Idle Recalcs", lbl: "GPU-Clean Brown & Black Theme UI" },
           { val: "PWA + APK", lbl: "Installable Web App & Capacitor Android" }
         ],
         cards: [
           {
             tag: "LAYER 1 & 2 · PRESENTATION & FIREBASE CDN",
-            head: "High-Contrast Orange & Obsidian Black Enterprise UI",
-            body: "Engineered with a sleek obsidian-black and vibrant orange (#ff6b00) design system, responsive mobile drawer, and global Firebase Hosting CDN deployment."
+            head: "Executive Brown & Obsidian Black Enterprise UI",
+            body: "Engineered with a sleek obsidian-black and warm saddle brown (#8b5a2b) design system, responsive mobile drawer, and global Firebase Hosting CDN deployment."
           },
           {
             tag: "LAYER 3 · SERVERLESS DOMAIN & EMAIL ENGINE",
@@ -604,7 +604,7 @@
 
       const metricsHtml = s.metrics.map(m => `
         <div class="slide-card flex flex-col justify-between">
-          <div class="text-2xl md:text-3xl font-black text-amber-500 tracking-tight">${m.val}</div>
+          <div class="text-2xl md:text-3xl font-black text-[#c89565] tracking-tight">${m.val}</div>
           <div class="text-xs text-zinc-400 font-semibold mt-2 uppercase tracking-wider">${m.lbl}</div>
         </div>
       `).join("");
@@ -612,7 +612,7 @@
       const cardsHtml = s.cards.map(c => `
         <div class="slide-card flex flex-col gap-3">
           <div>
-            <span class="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest">${c.tag}</span>
+            <span class="text-xs font-mono font-bold text-[#dfc09f] uppercase tracking-widest">${c.tag}</span>
             <h3 class="text-lg font-bold text-white mt-1">${c.head}</h3>
           </div>
           <p class="text-sm text-zinc-300 leading-relaxed whitespace-pre-line m-0">${c.body}</p>

@@ -4,8 +4,8 @@
   "description": "Claims-centric digital insurance management platform for Motor & General Insurance in Kenya",
   "start_url": "/index.html",
   "display": "standalone",
-  "background_color": "#09090b",
-  "theme_color": "#ff6b00",
+  "background_color": "#0c0a09",
+  "theme_color": "#8b5a2b",
   "orientation": "portrait-primary",
   "icons": [
     {
