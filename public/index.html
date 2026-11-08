@@ -22,7 +22,7 @@
   </script>
   
   <!-- Modern CSS styling -->
-  <link rel="stylesheet" href="index.css?v=20261108h">
+  <link rel="stylesheet" href="index.css?v=20261108i">
   
   <!-- Leaflet CSS for Map integration -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
@@ -1179,114 +1179,178 @@
         <section class="app-view" id="view-create-claim">
           <div class="view-title-block">
             <div>
-              <h1>First Notice of Loss (FNOL)</h1>
-              <p>Submit media, mapping, and vehicle plate for AI scoring and immediate triage routing</p>
+              <h1>First Notice of Loss (FNOL) &amp; Multi-Line Claims Intake</h1>
+              <p id="fnol-header-subtitle">Domain-tailored statutory intake, registry verification, geolocation context, and actuarial/AI triage across all 7 insurance classes</p>
             </div>
             <button class="btn btn-secondary" onclick="resetFNOLStepper()">Reset Form</button>
           </div>
           
           <div class="dashboard-card" style="padding: 24px;">
+            <!-- Multi-Line Claims Journey Selector & Statutory Workflow Preview -->
+            <div class="fnol-line-config-bar" id="fnol-line-selector-bar">
+              <div class="fnol-line-config-grid">
+                <div class="form-group" style="margin:0;">
+                  <label for="fnol-insurance-line">Insurance Line / Statutory Class</label>
+                  <select class="form-control" id="fnol-insurance-line" onchange="switchFNOLInsuranceLine(this.value)">
+                    <option value="Motor">Motor, EV &amp; County Fleet (Cap 405)</option>
+                    <option value="Medical &amp; Health">Medical &amp; Health (IRA Class 08 / SHA)</option>
+                    <option value="Property &amp; Fire">Property, Fire &amp; Engineering (Classes 03-05)</option>
+                    <option value="Life &amp; Pension">Life, Group Life &amp; Pension (Long-Term Cap 487)</option>
+                    <option value="WIBA &amp; Liability">WIBA (2007), Liability &amp; Fidelity (DOSHS)</option>
+                    <option value="Marine &amp; Transit">Marine Cargo, GIT &amp; Aviation (Sec 20 / ICMS)</option>
+                    <option value="Agriculture &amp; Livestock">Agriculture, Livestock &amp; Parametric NDVI</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label for="fnol-policy-select">Linked Active Policy / Scheme</label>
+                  <select class="form-control" id="fnol-policy-select" onchange="onFNOLPolicySelectChange(this.value)"></select>
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label for="fnol-peril-select">Loss Event / Benefit Trigger</label>
+                  <select class="form-control" id="fnol-peril-select" onchange="onFNOLPerilChange(this.value)"></select>
+                </div>
+              </div>
+              <div class="fnol-journey-preview-strip" id="fnol-journey-preview-strip">
+                <!-- Populated dynamically with the 5 domain-specific claim journey stages -->
+              </div>
+            </div>
+
             <!-- Stepper Nodes header -->
             <div class="stepper-header">
               <div class="stepper-progress-bar" id="stepper-progress-fill"></div>
               
-              <div class="step-node active" id="step-node-1" onclick="jumpToFNOLStep(1)" style="cursor:pointer;" title="Step 1: Media &amp; Info">
+              <div class="step-node active" id="step-node-1" onclick="jumpToFNOLStep(1)" style="cursor:pointer;" title="Step 1: Intake &amp; Evidence">
                 <div class="step-circle">1</div>
-                <div class="step-label">Media &amp; Info</div>
+                <div class="step-label" id="fnol-step-label-1">Media &amp; Info</div>
               </div>
-              <div class="step-node" id="step-node-2" onclick="jumpToFNOLStep(2)" style="cursor:pointer;" title="Step 2: ANPR Check">
+              <div class="step-node" id="step-node-2" onclick="jumpToFNOLStep(2)" style="cursor:pointer;" title="Step 2: Statutory Registry Check">
                 <div class="step-circle">2</div>
-                <div class="step-label">ANPR Check</div>
+                <div class="step-label" id="fnol-step-label-2">ANPR &amp; DMVIC</div>
               </div>
-              <div class="step-node" id="step-node-3" onclick="jumpToFNOLStep(3)" style="cursor:pointer;" title="Step 3: Incident Mapping">
+              <div class="step-node" id="step-node-3" onclick="jumpToFNOLStep(3)" style="cursor:pointer;" title="Step 3: Location &amp; Responders">
                 <div class="step-circle">3</div>
-                <div class="step-label">Incident Mapping</div>
+                <div class="step-label" id="fnol-step-label-3">Incident Mapping</div>
               </div>
-              <div class="step-node" id="step-node-4" onclick="jumpToFNOLStep(4)" style="cursor:pointer;" title="Step 4: AI Audit &amp; Triage">
+              <div class="step-node" id="step-node-4" onclick="jumpToFNOLStep(4)" style="cursor:pointer;" title="Step 4: Domain Audit &amp; Triage">
                 <div class="step-circle">4</div>
-                <div class="step-label">AI Audit &amp; Triage</div>
+                <div class="step-label" id="fnol-step-label-4">AI Audit &amp; Triage</div>
               </div>
             </div>
             
-            <!-- STEP 1: Claimant Info & Scene Media Capture -->
+            <!-- STEP 1: Claimant Info & Line-Specific Evidence / Media Capture -->
             <div class="stepper-pane active" id="step-pane-1">
               <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
-                <h2 style="font-size:18px; margin:0;">1. Client Details &amp; Accident Scene Media</h2>
-                <div style="display:flex; gap:8px;">
+                <h2 style="font-size:18px; margin:0;" id="fnol-step1-title">1. Client Details &amp; Accident Scene Media</h2>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
                   <button type="button" class="btn btn-secondary" onclick="autoFillDemoClaimData()" style="padding:6px 14px; font-size:12px;">
-                     Auto-Fill Demo Form
+                    Auto-Fill Line Sample
                   </button>
                   <button type="button" class="btn btn-primary" onclick="quickSubmitDemoClaim()" style="padding:6px 14px; font-size:12px;">
-                     Instant Register Claim
+                    Instant Register Claim
                   </button>
                 </div>
               </div>
-              <p style="color:var(--text-secondary); margin-bottom:20px; font-size:14px;">
+              <p style="color:var(--text-secondary); margin-bottom:20px; font-size:14px;" id="fnol-step1-desc">
                 Start by entering your registration details and capturing/uploading photos or videos at the accident scene using your phone. Click on uploaded photos to mark damaged areas.
               </p>
               
               <div class="form-grid-2" style="margin-bottom:24px;">
                 <div class="form-group">
-                  <label for="claim-plate">Registration Plate (Kenya)</label>
+                  <label for="claim-plate" id="fnol-subject-label">Registration Plate (Kenya)</label>
                   <input type="text" class="form-control" id="claim-plate" placeholder="e.g. KDG 123A" style="text-transform:uppercase;">
                 </div>
                 <div class="form-group">
-                  <label for="claim-owner">Policyholder / Claimant Name</label>
+                  <label for="claim-owner" id="fnol-owner-label">Policyholder / Claimant Name</label>
                   <input type="text" class="form-control" id="claim-owner" placeholder="e.g. Boniface Mwangi">
                 </div>
-                <div class="form-group" style="grid-column: span 2;">
+                <div class="form-group">
                   <label for="claim-phone">Mobile Number (M-PESA / WhatsApp Alerts)</label>
                   <input type="tel" class="form-control" id="claim-phone" placeholder="e.g. +254 712 345678">
+                </div>
+                <div class="form-group">
+                  <label for="claim-estimate-input" id="fnol-amount-label">Estimated Repair / Claimed Amount (KSh)</label>
+                  <input type="number" class="form-control" id="claim-estimate-input" min="1000" placeholder="e.g. 142500">
                 </div>
               </div>
               
               <!-- Hidden native mobile camera capture input -->
               <input type="file" id="media-capture-input" accept="image/*,video/*" capture="environment" style="display:none;">
               
-              <div class="media-annotate-wrapper">
-                <div class="canvas-panel">
-                  <!-- Damage Drawing Canvas -->
-                  <canvas class="canvas-element" id="annotation-canvas"></canvas>
-                  
-                  <div id="media-placeholder-content" style="text-align:center; padding:20px; color:var(--text-muted); pointer-events:none;">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom:10px;">
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                      <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                      <polyline points="21 15 16 10 5 21"></polyline>
-                    </svg>
-                    <p style="font-size:12px; font-weight:600;">Tap "Capture Scene" or load demo asset</p>
+              <!-- MOTOR / EV / FLEET VISUAL DAMAGE CANVAS SECTION -->
+              <div id="fnol-motor-media-section">
+                <div class="media-annotate-wrapper">
+                  <div class="canvas-panel">
+                    <!-- Damage Drawing Canvas -->
+                    <canvas class="canvas-element" id="annotation-canvas"></canvas>
+                    
+                    <div id="media-placeholder-content" style="text-align:center; padding:20px; color:var(--text-muted); pointer-events:none;">
+                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom:10px;">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                        <polyline points="21 15 16 10 5 21"></polyline>
+                      </svg>
+                      <p style="font-size:12px; font-weight:600;">Tap "Capture Scene" or load demo asset</p>
+                    </div>
+                    
+                    <img id="annotate-bg-img" src="car_damaged.jpg" alt="Vehicle Damage Preview" class="canvas-bg-img" style="display:none;">
+                    <video id="annotate-bg-video" controls class="canvas-bg-img" style="display:none; max-height:380px; width:100%; object-fit:contain; z-index:6;"></video>
                   </div>
                   
-                  <img id="annotate-bg-img" src="car_damaged.jpg" alt="Vehicle Damage Preview" class="canvas-bg-img" style="display:none;">
-                  <video id="annotate-bg-video" controls class="canvas-bg-img" style="display:none; max-height:380px; width:100%; object-fit:contain; z-index:6;"></video>
+                  <div class="annotate-tools">
+                    <div style="font-size:11px; font-weight:700; color:var(--text-secondary); margin-bottom:4px;">Damage Marker Tool:</div>
+                    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-bottom:8px;">
+                      <button type="button" class="btn btn-secondary damage-type-btn active" id="tool-dent" style="padding:6px 4px; font-size:11px;">Dent</button>
+                      <button type="button" class="btn btn-secondary damage-type-btn" id="tool-scratch" style="padding:6px 4px; font-size:11px;">Scratch</button>
+                      <button type="button" class="btn btn-secondary damage-type-btn" id="tool-crack" style="padding:6px 4px; font-size:11px;">Crack</button>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="mobile-capture-btn" onclick="openCameraCaptureModal()" style="margin-top:auto;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                        <circle cx="12" cy="13" r="4"></circle>
+                      </svg>
+                      Capture Scene (Mobile)
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="annotate-load-btn">
+                      Load Demo Photo
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="annotate-clear-btn">
+                      Clear Markers
+                    </button>
+                    
+                    <div style="font-size:10px; color:var(--text-muted); margin-top:8px;">
+                      <strong>Scene Telemetry:</strong><br>
+                      GPS: -1.286, 36.817<br>
+                      Time: <span id="exif-timestamp">August 2026</span><br>
+                      Type: <span id="telemetry-media-type">Image (EXIF verified)</span>
+                    </div>
+                  </div>
                 </div>
-                
-                <div class="annotate-tools">
-                  <div style="font-size:11px; font-weight:700; color:var(--text-secondary); margin-bottom:4px;">Damage Marker Tool:</div>
-                  <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-bottom:8px;">
-                    <button type="button" class="btn btn-secondary damage-type-btn active" id="tool-dent" style="padding:6px 4px; font-size:11px;">Dent</button>
-                    <button type="button" class="btn btn-secondary damage-type-btn" id="tool-scratch" style="padding:6px 4px; font-size:11px;">Scratch</button>
-                    <button type="button" class="btn btn-secondary damage-type-btn" id="tool-crack" style="padding:6px 4px; font-size:11px;">Crack</button>
+              </div>
+
+              <!-- NON-MOTOR LINE STATUTORY EVIDENCE & SUPPORTING DOSSIER SECTION -->
+              <div id="fnol-multiline-dossier-section" style="display:none;">
+                <div class="multiline-dossier-card">
+                  <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
+                    <div>
+                      <div class="ins-module-kicker" id="fnol-dossier-kicker">STATUTORY SUPPORTING EVIDENCE DOSSIER</div>
+                      <h3 style="font-size:15px; font-weight:700; margin:4px 0 0;" id="fnol-dossier-title">Mandatory Claim Verification Artefacts</h3>
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="verifyAllFNOLDossierDocs()" style="padding:6px 12px; font-size:12px;">
+                      Attach &amp; Verify Statutory Docs
+                    </button>
                   </div>
-                  <button type="button" class="btn btn-primary" id="mobile-capture-btn" onclick="openCameraCaptureModal()" style="margin-top:auto;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;">
-                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                      <circle cx="12" cy="13" r="4"></circle>
-                    </svg>
-                    Capture Scene (Mobile)
-                  </button>
-                  <button type="button" class="btn btn-secondary" id="annotate-load-btn">
-                    Load Demo Photo
-                  </button>
-                  <button type="button" class="btn btn-secondary" id="annotate-clear-btn">
-                    Clear Markers
-                  </button>
-                  
-                  <div style="font-size:10px; color:var(--text-muted); margin-top:8px;">
-                    <strong>Scene Telemetry:</strong><br>
-                    GPS: -1.286, 36.817<br>
-                    Time: <span id="exif-timestamp">August 2026</span><br>
-                    Type: <span id="telemetry-media-type">Image (EXIF verified)</span>
+                  <div class="form-grid-2" style="margin-bottom:14px;">
+                    <div class="form-group" style="margin:0;">
+                      <label for="fnol-statutory-ref" id="fnol-statutory-ref-label">Statutory Reference / Voucher No</label>
+                      <input type="text" class="form-control" id="fnol-statutory-ref" placeholder="e.g. GOP-MED-2026-8841">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                      <label for="fnol-incident-notes" id="fnol-incident-notes-label">Clinical / Loss / Event Summary</label>
+                      <input type="text" class="form-control" id="fnol-incident-notes" placeholder="Summary of insured loss or benefit trigger">
+                    </div>
+                  </div>
+                  <div class="fnol-doc-checklist" id="fnol-doc-checklist">
+                    <!-- Rendered per insurance line -->
                   </div>
                 </div>
               </div>
@@ -1295,14 +1359,14 @@
               <div id="saved-media-vault-container" style="margin-top:16px; padding:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(139, 90, 43,0.25); border-radius:10px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
                   <span style="font-size:12px; font-weight:700; color:var(--primary); display:flex; align-items:center; gap:6px;">
-                     Stored Claim Media Vault (<span id="saved-media-count">1 Item</span>)
+                    Stored Claim Evidence Vault (<span id="saved-media-count">1 Item</span>)
                   </span>
                   <div style="display:flex; gap:8px;">
                     <button type="button" class="btn btn-secondary" onclick="downloadActiveClaimMedia()" style="padding:5px 12px; font-size:11px;">
-                       Download Local Copy
+                      Download Local Copy
                     </button>
                     <button type="button" class="btn btn-primary" onclick="uploadActiveClaimMediaToCloud()" style="padding:5px 12px; font-size:11px;">
-                       Sync to Cloud Storage
+                      Sync to Cloud Storage
                     </button>
                   </div>
                 </div>
@@ -1312,18 +1376,19 @@
               </div>
             </div>
             
-            <!-- STEP 2: ANPR OCR & KRA/NTSA Database Lookup -->
+            <!-- STEP 2: Registry & Policy Verification (Motor ANPR/NTSA vs Multi-Line Statutory Registry) -->
             <div class="stepper-pane" id="step-pane-2">
-              <h2 style="font-size:18px; margin-bottom:16px;">2. License Plate & Vehicle Verification</h2>
-              <p style="color:var(--text-secondary); margin-bottom:20px; font-size:14px;">
-                ANPR technology will automatically scan the plate from your shared media and match records against the National Transport and Safety Authority (NTSA) registry to verify ownership and policy info.
+              <h2 style="font-size:18px; margin-bottom:16px;" id="fnol-step2-title">2. License Plate &amp; Vehicle Verification</h2>
+              <p style="color:var(--text-secondary); margin-bottom:20px; font-size:14px;" id="fnol-step2-desc">
+                ANPR technology scans the vehicle plate and cross-matches records against the NTSA logbook registry and AKI DMVIC digital certificate ledger.
               </p>
               
-              <div class="form-grid-2">
+              <!-- MOTOR / EV / FLEET STEP 2 -->
+              <div class="form-grid-2" id="fnol-motor-step2-grid">
                 <div class="form-group">
                   <label style="display:flex; justify-content:space-between; align-items:center;">
                     <span>ANPR Plate Scanner Media</span>
-                    <span style="font-size:11px; color:var(--primary); font-weight:600;">(Photo & Video Ready)</span>
+                    <span style="font-size:11px; color:var(--primary); font-weight:600;">(Photo &amp; Video Ready)</span>
                   </label>
                   
                   <div class="anpr-capture-zone" id="anpr-photo-loader" onclick="triggerANPRFileUpload()" style="cursor:pointer; position:relative; min-height:220px; border:2px dashed var(--primary); border-radius:12px; overflow:hidden; background:#000; display:flex; align-items:center; justify-content:center;">
@@ -1351,10 +1416,10 @@
 
                   <div style="display:flex; gap:10px; margin-top:12px;">
                     <button type="button" class="btn btn-primary" id="anpr-scan-btn" onclick="runANPRScanSimulation()" style="flex:1;">
-                       Execute ANPR OCR Scan
+                      Execute ANPR OCR Scan
                     </button>
                     <button type="button" class="btn btn-secondary" onclick="triggerANPRFileUpload()" style="padding:10px 14px; font-size:12px;">
-                       Upload Photo / Video
+                      Upload Photo / Video
                     </button>
                   </div>
                 </div>
@@ -1393,16 +1458,53 @@
                   </div>
                 </div>
               </div>
+
+              <!-- NON-MOTOR STATUTORY REGISTRY & POLICY BENEFIT VERIFICATION (STEP 2) -->
+              <div class="form-grid-2" id="fnol-multiline-step2-grid" style="display:none;">
+                <div class="dashboard-card" style="padding:18px; background:#120f0d; border:1px solid rgba(200,149,101,0.28);">
+                  <div class="ins-module-kicker" id="ml-reg-authority-kicker">STATUTORY REGISTRY GATEWAY</div>
+                  <h3 style="font-size:15px; font-weight:700; margin:6px 0 8px;" id="ml-reg-card-title">Automated Policy &amp; Regulatory Registry Handshake</h3>
+                  <p style="font-size:12.5px; color:var(--text-secondary); margin-bottom:16px;" id="ml-reg-card-desc">
+                    Validates active cover, benefit sub-limits, waiting/contestability clauses, and statutory registry entries before claim triage.
+                  </p>
+                  <div style="background:#0c0a09; border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:12px; margin-bottom:14px; font-size:12px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                      <span style="color:var(--text-muted);">Selected Policy:</span>
+                      <strong id="ml-reg-preview-policy">POL-MED-4011-2026</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                      <span style="color:var(--text-muted);">Peril / Trigger:</span>
+                      <strong id="ml-reg-preview-peril" style="color:#dfc09f;">Cashless Inpatient GOP</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between;">
+                      <span style="color:var(--text-muted);">External Authority Feed:</span>
+                      <span id="ml-reg-preview-feed">SHA / KMPDC &amp; IRA Cap 487</span>
+                    </div>
+                  </div>
+                  <button type="button" class="btn btn-primary" id="multiline-registry-scan-btn" onclick="runMultiLineRegistryVerification()" style="width:100%;">
+                    Execute Statutory Registry &amp; Benefit Verification
+                  </button>
+                </div>
+
+                <div class="dashboard-card" id="multiline-verification-box" style="padding:18px; background-color:rgba(16,185,129,0.05); border-color:var(--success);">
+                  <div style="display:flex; align-items:center; gap:10px; color:var(--success); font-weight:700; font-size:14px; margin-bottom:12px;" id="ml-verif-header">
+                    <span class="pulse-circle"></span> Statutory Policy &amp; Registry Match Verified
+                  </div>
+                  <div class="info-list" style="grid-template-columns:1fr; gap:10px;" id="ml-verif-details-list">
+                    <!-- Populated per insurance line -->
+                  </div>
+                </div>
+              </div>
             </div>
             
-            <!-- STEP 3: Incident Mapping & Geolocation -->
+            <!-- STEP 3: Incident / Facility / Site Mapping & Domain Responders -->
             <div class="stepper-pane" id="step-pane-3">
-              <h2 style="font-size:18px; margin-bottom:16px;">3. Geomap Incident Location</h2>
-              <p style="color:var(--text-secondary); margin-bottom:20px; font-size:14px;">
-                Provide the exact geographic coordinates of the accident scene. You can use your browser's GPS or click on the map to place a pin. The system will auto-detect the county jurisdiction and list the nearest local emergency contacts (police, towing).
+              <h2 style="font-size:18px; margin-bottom:16px;" id="fnol-step3-title">3. Geomap Incident Location</h2>
+              <p style="color:var(--text-secondary); margin-bottom:20px; font-size:14px;" id="fnol-step3-desc">
+                Provide the exact geographic coordinates of the incident, facility, port berth, or agro-ecological zone. Click on the map or use GPS to assign county jurisdiction and accredited responders.
               </p>
               
-              <div style="display:flex; gap:16px; margin-bottom:16px;">
+              <div style="display:flex; gap:16px; margin-bottom:16px; flex-wrap:wrap;">
                 <button class="btn btn-secondary" type="button" id="geo-detect-btn">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"></circle>
@@ -1422,7 +1524,7 @@
                 
                 <div class="form-group" style="justify-content: space-between;">
                   <div class="dashboard-card" style="padding:16px; height:100%;">
-                    <h3 style="font-size:14px; font-weight:600; margin-bottom:12px;">Location Context & County Jurisdictions</h3>
+                    <h3 style="font-size:14px; font-weight:600; margin-bottom:12px;" id="fnol-step3-card-title">Location Context &amp; County Jurisdictions</h3>
                     <div class="info-list" style="grid-template-columns: 1fr; gap:12px;">
                       <div class="info-item">
                         <span class="label">GPS Latitude/Longitude</span>
@@ -1433,11 +1535,11 @@
                         <span class="value" id="geo-county">Nairobi County (Starehe Constituency)</span>
                       </div>
                       <div class="info-item">
-                        <span class="label">Nearest Police Station</span>
+                        <span class="label" id="geo-primary-label">Nearest Police Station</span>
                         <span class="value" id="geo-police">Central Police Station Nairobi (0.4 km)</span>
                       </div>
                       <div class="info-item">
-                        <span class="label">Primary Towing Dispatcher</span>
+                        <span class="label" id="geo-secondary-label">Primary Towing Dispatcher</span>
                         <span class="value" id="geo-tow">Nairobi County Towing Logistics (0.9 km)</span>
                       </div>
                     </div>
@@ -1446,17 +1548,17 @@
               </div>
             </div>
             
-            <!-- STEP 4: AI Triage, Fraud Score and Routing -->
+            <!-- STEP 4: Domain AI / Actuarial Triage, Fraud Score and Fulfillment Routing -->
             <div class="stepper-pane" id="step-pane-4">
-              <h2 style="font-size:18px; margin-bottom:16px;">4. AI Claims Triage & Fraud Audit Report</h2>
-              <p style="color:var(--text-secondary); margin-bottom:20px; font-size:14px;">
-                The claims-centric AI auditor uses neural vision models to examine the damage annotations, compare plate EXIF, cross-reference metadata for time-travel or duplicate fraud checks, and calculate an overall risk scoring.
+              <h2 style="font-size:18px; margin-bottom:16px;" id="fnol-step4-title">4. AI Claims Triage &amp; Fraud Audit Report</h2>
+              <p style="color:var(--text-secondary); margin-bottom:20px; font-size:14px;" id="fnol-step4-desc">
+                Executes line-specialized fraud, clinical, engineering, mortality, DOSHS, cargo survey, or satellite NDVI checks to determine Green Fast-Track, Yellow Adjuster Review, or Red SIU routing.
               </p>
               
               <div id="ai-analyzing-loader" style="text-align:center; padding:40px 0;">
                 <div class="pulse-circle" style="width:40px; height:40px; margin:0 auto 20px;"></div>
-                <h3 style="font-size:16px; font-weight:600;">Running Computer Vision & Metadata Fraud Audit...</h3>
-                <p style="color:var(--text-muted); font-size:13px; margin-top:8px;">Comparing with 10k+ historical claims and local parts indices</p>
+                <h3 style="font-size:16px; font-weight:600;" id="ai-loader-title">Running Domain Audit &amp; Statutory Fraud Verification...</h3>
+                <p style="color:var(--text-muted); font-size:13px; margin-top:8px;" id="ai-loader-sub">Cross-referencing policy schedules, statutory registries, and historical claims velocity</p>
               </div>
               
               <div id="ai-report-content" style="display:none;" class="audit-report-card">
@@ -1469,14 +1571,14 @@
                 <div class="card-body">
                   <div class="audit-details-grid" style="margin-bottom:20px;">
                     <div>
-                      <h3 class="detail-section-title">Audit Score Summary</h3>
+                      <h3 class="detail-section-title">Audit &amp; Fulfillment Summary</h3>
                       <div class="info-list" style="grid-template-columns: 1fr 1fr; gap:12px;">
                         <div class="info-item">
-                          <span class="label">Fraud Index Rating</span>
+                          <span class="label">Fraud / Anomaly Rating</span>
                           <span class="value" id="ai-fraud-badge">Low Risk</span>
                         </div>
                         <div class="info-item">
-                          <span class="label">Damage Estimation</span>
+                          <span class="label" id="ai-amount-label">Assessed Indemnity / Benefit</span>
                           <span class="value" id="ai-est-cost">KSh 142,500</span>
                         </div>
                         <div class="info-item">
@@ -1484,8 +1586,8 @@
                           <span class="value" id="ai-routing-route">Instant Auto-Approve</span>
                         </div>
                         <div class="info-item">
-                          <span class="label">Next Action Gate</span>
-                          <span class="value" id="ai-next-action">Auto-Disbursement</span>
+                          <span class="label">Fulfillment Channel</span>
+                          <span class="value" id="ai-next-action">Accredited Garage / M-PESA</span>
                         </div>
                       </div>
                     </div>
@@ -1498,40 +1600,19 @@
                         </svg>
                         <div class="radial-text">
                           <div class="radial-percentage" id="ai-score-number">8%</div>
-                          <div class="radial-label">Fraud Risk</div>
+                          <div class="radial-label">Risk Index</div>
                         </div>
                       </div>
                     </div>
                   </div>
                   
-                  <h3 class="detail-section-title">Audit Flag Breakdown</h3>
+                  <h3 class="detail-section-title">Domain Audit &amp; Statutory Gate Breakdown</h3>
                   <ul class="audit-check-list">
                     <li class="audit-check-item">
-                      <div class="audit-check-icon pass" id="flag-icon-1">✓</div>
+                      <div class="audit-check-icon pass" id="flag-icon-1">OK</div>
                       <div class="audit-check-details">
-                        <h4>EXIF Metadata Consistency</h4>
-                        <p>Image metadata latitude/longitude correlates with incident mapping location coordinates within 50 meters. Camera model matching confirms original file.</p>
-                      </div>
-                    </li>
-                    <li class="audit-check-item">
-                      <div class="audit-check-icon pass" id="flag-icon-2">✓</div>
-                      <div class="audit-check-details">
-                        <h4>Vehicle Matching Verification</h4>
-                        <p>NTSA license plate scan KDG 123A matches physical features (Blue Toyota Fielder) detected in the computer vision scan of the damage photos.</p>
-                      </div>
-                    </li>
-                    <li class="audit-check-item">
-                      <div class="audit-check-icon pass" id="flag-icon-3">✓</div>
-                      <div class="audit-check-details">
-                        <h4>Stock Image & Double Claim Scan</h4>
-                        <p>Reverse-image search of the uploaded file returns 0 matching records in global stock photos or historical county claim database. No previous damage claim reported on front bumper.</p>
-                      </div>
-                    </li>
-                    <li class="audit-check-item">
-                      <div class="audit-check-icon pass" id="flag-icon-4">✓</div>
-                      <div class="audit-check-details">
-                        <h4>Claim Velocity Check</h4>
-                        <p>Claimant Boniface Mwangi has had 1 claim in the last 24 months. Well below normal velocity threat bounds (risk remains low).</p>
+                        <h4>Statutory Coverage &amp; Registry Gate</h4>
+                        <p>Policy schedule, endorsements, and statutory registry hashes verified active at time of loss.</p>
                       </div>
                     </li>
                   </ul>
@@ -1551,8 +1632,8 @@
         <section class="app-view" id="view-claims-directory">
           <div class="view-title-block">
             <div>
-              <h1>Claims Directory</h1>
-              <p>Audit and manage notice of loss files and print regulatory documents</p>
+              <h1>Master Multi-Line Claims Directory</h1>
+              <p>Audit, advance domain workflow stages, approve, settle, and print statutory claim vouchers across all 7 insurance lines</p>
             </div>
             <button class="btn btn-primary" onclick="navigateToView('create-claim')">+ Register Claim (FNOL)</button>
           </div>
@@ -1560,9 +1641,9 @@
           <div class="dashboard-card" style="padding: 20px; margin-bottom: 24px;">
             <div style="display:flex; gap:16px; flex-wrap:wrap;">
               <div style="flex-grow:1; min-width:200px;">
-                <input type="text" class="form-control" id="directory-search-input" placeholder="Search claimant, plate, asset or line..." oninput="window.renderClaimsDirectory()">
+                <input type="text" class="form-control" id="directory-search-input" placeholder="Search claimant, policy, plate, hospital, B/L, UAI or line..." oninput="window.renderClaimsDirectory()">
               </div>
-              <div style="width:175px;">
+              <div style="width:185px;">
                 <select class="form-control" id="directory-line-select" onchange="window.renderClaimsDirectory()">
                   <option value="ALL">All Insurance Lines</option>
                   <option value="Motor">Motor &amp; Fleet</option>
@@ -1602,13 +1683,13 @@
                 <thead>
                   <tr>
                     <th>Claim ID</th>
-                    <th>Plate / Asset Ref</th>
-                    <th>Claimant</th>
+                    <th>Subject / Policy Ref</th>
+                    <th>Claimant / Beneficiary</th>
                     <th>Incident Date</th>
-                    <th>Damage Estimate</th>
+                    <th>Claimed / Assessed</th>
                     <th>Fraud Risk</th>
                     <th>Triage</th>
-                    <th>Status</th>
+                    <th>Status &amp; Stage</th>
                     <th>Action</th>
                   </tr>
                 </thead>
@@ -2431,15 +2512,25 @@
         <section class="app-view" id="view-garage-network">
           <div class="view-title-block">
             <div>
-              <h1>Accredited Garage & Repair Network</h1>
-              <p>Assign claims to panel beaters, track 5-stage repair progress, and issue repair release vouchers</p>
+              <h1>Accredited Motor Garage &amp; Panel Repair Network</h1>
+              <p>Assign Motor, EV &amp; County Fleet physical damage claims to accredited panel beaters, track 5-stage repair progress, and issue release vouchers</p>
+            </div>
+          </div>
+
+          <div class="dashboard-card" style="padding:14px 18px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; background:#120f0d; border:1px solid rgba(200,149,101,0.3);">
+            <div style="flex:1; min-width:250px;">
+              <label for="garage-motor-claim-select" style="display:block; font-size:11px; font-weight:700; color:#c89565; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:5px;">Target Motor / EV / Fleet Repair Claim</label>
+              <select id="garage-motor-claim-select" class="form-control" onchange="onGarageMotorClaimSelectChange(this.value)" style="font-size:12.5px; font-weight:600;"></select>
+            </div>
+            <div style="font-size:11.5px; color:var(--text-secondary); max-width:440px;">
+              <strong>Domain Scope:</strong> Garage allocation applies exclusively to <strong>Motor, EV &amp; County Fleet</strong> physical repairs. Non-motor claims fulfill via Hospital Panel EFT, Chartered Loss Adjusters, Beneficiary Trusts, DOSHS Awards, Marine Surveyors, or Bulk M-PESA.
             </div>
           </div>
 
           <div style="display:grid; grid-template-columns: 2fr 1fr; gap:24px; margin-bottom: 24px;">
             <!-- Garage Directory -->
             <div class="dashboard-card" style="padding:20px;">
-              <h3 style="font-size:15px; font-weight:600; margin-bottom:16px;">Accredited Repair Panel</h3>
+              <h3 style="font-size:15px; font-weight:600; margin-bottom:16px;">Accredited Motor &amp; EV Repair Panel</h3>
               <div class="claims-table-wrapper" style="border:none;">
                 <table class="claims-table" id="garage-table">
                   <thead>
@@ -2463,7 +2554,7 @@
             <div class="dashboard-card" style="padding:20px;">
               <h3 style="font-size:15px; font-weight:600; margin-bottom:12px;">Active Repair Stage Tracker</h3>
               <p style="font-size:12px; color:var(--text-secondary); margin-bottom:16px;">
-                Select an assigned repair to view real-time garage audit status.
+                Select a Motor/Fleet claim above and assign an accredited garage to track 5-stage repair audit progress.
               </p>
               
               <div id="repair-tracker-box" style="border:1px solid var(--border-color); padding:16px; border-radius:10px; background-color:var(--bg-primary);">
@@ -2611,22 +2702,32 @@
         <section class="app-view" id="view-loss-assessors">
           <div class="view-title-block">
             <div>
-              <h1>Independent Loss Assessors &amp; Surveyors</h1>
-              <p>Dispatch physical inspection requests for Yellow and Red SIU flagged claim files</p>
+              <h1>Independent Loss Assessors, Clinical Auditors &amp; Surveyors</h1>
+              <p>Dispatch IRA-licensed motor assessors, chartered fire adjusters, KMPDC medical auditors, DOSHS occupational boards, Lloyd's marine surveyors &amp; agro-vets</p>
+            </div>
+          </div>
+
+          <div class="dashboard-card" style="padding:16px 20px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; background:#120f0d; border:1px solid rgba(200,149,101,0.3);">
+            <div style="flex:1; min-width:260px;">
+              <label for="assessor-claim-select" style="display:block; font-size:11.5px; font-weight:700; color:#c89565; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Target Claim File for Specialist Inspection / Survey</label>
+              <select id="assessor-claim-select" class="form-control" onchange="onAssessorClaimSelectChange(this.value)" style="font-size:12.5px; font-weight:600;"></select>
+            </div>
+            <div style="font-size:12px; color:var(--text-secondary); max-width:390px;" id="assessor-line-guidance">
+              Select any claim across all 7 insurance lines, then dispatch a matching accredited specialist firm below to generate a statutory assessment report.
             </div>
           </div>
 
           <div style="display:grid; grid-template-columns: 2fr 1fr; gap:24px; margin-bottom:24px;">
             <!-- Assessor Directory & Dispatch -->
             <div class="dashboard-card" style="padding:20px;">
-              <h3 style="font-size:15px; font-weight:600; margin-bottom:16px;">Certified Loss Adjustment Firms</h3>
+              <h3 style="font-size:15px; font-weight:600; margin-bottom:16px;">IRA-Licensed Multi-Line Adjustment &amp; Survey Panel</h3>
               <div class="claims-table-wrapper" style="border:none;">
                 <table class="claims-table" id="assessors-table">
                   <thead>
                     <tr>
-                      <th>Firm Name</th>
+                      <th>Firm / Specialist Panel</th>
                       <th>County / Region</th>
-                      <th>Specialization</th>
+                      <th>Accredited Line &amp; Scope</th>
                       <th>Rating</th>
                       <th>Action</th>
                     </tr>
@@ -2640,17 +2741,19 @@
 
             <!-- Assessor Inspection Report Viewer -->
             <div class="dashboard-card" style="padding:20px;">
-              <h3 style="font-size:15px; font-weight:600; margin-bottom:12px;">Assessor Inspection Report</h3>
+              <h3 style="font-size:15px; font-weight:600; margin-bottom:12px;">Specialist Inspection &amp; Survey Report</h3>
               <p style="font-size:12px; color:var(--text-secondary); margin-bottom:16px;" id="assessor-report-firm">
                 Physical valuation report submitted by General Adjusters Ltd.
               </p>
               
-              <div style="border:1px solid var(--border-color); padding:14px; border-radius:10px; background-color:var(--bg-primary); font-size:12px; line-height:1.5;">
+              <div style="border:1px solid var(--border-color); padding:14px; border-radius:10px; background-color:var(--bg-primary); font-size:12px; line-height:1.55;">
                 <div style="font-weight:700; color:var(--primary); margin-bottom:4px;" id="assessor-report-ref">Report Ref: GAR-8902-2026</div>
                 <div><strong>Claim File:</strong> <span id="assessor-report-claim">CLM-2026-002 (KBA 456X)</span></div>
-                <div><strong>Chassis Verification:</strong> Verified (SF5-087342)</div>
-                <div><strong>Physical Valuation:</strong> KSh 2,200,000</div>
-                <div><strong>Assessed Damage:</strong> Pre-existing bumper scuff detected. Adjusted estimate: <strong>KSh 390,000</strong></div>
+                <div id="assessor-report-details" style="margin-top:6px; display:flex; flex-direction:column; gap:4px;">
+                  <div><strong>Chassis Verification:</strong> Verified (SF5-087342)</div>
+                  <div><strong>Pre-Loss Valuation:</strong> KSh 2,200,000</div>
+                  <div><strong>Technical Finding:</strong> Pre-existing bumper scuff detected. Net assessed indemnity: <strong>KSh 390,000</strong></div>
+                </div>
                 <div style="margin-top:10px; font-weight:600; color:var(--warning);" id="assessor-report-verdict">Assessor Verdict: Conditional Approval</div>
               </div>
             </div>
@@ -3939,8 +4042,43 @@
         <section class="app-view" id="view-subrogation-recovery">
           <div class="view-title-block">
             <div>
-              <h1>Subrogation & Third-Party Legal Recovery</h1>
-              <p>Legal recovery ledger for pursuing third-party insurer fault liabilities and recovering claim payouts</p>
+              <h1>Subrogation &amp; Third-Party Legal Recovery</h1>
+              <p>Indemnity recovery ledger for Motor Knock-for-Knock, Marine Carrier/Bailee Liability, Property Third-Party Negligence &amp; WIBA Tortfeasor claims</p>
+            </div>
+          </div>
+
+          <!-- Eligible Indemnity Claim Subrogation Registration Bar -->
+          <div class="dashboard-card" style="padding:18px 20px; margin-bottom:20px; background:linear-gradient(135deg, rgba(139, 90, 43, 0.1), rgba(18, 15, 13, 0.96)); border:1px solid rgba(200, 149, 101, 0.32);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+              <div>
+                <div style="font-size:11px; font-weight:800; color:#c89565; text-transform:uppercase; letter-spacing:0.6px;">STATUTORY INDEMNITY SUBROGATION GATE (CAP 487)</div>
+                <div style="font-size:12.5px; color:var(--text-secondary); margin-top:2px;">
+                  Subrogation applies strictly to contracts of indemnity (Motor, Marine Cargo/GIT, Property &amp; Fire, WIBA Tortfeasor, Medical Third-Party). <strong>Life &amp; Pension</strong> and <strong>Parametric Weather-Index</strong> contracts are legally exempt.
+                </div>
+              </div>
+              <span class="status-badge approved" style="font-size:10.5px;">INDEMNITY LAW ENFORCED</span>
+            </div>
+            <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+              <div class="form-group" style="flex:1.4; min-width:240px; margin:0;">
+                <label for="subrogation-claim-select" style="font-size:11.5px;">Eligible Approved / Settled Indemnity Claim</label>
+                <select id="subrogation-claim-select" class="form-control" style="font-size:12.5px;"></select>
+              </div>
+              <div class="form-group" style="flex:1.2; min-width:210px; margin:0;">
+                <label for="subrogation-liable-party" style="font-size:11.5px;">Liable Third-Party Insurer / Carrier / Utility</label>
+                <input type="text" id="subrogation-liable-party" class="form-control" placeholder="e.g. Jubilee Allianz / Maersk Line / Kenya Power" style="font-size:12.5px;">
+              </div>
+              <div class="form-group" style="width:155px; margin:0;">
+                <label for="subrogation-fault-select" style="font-size:11.5px;">Apportioned Fault</label>
+                <select id="subrogation-fault-select" class="form-control" style="font-size:12.5px;">
+                  <option value="100% Fault">100% Liable</option>
+                  <option value="85% Fault">85% Liable</option>
+                  <option value="75% Carrier Liability">75% Bailee/Carrier</option>
+                  <option value="50% Knock-for-Knock">50% Shared Fault</option>
+                </select>
+              </div>
+              <button type="button" class="btn btn-primary" onclick="registerSubrogationFromClaim()" style="padding:10px 16px; font-size:12.5px; font-weight:700;">
+                + Open Subrogation File
+              </button>
             </div>
           </div>
 
@@ -3953,9 +4091,9 @@
                   <thead>
                     <tr>
                       <th>Claim File</th>
-                      <th>Insured Vehicle</th>
-                      <th>Third-Party Insurer</th>
-                      <th>Fault %</th>
+                      <th>Subject / Policy Ref</th>
+                      <th>Liable Party / Carrier / Insurer</th>
+                      <th>Fault / Basis</th>
                       <th>Demand Amount</th>
                       <th>Status</th>
                       <th>Action</th>
@@ -3972,18 +4110,21 @@
             <div class="dashboard-card" style="padding:20px;">
               <h3 style="font-size:15px; font-weight:600; margin-bottom:12px;">Subrogation Metrics</h3>
               <div style="font-size:12px; color:var(--text-secondary); margin-bottom:16px;">
-                Legal recovery ledger for third-party fault indemnities.
+                Legal recovery ledger across Motor, Marine Cargo/Transit, Property &amp; WIBA third-party liabilities.
               </div>
 
               <div style="display:flex; flex-direction:column; gap:12px; font-size:12.5px;">
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
-                  <span>Active Recovery Files:</span> <strong>3 Cases</strong>
+                  <span>Active Recovery Files:</span> <strong id="subrog-kpi-active">5 Cases</strong>
                 </div>
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
-                  <span>Total Demands Issued:</span> <strong style="color:var(--primary);">KSh 1,320,000</strong>
+                  <span>Total Demands Issued:</span> <strong style="color:var(--primary);" id="subrog-kpi-demands">KSh 4,810,000</strong>
                 </div>
-                <div style="display:flex; justify-content:space-between;">
-                  <span>Subrogation Recovered (YTD):</span> <strong style="color:var(--success);">KSh 420,000</strong>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
+                  <span>Subrogation Recovered (YTD):</span> <strong style="color:var(--success);" id="subrog-kpi-recovered">KSh 1,270,000</strong>
+                </div>
+                <div style="font-size:11.5px; color:#dfc09f; line-height:1.45; padding-top:4px;">
+                  Exempt Lines: Life &amp; Pension (Sec 111 Contingency) and Satellite NDVI Weather-Index Payouts.
                 </div>
               </div>
             </div>
@@ -4802,8 +4943,11 @@
               </div>
 
               <div class="dashboard-card" style="padding:20px;">
-                <h3 style="font-size:15px; font-weight:700; margin-bottom:8px;">Submit Medical Reimbursement / Hospital Claim</h3>
-                <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">Routes directly to Master Claims Directory &amp; 60-Min SLA Watchdog.</p>
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+                  <h3 style="font-size:15px; font-weight:700; margin:0;">Submit Medical Reimbursement / Hospital Claim</h3>
+                  <button type="button" class="btn btn-secondary" onclick="openGuidedFNOLForLine('medical')" style="padding:4px 10px; font-size:11px;">Guided 4-Step FNOL</button>
+                </div>
+                <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">Applies ICD-11 clinical coding, SHA/SHIF primary bed-rebate offset &amp; Hospital Panel EFT routing.</p>
                 <div class="form-group" style="margin-bottom:12px;">
                   <label for="clm-medical-policy">Select Active Medical Policy</label>
                   <select class="form-control" id="clm-medical-policy"></select>
@@ -4821,6 +4965,32 @@
                   <input type="text" class="form-control" id="clm-medical-desc" value="ICD-11 Surgical Admission • Smart Card Biometric Verified">
                 </div>
                 <button class="btn btn-primary" onclick="submitInsuranceLineClaim('medical')" style="width:100%;">Register Medical Claim</button>
+              </div>
+            </div>
+
+            <div class="dashboard-card" style="padding:20px; margin-top:20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+                <div>
+                  <h3 style="font-size:15px; font-weight:700; margin:0;">Medical &amp; Health Claims Journey Pipeline</h3>
+                  <div style="font-size:12px; color:var(--text-secondary);">Workflow: 1. Biometric / GOP Admission -&gt; 2. ICD-11 Clinical &amp; Benefit Check -&gt; 3. SHA/SHIF Primary Offset -&gt; 4. Medical Care Audit -&gt; 5. Hospital EFT / Member Payout</div>
+                </div>
+                <button class="btn btn-secondary" onclick="openGuidedFNOLForLine('medical')" style="font-size:12px;">+ Launch Full Medical FNOL Wizard</button>
+              </div>
+              <div class="claims-table-wrapper">
+                <table class="claims-table">
+                  <thead>
+                    <tr>
+                      <th>Claim ID</th>
+                      <th>Scheme / Smart Card Ref</th>
+                      <th>Provider / Member</th>
+                      <th>Journey Stage</th>
+                      <th>Adjudicated Bill (KSh)</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ins-medical-claims-tbody"></tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -4991,8 +5161,11 @@
               </div>
 
               <div class="dashboard-card" style="padding:20px;">
-                <h3 style="font-size:15px; font-weight:700; margin-bottom:8px;">Register Fire, Peril or Engineering Claim</h3>
-                <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">Appoints loss adjuster and syncs to Master Claims Directory &amp; SLA Watchdog.</p>
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+                  <h3 style="font-size:15px; font-weight:700; margin:0;">Register Fire, Peril or Engineering Claim</h3>
+                  <button type="button" class="btn btn-secondary" onclick="openGuidedFNOLForLine('property')" style="padding:4px 10px; font-size:11px;">Guided 4-Step FNOL</button>
+                </div>
+                <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">Appoints Chartered Loss Adjuster, checks Condition of Average &amp; syncs to Claims Directory.</p>
                 <div class="form-group" style="margin-bottom:12px;">
                   <label for="clm-property-policy">Select Active Property / CAR Policy</label>
                   <select class="form-control" id="clm-property-policy"></select>
@@ -5010,6 +5183,32 @@
                   <input type="text" class="form-control" id="clm-property-desc" value="Electrical Surge &amp; Transformer Fire • Cunningham Lindsey Assigned">
                 </div>
                 <button class="btn btn-primary" onclick="submitInsuranceLineClaim('property')" style="width:100%;">Register Property Claim</button>
+              </div>
+            </div>
+
+            <div class="dashboard-card" style="padding:20px; margin-top:20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+                <div>
+                  <h3 style="font-size:15px; font-weight:700; margin:0;">Property, Fire &amp; Engineering Claims Journey Pipeline</h3>
+                  <div style="font-size:12px; color:var(--text-secondary);">Workflow: 1. Peril Notice &amp; Fire Report -&gt; 2. Chartered Loss Adjuster Survey -&gt; 3. BoQ &amp; Average Clause Test -&gt; 4. Reinstatement / Treaty Approval -&gt; 5. Indemnity EFT</div>
+                </div>
+                <button class="btn btn-secondary" onclick="openGuidedFNOLForLine('property')" style="font-size:12px;">+ Launch Full Property FNOL Wizard</button>
+              </div>
+              <div class="claims-table-wrapper">
+                <table class="claims-table">
+                  <thead>
+                    <tr>
+                      <th>Claim ID</th>
+                      <th>LR Plot / Asset Policy</th>
+                      <th>Insured Facility</th>
+                      <th>Journey Stage</th>
+                      <th>Assessed Loss (KSh)</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ins-property-claims-tbody"></tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -5182,8 +5381,11 @@
               </div>
 
               <div class="dashboard-card" style="padding:20px;">
-                <h3 style="font-size:15px; font-weight:700; margin-bottom:8px;">Log Last Expense (48h), Death or Maturity Claim</h3>
-                <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">Dispatches priority beneficiary payout alert and syncs with Claims Directory.</p>
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+                  <h3 style="font-size:15px; font-weight:700; margin:0;">Log Last Expense (48h), Death or Maturity Claim</h3>
+                  <button type="button" class="btn btn-secondary" onclick="openGuidedFNOLForLine('life')" style="padding:4px 10px; font-size:11px;">Guided 4-Step FNOL</button>
+                </div>
+                <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">Verifies CRS burial/death record &amp; Section 111 probate-exempt beneficiary trust (Subrogation non-applicable).</p>
                 <div class="form-group" style="margin-bottom:12px;">
                   <label for="clm-life-policy">Select Active Life / GLA Policy</label>
                   <select class="form-control" id="clm-life-policy"></select>
@@ -5201,6 +5403,32 @@
                   <input type="text" class="form-control" id="clm-life-desc" value="48-Hour Last Expense Payout • CRS Burial Permit Verified">
                 </div>
                 <button class="btn btn-primary" onclick="submitInsuranceLineClaim('life')" style="width:100%;">Register Life / Funeral Claim</button>
+              </div>
+            </div>
+
+            <div class="dashboard-card" style="padding:20px; margin-top:20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+                <div>
+                  <h3 style="font-size:15px; font-weight:700; margin:0;">Life, Group Life &amp; Pension Claims Journey Pipeline</h3>
+                  <div style="font-size:12px; color:var(--text-secondary);">Workflow: 1. Benefit Event Notice -&gt; 2. CRS Registry &amp; Policy Bond Check -&gt; 3. Sec 111 Beneficiary Verification -&gt; 4. Actuarial Bonus &amp; Benefit Calc -&gt; 5. Priority Beneficiary Payout</div>
+                </div>
+                <button class="btn btn-secondary" onclick="openGuidedFNOLForLine('life')" style="font-size:12px;">+ Launch Full Life FNOL Wizard</button>
+              </div>
+              <div class="claims-table-wrapper">
+                <table class="claims-table">
+                  <thead>
+                    <tr>
+                      <th>Claim ID</th>
+                      <th>Policy Bond / GLA Scheme</th>
+                      <th>Nominated Beneficiary</th>
+                      <th>Journey Stage</th>
+                      <th>Benefit Sum (KSh)</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ins-life-claims-tbody"></tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -5371,15 +5599,18 @@
               </div>
 
               <div class="dashboard-card" style="padding:20px;">
-                <h3 style="font-size:15px; font-weight:700; margin-bottom:8px;">Register WIBA, Public Liability or Fidelity Claim</h3>
-                <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">Syncs DOSHS medical assessment into Master Claims Directory &amp; SLA Watchdog.</p>
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+                  <h3 style="font-size:15px; font-weight:700; margin:0;">Register WIBA, Public Liability or Fidelity Claim</h3>
+                  <button type="button" class="btn btn-secondary" onclick="openGuidedFNOLForLine('wiba')" style="padding:4px 10px; font-size:11px;">Guided 4-Step FNOL</button>
+                </div>
+                <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">Syncs DOSHS Form 1 &amp; Medical Board PD% assessment into Master Claims Directory &amp; SLA Watchdog.</p>
                 <div class="form-group" style="margin-bottom:12px;">
                   <label for="clm-wiba-policy">Select Active WIBA / Liability Policy</label>
                   <select class="form-control" id="clm-wiba-policy"></select>
                 </div>
                 <div class="form-group" style="margin-bottom:12px;">
                   <label for="clm-wiba-claimant">Employee / Third-Party Claimant</label>
-                  <input type="text" class="form-control" id="clm-wiba-claimant" value="eng. Peter Ochieng Otieno (Field Technician)">
+                  <input type="text" class="form-control" id="clm-wiba-claimant" value="Eng. Peter Ochieng Otieno (Field Technician)">
                 </div>
                 <div class="form-group" style="margin-bottom:12px;">
                   <label for="clm-wiba-amount">Assessed Compensation / Reserve (KSh)</label>
@@ -5390,6 +5621,32 @@
                   <input type="text" class="form-control" id="clm-wiba-desc" value="DOSHS/NBI/2026/1104 • 15% Permanent Disablement Award">
                 </div>
                 <button class="btn btn-primary" onclick="submitInsuranceLineClaim('wiba')" style="width:100%;">Register WIBA / Liability Claim</button>
+              </div>
+            </div>
+
+            <div class="dashboard-card" style="padding:20px; margin-top:20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+                <div>
+                  <h3 style="font-size:15px; font-weight:700; margin:0;">WIBA (2007), Liability &amp; Fidelity Claims Journey Pipeline</h3>
+                  <div style="font-size:12px; color:var(--text-secondary);">Workflow: 1. DOSHS Form 1 Notice -&gt; 2. Wage-Roll &amp; Roster Check -&gt; 3. Medical Board PD% Assessment -&gt; 4. Statutory 96-Mo Computation -&gt; 5. Compensation Discharge</div>
+                </div>
+                <button class="btn btn-secondary" onclick="openGuidedFNOLForLine('wiba')" style="font-size:12px;">+ Launch Full WIBA FNOL Wizard</button>
+              </div>
+              <div class="claims-table-wrapper">
+                <table class="claims-table">
+                  <thead>
+                    <tr>
+                      <th>Claim ID</th>
+                      <th>Employer Policy / DOSHS Ref</th>
+                      <th>Injured Worker / Claimant</th>
+                      <th>Journey Stage</th>
+                      <th>Statutory Award (KSh)</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ins-wiba-claims-tbody"></tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -5560,8 +5817,11 @@
               </div>
 
               <div class="dashboard-card" style="padding:20px;">
-                <h3 style="font-size:15px; font-weight:700; margin-bottom:8px;">Log Marine Shortage, Wet Damage or GIT Transit Claim</h3>
-                <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">Attaches Lloyd's / KPA outturn survey &amp; routes to Subrogation &amp; Claims Directory.</p>
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+                  <h3 style="font-size:15px; font-weight:700; margin:0;">Log Marine Shortage, Wet Damage or GIT Transit Claim</h3>
+                  <button type="button" class="btn btn-secondary" onclick="openGuidedFNOLForLine('marine')" style="padding:4px 10px; font-size:11px;">Guided 4-Step FNOL</button>
+                </div>
+                <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">Attaches Lloyd's / KPA outturn survey, preserves Carrier Subrogation &amp; syncs to Claims Directory.</p>
                 <div class="form-group" style="margin-bottom:12px;">
                   <label for="clm-marine-policy">Select Active Marine / GIT Policy</label>
                   <select class="form-control" id="clm-marine-policy"></select>
@@ -5579,6 +5839,32 @@
                   <input type="text" class="form-control" id="clm-marine-desc" value="Berth 16 Container Seal Breach &amp; Sea-Water Ingress Survey">
                 </div>
                 <button class="btn btn-primary" onclick="submitInsuranceLineClaim('marine')" style="width:100%;">Register Marine / GIT Claim</button>
+              </div>
+            </div>
+
+            <div class="dashboard-card" style="padding:20px; margin-top:20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+                <div>
+                  <h3 style="font-size:15px; font-weight:700; margin:0;">Marine Cargo, GIT &amp; Aviation Claims Journey Pipeline</h3>
+                  <div style="font-size:12px; color:var(--text-secondary);">Workflow: 1. Outturn &amp; Carrier Reserve -&gt; 2. KRA ICMS &amp; B/L Check -&gt; 3. Marine Surveyor Inspection -&gt; 4. CIF+10% Loss Adjustment -&gt; 5. Indemnity &amp; Carrier Subrogation</div>
+                </div>
+                <button class="btn btn-secondary" onclick="openGuidedFNOLForLine('marine')" style="font-size:12px;">+ Launch Full Marine FNOL Wizard</button>
+              </div>
+              <div class="claims-table-wrapper">
+                <table class="claims-table">
+                  <thead>
+                    <tr>
+                      <th>Claim ID</th>
+                      <th>MCI / IDF / B/L Ref</th>
+                      <th>Consignee Claimant</th>
+                      <th>Journey Stage</th>
+                      <th>Surveyed Loss (KSh)</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ins-marine-claims-tbody"></tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -5749,8 +6035,11 @@
               </div>
 
               <div class="dashboard-card" style="padding:20px;">
-                <h3 style="font-size:15px; font-weight:700; margin-bottom:8px;">Log Crop Failure, Livestock Mortality or Index Claim</h3>
-                <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">Verifies e-Voucher / RFID ear-tag or NDVI anomaly &amp; routes to Claims Directory.</p>
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+                  <h3 style="font-size:15px; font-weight:700; margin:0;">Log Crop Failure, Livestock Mortality or Index Claim</h3>
+                  <button type="button" class="btn btn-secondary" onclick="openGuidedFNOLForLine('agri')" style="padding:4px 10px; font-size:11px;">Guided 4-Step FNOL</button>
+                </div>
+                <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">Verifies e-Voucher / RFID ear-tag or NDVI anomaly &amp; routes to Smallholder Bulk M-PESA Settlement.</p>
                 <div class="form-group" style="margin-bottom:12px;">
                   <label for="clm-agri-policy">Select Active Agriculture / Livestock Policy</label>
                   <select class="form-control" id="clm-agri-policy"></select>
@@ -5770,6 +6059,32 @@
                 <button class="btn btn-primary" onclick="submitInsuranceLineClaim('agri')" style="width:100%;">Register Agri / Livestock Claim</button>
               </div>
             </div>
+
+            <div class="dashboard-card" style="padding:20px; margin-top:20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+                <div>
+                  <h3 style="font-size:15px; font-weight:700; margin:0;">Agriculture, Livestock &amp; Parametric Claims Journey Pipeline</h3>
+                  <div style="font-size:12px; color:var(--text-secondary);">Workflow: 1. NDVI Breach / Vet Notice -&gt; 2. UAI &amp; RFID Subsidy Check -&gt; 3. Satellite / Agronomy Audit -&gt; 4. Cooperative Payout Calc -&gt; 5. Bulk M-PESA Disbursement</div>
+                </div>
+                <button class="btn btn-secondary" onclick="openGuidedFNOLForLine('agri')" style="font-size:12px;">+ Launch Full Agri FNOL Wizard</button>
+              </div>
+              <div class="claims-table-wrapper">
+                <table class="claims-table">
+                  <thead>
+                    <tr>
+                      <th>Claim ID</th>
+                      <th>UAI / Cooperative Policy</th>
+                      <th>Beneficiary Group</th>
+                      <th>Journey Stage</th>
+                      <th>Payout (KSh)</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ins-agri-claims-tbody"></tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </section>
       </div>
@@ -5778,9 +6093,12 @@
   
   <!-- ================= AUDIT DETAILS MODAL DIALOG ================= -->
   <div class="modal-overlay" id="audit-modal">
-    <div class="modal-window">
+    <div class="modal-window" style="max-width:760px;">
       <div class="modal-header">
-        <h2 id="modal-claim-id">Claim Details: CLM-2026-001</h2>
+        <div>
+          <h2 id="modal-claim-id">Claim Details: CLM-2026-001</h2>
+          <div style="font-size:11.5px; color:#c89565; font-weight:700; margin-top:3px;" id="modal-line-badge">Motor &amp; Fleet • Statutory Cap 405</div>
+        </div>
         <button class="modal-close-btn" id="modal-close-x" title="Close Details">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -5790,18 +6108,37 @@
       </div>
       
       <div class="modal-body">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-          <span class="status-badge approved" id="modal-status-badge">Approved</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="status-badge approved" id="modal-status-badge">Approved</span>
+            <span class="badge" id="modal-peril-badge" style="background:rgba(139,90,43,0.18); color:#dfc09f; font-size:11px;">Own Damage Collision</span>
+          </div>
           <span style="font-size:12px; color:var(--text-secondary);" id="modal-timestamp">Aug 3, 2026 22:00</span>
+        </div>
+
+        <!-- 5-Stage Domain Claims Journey Pipeline -->
+        <div class="modal-journey-card" id="modal-journey-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+            <div>
+              <span style="font-size:10.5px; font-weight:800; color:#c89565; text-transform:uppercase; letter-spacing:0.6px;" id="modal-journey-title">END-TO-END STATUTORY CLAIMS JOURNEY</span>
+              <div style="font-size:12px; color:var(--text-secondary);" id="modal-journey-subtitle">Stage 4 of 5 • Fulfillment Channel: Accredited Garage / M-PESA B2C</div>
+            </div>
+            <button type="button" class="btn btn-secondary" id="modal-btn-advance-stage" onclick="advanceClaimJourneyStage()" style="padding:5px 12px; font-size:11.5px;">
+              Advance Journey Stage -&gt;
+            </button>
+          </div>
+          <div class="modal-journey-steps" id="modal-journey-stepper">
+            <!-- Populated dynamically with the 5 domain-specific stages -->
+          </div>
         </div>
         
         <div class="info-list">
           <div class="info-item">
-            <span class="label">Claimant</span>
+            <span class="label" id="modal-claimant-label">Claimant / Beneficiary</span>
             <span class="value" id="modal-claimant">Boniface Mwangi</span>
           </div>
           <div class="info-item">
-            <span class="label">Plate Number</span>
+            <span class="label" id="modal-subject-label">Plate Number</span>
             <span class="value" id="modal-plate">KDG 123A</span>
           </div>
           <div class="info-item">
@@ -5809,49 +6146,61 @@
             <span class="value" id="modal-phone">+254 712 345678</span>
           </div>
           <div class="info-item">
-            <span class="label">Damage Estimate</span>
+            <span class="label" id="modal-amount-label">Damage Estimate</span>
             <span class="value" id="modal-est-cost">KSh 142,500</span>
           </div>
         </div>
         
         <div class="audit-details-grid" style="margin-bottom:20px;">
           <div>
-            <h3 class="detail-section-title">Claim Mapping (Incident Location)</h3>
+            <h3 class="detail-section-title" id="modal-map-title">Claim Mapping (Incident Location)</h3>
             <div id="modal-map-container" style="height:180px; background-color:var(--bg-primary); border-radius:10px; overflow:hidden;">
               <!-- Map gets loaded inside modal -->
             </div>
             <div style="font-size:11px; color:var(--text-secondary); margin-top:6px;" id="modal-coords">
               GPS: -1.286389, 36.817223
             </div>
+            <div style="font-size:11px; color:#c89565; margin-top:3px;" id="modal-responders-line">
+              Responders: Central Police Station • Nairobi Towing Logistics
+            </div>
           </div>
           
           <div>
-            <h3 class="detail-section-title">AI Fraud & Triage Audit</h3>
-            <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+            <h3 class="detail-section-title" id="modal-audit-title">AI Fraud &amp; Domain Triage Audit</h3>
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap;">
               <span class="fraud-pill low" id="modal-fraud-badge">Fraud: 8% (Low)</span>
               <span class="status-badge" id="modal-triage-badge" style="background-color:var(--success-bg); color:var(--success)">Green Path</span>
             </div>
-            <div style="font-size:12px; color:var(--text-secondary); line-height:1.4;" id="modal-audit-summary">
+            <div style="font-size:12px; color:var(--text-secondary); line-height:1.5;" id="modal-audit-summary">
               Computer vision matching indicates 100% vehicle chassis symmetry. Exif photo coordinates align with reported GPS collision metadata.
             </div>
           </div>
         </div>
         
-        <div style="margin-bottom:20px;">
-          <h3 class="detail-section-title">Claimant Upload Image (Annotated Damages)</h3>
+        <!-- MOTOR VEHICLE VISUAL EVIDENCE (ONLY SHOWN FOR MOTOR / EV / FLEET CLAIMS) -->
+        <div style="margin-bottom:20px;" id="modal-motor-evidence-box">
+          <h3 class="detail-section-title">Claimant Upload Image (Annotated Vehicle Damages)</h3>
           <div style="position:relative; width:100%; height:200px; background-color:#000; border-radius:10px; overflow:hidden; display:flex; align-items:center; justify-content:center;">
-            <!-- Static image overlaying markings -->
             <img src="car_damaged.jpg" alt="Car Damaged" style="max-height:100%; object-fit:contain;">
             <div id="modal-annotation-overlays" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;">
               <!-- Circles injected via JS -->
             </div>
           </div>
         </div>
+
+        <!-- NON-MOTOR STATUTORY VERIFICATION DOSSIER (SHOWN FOR MEDICAL, PROPERTY, LIFE, WIBA, MARINE, AGRI) -->
+        <div style="margin-bottom:20px; display:none;" id="modal-multiline-dossier-box">
+          <h3 class="detail-section-title" id="modal-dossier-heading">Statutory Claim Verification Dossier</h3>
+          <div class="modal-dossier-grid" id="modal-dossier-content">
+            <!-- Injected dynamically with domain-accurate clinical/survey/CRS/DOSHS/ICMS/NDVI artefacts -->
+          </div>
+        </div>
         
-        <div style="border-top:1px solid var(--border-color); padding-top:20px; display:flex; gap:12px; flex-wrap:wrap;">
-          <button class="btn btn-primary" id="modal-btn-approve">Approve & Disburse</button>
+        <div style="border-top:1px solid var(--border-color); padding-top:20px; display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-primary" id="modal-btn-approve">Approve Claim</button>
+          <button class="btn btn-secondary" id="modal-btn-fulfillment" onclick="routeClaimToFulfillmentChannel()">Route to Fulfillment</button>
           <button class="btn btn-accent" id="modal-btn-investigate">Send to SIU</button>
-          <button class="btn btn-secondary" id="modal-btn-kira">Export KIRA Form 104</button>
+          <button class="btn btn-secondary" id="modal-btn-kira">Export Statutory Form</button>
           <button class="btn btn-secondary" id="modal-btn-close" style="margin-left:auto;">Close</button>
         </div>
       </div>

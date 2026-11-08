@@ -432,6 +432,7 @@ function navigateToView(viewId) {
   if (viewId === "dashboard") {
     renderDashboard();
   } else if (viewId === "create-claim") {
+    if (typeof ensureFNOLSelectorInitialized === "function") ensureFNOLSelectorInitialized();
     // Lazy map init
     setTimeout(initFNOLMap, 300);
   } else if (viewId === "claims-directory") {
@@ -780,9 +781,22 @@ function renderDashboardChart() {
 // ================= STEPER FLOW HANDLERS =================
 function resetFNOLStepper() {
   currentFNOLStep = 1;
+  const selectedRawLine = document.getElementById("fnol-insurance-line")?.value || activeFNOLInsuranceLine || "Motor";
+  const resolvedLine = typeof resolveClaimJourneyLine === "function" ? resolveClaimJourneyLine(selectedRawLine, "") : "Motor";
+  const spec = typeof getClaimJourneySpec === "function" ? getClaimJourneySpec(resolvedLine) : null;
+  const isMotor = resolvedLine === "Motor";
+  const claimId = isMotor
+    ? "CLM-2026-00" + (claims.length + 1)
+    : `${spec ? spec.claimPrefix : "CLM-" }2026-${120 + claims.length}`;
+
   currentFNOLClaim = {
-    id: "CLM-2026-00" + (claims.length + 1),
+    id: claimId,
     plate: "",
+    policyNo: "",
+    insuranceLine: isMotor ? selectedRawLine : resolvedLine,
+    perilCode: spec && spec.perils[0] ? spec.perils[0].code : "OWN_DAMAGE",
+    perilType: spec && spec.perils[0] ? spec.perils[0].label : "Own Damage Collision (Comprehensive)",
+    statutoryRef: spec ? spec.defaultStatRef : "OB 44/08/11/2026 Central Police",
     owner: "",
     phone: "",
     date: new Date().toISOString().split("T")[0],
@@ -790,23 +804,23 @@ function resetFNOLStepper() {
     fraudScore: 0,
     triage: "Green",
     status: "Pending",
+    journeyStage: 1,
     coords: [-1.286389, 36.817223],
     county: "Nairobi County",
-    police: "Central Police Station (0.4 km)",
-    tow: "Nairobi Towing Logistics (0.9 km)",
+    police: spec ? spec.respondersByCounty.defaultPrimary : "Central Police Station (0.4 km)",
+    tow: spec ? spec.respondersByCounty.defaultSecondary : "Nairobi Towing Logistics (0.9 km)",
+    dossierDocs: [],
     annotations: [],
     flags: []
   };
   
-  // Reset inputs
-  document.getElementById("claim-plate").value = "";
-  document.getElementById("claim-owner").value = "";
-  document.getElementById("claim-phone").value = "";
+  // Hide verification boxes
+  const ntsaBox = document.getElementById("ntsa-verification-box");
+  if (ntsaBox) ntsaBox.style.display = "none";
+  const mlBox = document.getElementById("multiline-verification-box");
+  if (mlBox) mlBox.style.display = "none";
   
-  // Hide verification box
-  document.getElementById("ntsa-verification-box").style.display = "none";
-  
-  // Reset anpr upload block
+  // Reset ANPR upload block
   document.getElementById("anpr-preview-img").style.display = "none";
   document.getElementById("anpr-placeholder-content").style.display = "block";
   
@@ -820,6 +834,16 @@ function resetFNOLStepper() {
   document.getElementById("telemetry-media-type").innerText = "Image (EXIF verified)";
   document.getElementById("media-capture-input").value = "";
   document.getElementById("media-placeholder-content").style.display = "block";
+
+  if (typeof switchFNOLInsuranceLine === "function") {
+    switchFNOLInsuranceLine(selectedRawLine);
+  }
+
+  if (isMotor) {
+    document.getElementById("claim-plate").value = "";
+    document.getElementById("claim-owner").value = "";
+    document.getElementById("claim-phone").value = "";
+  }
   
   // Map reset
   if (leafletMarker) {
@@ -831,17 +855,24 @@ function resetFNOLStepper() {
 
 function jumpToFNOLStep(targetStep) {
   if (targetStep === currentFNOLStep) return;
+  const selectedRawLine = document.getElementById("fnol-insurance-line")?.value || activeFNOLInsuranceLine || "Motor";
+  const resolvedLine = typeof resolveClaimJourneyLine === "function" ? resolveClaimJourneyLine(selectedRawLine, "") : "Motor";
+  const isMotor = resolvedLine === "Motor";
+
   if (targetStep > currentFNOLStep) {
-    // Auto-fill defaults if jumping ahead with empty fields so demo exploration is seamless
     const plateEl = document.getElementById("claim-plate");
     const ownerEl = document.getElementById("claim-owner");
     const phoneEl = document.getElementById("claim-phone");
-    if (plateEl && !plateEl.value.trim()) plateEl.value = "KDG 123A";
-    if (ownerEl && !ownerEl.value.trim()) ownerEl.value = "Boniface Mwangi";
-    if (phoneEl && !phoneEl.value.trim()) phoneEl.value = "+254 712 345678";
-    currentFNOLClaim.plate = plateEl ? plateEl.value.trim().toUpperCase() : "KDG 123A";
-    currentFNOLClaim.owner = ownerEl ? ownerEl.value.trim() : "Boniface Mwangi";
-    currentFNOLClaim.phone = phoneEl ? phoneEl.value.trim() : "+254 712 345678";
+    if (isMotor) {
+      if (plateEl && !plateEl.value.trim()) plateEl.value = "KDG 123A";
+      if (ownerEl && !ownerEl.value.trim()) ownerEl.value = "Boniface Mwangi";
+      if (phoneEl && !phoneEl.value.trim()) phoneEl.value = "+254 712 345678";
+    } else if (!plateEl?.value.trim() || !ownerEl?.value.trim()) {
+      autoFillDemoClaimData();
+    }
+    validateFNOLStep(1);
+    if (targetStep >= 3) validateFNOLStep(2);
+    if (targetStep >= 4) validateFNOLStep(3);
   }
   currentFNOLStep = targetStep;
   updateFNOLStepperView();
@@ -855,6 +886,11 @@ function setupFNOLStepper() {
   currentFNOLClaim = {
     id: "CLM-2026-004",
     plate: "",
+    policyNo: "",
+    insuranceLine: "Motor",
+    perilCode: "OWN_DAMAGE",
+    perilType: "Own Damage Collision (Comprehensive)",
+    statutoryRef: "OB 44/08/11/2026 Central Police",
     owner: "",
     phone: "",
     date: new Date().toISOString().split("T")[0],
@@ -862,10 +898,12 @@ function setupFNOLStepper() {
     fraudScore: 0,
     triage: "Green",
     status: "Pending",
+    journeyStage: 1,
     coords: [-1.286389, 36.817223],
     county: "Nairobi County",
     police: "Central Police Station (0.4 km)",
     tow: "Nairobi Towing Logistics (0.9 km)",
+    dossierDocs: [],
     annotations: [],
     flags: []
   };
@@ -1050,6 +1088,12 @@ function updateFNOLStepperView() {
       pane.classList.add("active");
     }
   });
+
+  // Sync top 5-stage preview strip highlight
+  const stageChips = document.querySelectorAll("#fnol-journey-preview-strip .fnol-stage-chip");
+  stageChips.forEach((chip, idx) => {
+    chip.classList.toggle("active-stage", idx + 1 === currentFNOLStep);
+  });
   
   // Set back btn visibility
   backBtn.style.visibility = currentFNOLStep === 1 ? "hidden" : "visible";
@@ -1063,31 +1107,78 @@ function updateFNOLStepperView() {
 }
 
 function validateFNOLStep(step) {
+  const selectedRawLine = document.getElementById("fnol-insurance-line")?.value || activeFNOLInsuranceLine || "Motor";
+  const resolvedLine = typeof resolveClaimJourneyLine === "function" ? resolveClaimJourneyLine(selectedRawLine, "") : "Motor";
+  const spec = typeof getClaimJourneySpec === "function" ? getClaimJourneySpec(resolvedLine) : CLAIMS_JOURNEY_SPECS["Motor"];
+  const isMotor = resolvedLine === "Motor";
+
   if (step === 1) {
     let plate = document.getElementById("claim-plate").value.trim();
     let owner = document.getElementById("claim-owner").value.trim();
     let phone = document.getElementById("claim-phone").value.trim();
-    
-    if (!plate) { plate = "KDG 123A"; document.getElementById("claim-plate").value = plate; }
-    if (!owner) { owner = "Boniface Mwangi"; document.getElementById("claim-owner").value = owner; }
-    if (!phone) { phone = "+254 712 345678"; document.getElementById("claim-phone").value = phone; }
-    
-    const bgVideo = document.getElementById("annotate-bg-video");
-    const placeholder = document.getElementById("media-placeholder-content");
-    
-    if (placeholder.style.display !== "none" && !annotationImageLoaded && bgVideo.style.display !== "block") {
-      loadHighResDemoPhoto();
+
+    const perilCode = document.getElementById("fnol-peril-select")?.value || (spec.perils[0]?.code || "OWN_DAMAGE");
+    const perilObj = spec.perils.find(p => p.code === perilCode) || spec.perils[0];
+
+    if (isMotor) {
+      if (!plate) { plate = "KDG 123A"; document.getElementById("claim-plate").value = plate; }
+      if (!owner) { owner = "Boniface Mwangi"; document.getElementById("claim-owner").value = owner; }
+      if (!phone) { phone = "+254 712 345678"; document.getElementById("claim-phone").value = phone; }
+      
+      const bgVideo = document.getElementById("annotate-bg-video");
+      const placeholder = document.getElementById("media-placeholder-content");
+      
+      if (placeholder.style.display !== "none" && !annotationImageLoaded && bgVideo.style.display !== "block") {
+        loadHighResDemoPhoto();
+      }
+      currentFNOLClaim.plate = plate.toUpperCase();
+      currentFNOLClaim.annotations = canvasCircles;
+      currentFNOLClaim.dossierDocs = [...spec.docs];
+    } else {
+      const selPolicyNo = document.getElementById("fnol-policy-select")?.value || "";
+      const polObj = policies.find(p => p.policyNo === selPolicyNo);
+      if (!plate) {
+        plate = polObj ? `${polObj.policyNo} • ${String(polObj.plate || "").slice(0, 26)}` : spec.subjectPlaceholder.replace("e.g., ", "");
+        document.getElementById("claim-plate").value = plate;
+      }
+      if (!owner) {
+        owner = polObj ? polObj.clientName : "Verified Scheme Policyholder";
+        document.getElementById("claim-owner").value = owner;
+      }
+      if (!phone) {
+        phone = "+254 722 418 900";
+        document.getElementById("claim-phone").value = phone;
+      }
+      const checkedDocs = Array.from(document.querySelectorAll("#fnol-doc-checklist .fnol-dossier-chk:checked"))
+        .map(chk => chk.getAttribute("data-doc-title"))
+        .filter(Boolean);
+      currentFNOLClaim.plate = plate;
+      currentFNOLClaim.policyNo = selPolicyNo;
+      currentFNOLClaim.statutoryRef = document.getElementById("fnol-statutory-ref")?.value.trim() || spec.defaultStatRef;
+      currentFNOLClaim.description = document.getElementById("fnol-incident-notes")?.value.trim() || "";
+      currentFNOLClaim.dossierDocs = checkedDocs;
+      currentFNOLClaim.annotations = [];
     }
-    
-    currentFNOLClaim.plate = plate.toUpperCase();
+
+    currentFNOLClaim.insuranceLine = isMotor ? selectedRawLine : resolvedLine;
+    currentFNOLClaim.perilCode = perilObj ? perilObj.code : perilCode;
+    currentFNOLClaim.perilType = perilObj ? perilObj.label : resolvedLine;
     currentFNOLClaim.owner = owner;
     currentFNOLClaim.phone = phone;
-    currentFNOLClaim.annotations = canvasCircles;
+    const estVal = parseFloat(document.getElementById("claim-estimate-input")?.value || "0");
+    if (estVal > 0) currentFNOLClaim.enteredEstimate = estVal;
   }
   
   if (step === 2) {
-    if (document.getElementById("ntsa-verification-box").style.display === "none") {
-      runANPRScanSimulation();
+    if (isMotor) {
+      if (document.getElementById("ntsa-verification-box").style.display === "none") {
+        runANPRScanSimulation();
+      }
+    } else {
+      const mlBox = document.getElementById("multiline-verification-box");
+      if (mlBox && mlBox.style.display === "none" && typeof runMultiLineRegistryVerification === "function") {
+        runMultiLineRegistryVerification();
+      }
     }
   }
   
@@ -1100,27 +1191,80 @@ function validateFNOLStep(step) {
   return true;
 }
 
-// SAVE THE NOTICE
+// UNIFIED MULTI-LINE FNOL CLAIM REGISTRATION
 function saveFNOLClaim() {
+  if (!currentFNOLClaim.cost || currentFNOLClaim.cost <= 0) {
+    computeAndRenderFNOLAudit(true);
+  }
+
+  const selectedRawLine = currentFNOLClaim.insuranceLine || document.getElementById("fnol-insurance-line")?.value || activeFNOLInsuranceLine || "Motor";
+  const resolvedLine = typeof resolveClaimJourneyLine === "function" ? resolveClaimJourneyLine(selectedRawLine, currentFNOLClaim.plate) : "Motor";
+  const isMotor = resolvedLine === "Motor";
+  const spec = typeof getClaimJourneySpec === "function" ? getClaimJourneySpec(resolvedLine) : CLAIMS_JOURNEY_SPECS["Motor"];
+
+  if (!currentFNOLClaim.id || claims.some(c => c.id === currentFNOLClaim.id)) {
+    currentFNOLClaim.id = isMotor
+      ? `CLM-2026-0${10 + claims.length + 1}`
+      : `${spec.claimPrefix}2026-${120 + claims.length + 1}`;
+  }
+
   currentFNOLClaim.date = new Date().toISOString().split("T")[0];
-  
+  currentFNOLClaim.submittedAt = Date.now();
+  currentFNOLClaim.insuranceLine = isMotor ? selectedRawLine : resolvedLine;
+  if (!currentFNOLClaim.perilType) currentFNOLClaim.perilType = spec.perils[0]?.label || spec.lineName;
+  if (!currentFNOLClaim.statutoryRef) currentFNOLClaim.statutoryRef = spec.defaultStatRef;
+  if (!currentFNOLClaim.payoutChannel) currentFNOLClaim.payoutChannel = spec.defaultChannel;
+  if (!currentFNOLClaim.bankDetails) currentFNOLClaim.bankDetails = spec.defaultBank;
+  if (!Array.isArray(currentFNOLClaim.coords) || currentFNOLClaim.coords.length < 2) {
+    currentFNOLClaim.coords = [-1.286389, 36.817223];
+  }
+  if (!currentFNOLClaim.county) currentFNOLClaim.county = "Nairobi County";
+  if (!currentFNOLClaim.police) currentFNOLClaim.police = spec.respondersByCounty.defaultPrimary;
+  if (!currentFNOLClaim.tow) currentFNOLClaim.tow = spec.respondersByCounty.defaultSecondary;
+
   if (currentFNOLClaim.triage === "Green") {
     currentFNOLClaim.status = "Approved";
+    currentFNOLClaim.approvalStatus = "Approved";
+    currentFNOLClaim.journeyStage = 4;
   } else if (currentFNOLClaim.triage === "Yellow") {
     currentFNOLClaim.status = "Pending";
+    currentFNOLClaim.approvalStatus = "Awaiting Approval";
+    currentFNOLClaim.journeyStage = 3;
   } else {
     currentFNOLClaim.status = "Under Investigation";
+    currentFNOLClaim.approvalStatus = "Under SIU Investigation";
+    currentFNOLClaim.journeyStage = 2;
   }
-  
-  // Unshift so new claim appears at top
-  claims.unshift(currentFNOLClaim);
-  
-  showToast("Notice Registered", `Claim file ${currentFNOLClaim.id} is now active at top of ledger.`, "success");
+
+  const savedRecord = {
+    ...currentFNOLClaim,
+    coords: [...currentFNOLClaim.coords],
+    annotations: Array.isArray(currentFNOLClaim.annotations) ? [...currentFNOLClaim.annotations] : [],
+    dossierDocs: Array.isArray(currentFNOLClaim.dossierDocs) && currentFNOLClaim.dossierDocs.length > 0 ? [...currentFNOLClaim.dossierDocs] : [...spec.docs],
+    flags: Array.isArray(currentFNOLClaim.flags) && currentFNOLClaim.flags.length > 0 ? [...currentFNOLClaim.flags] : [`${spec.lineName} statutory dossier verified.`]
+  };
+
+  claims.unshift(savedRecord);
+
+  if (savedRecord.status === "Pending" && typeof dispatchDesignatedEmailAlert === "function") {
+    dispatchDesignatedEmailAlert("CLAIM_AWAITING_APPROVAL", savedRecord);
+  } else {
+    showToast(
+      "Claim Notice Registered",
+      `${savedRecord.insuranceLine} file ${savedRecord.id} (${savedRecord.status}) added to ledger at Stage ${savedRecord.journeyStage}/5.`,
+      savedRecord.triage === "Red" ? "danger" : "success"
+    );
+  }
   
   renderClaimsDirectory();
   renderDashboard();
+  if (typeof renderMpesaGateway === "function") renderMpesaGateway();
+  if (typeof renderGarageNetwork === "function") renderGarageNetwork();
+  if (typeof renderLossAssessors === "function") renderLossAssessors();
+  if (typeof renderSubrogationRecovery === "function") renderSubrogationRecovery();
+  if (typeof renderAllInsuranceLineModules === "function") renderAllInsuranceLineModules();
+  if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
   
-  // Transition View to Claims Directory
   navigateToView("claims-directory");
 }
 
@@ -1185,11 +1329,12 @@ function runANPRScanSimulation() {
     if (!document.getElementById("claim-owner").value) {
       document.getElementById("claim-owner").value = ntsaResult.owner;
     }
-  }, 1600);
+  }, 600);
 }
 
 // GEOLOCATION CONTROLS
 function initFNOLMap() {
+  if (typeof L === "undefined" || !document.getElementById("fnol-leaflet-map")) return;
   if (leafletMap) {
     leafletMap.invalidateSize();
     return;
@@ -1230,19 +1375,19 @@ function detectUserLocation() {
       const lat = position.coords.latitude;
       const lng = position.coords.longitude;
       
-      leafletMap.setView([lat, lng], 15);
-      leafletMarker.setLatLng([lat, lng]);
+      if (leafletMap) leafletMap.setView([lat, lng], 15);
+      if (leafletMarker) leafletMarker.setLatLng([lat, lng]);
       updateMapResourceContext(lat, lng);
       
-      showToast("GPS Synced", "Accident location pinned.", "success");
+      showToast("GPS Synced", "Incident jurisdiction pinned.", "success");
     },
     () => {
       // Nairobi fallback mockup
       const mockLat = -1.286 + (Math.random() - 0.5) * 0.05;
       const mockLng = 36.817 + (Math.random() - 0.5) * 0.05;
       
-      leafletMap.setView([mockLat, mockLng], 14);
-      leafletMarker.setLatLng([mockLat, mockLng]);
+      if (leafletMap) leafletMap.setView([mockLat, mockLng], 14);
+      if (leafletMarker) leafletMarker.setLatLng([mockLat, mockLng]);
       updateMapResourceContext(mockLat, mockLng);
       
       showToast("Fallback Pin set", "Defaulted coordinates in central Nairobi.", "info");
@@ -1265,19 +1410,31 @@ function updateMapResourceContext(lat, lng) {
     }
   });
   
-  const mockDistPolice = (minDistance * 111).toFixed(1); // approx degrees to km
+  const mockDistPolice = (minDistance * 111).toFixed(1);
   const mockDistTow = (minDistance * 111 + 0.3).toFixed(1);
+
+  const selectedRawLine = document.getElementById("fnol-insurance-line")?.value || activeFNOLInsuranceLine || "Motor";
+  const resolvedLine = typeof resolveClaimJourneyLine === "function" ? resolveClaimJourneyLine(selectedRawLine, "") : "Motor";
+  const spec = typeof getClaimJourneySpec === "function" ? getClaimJourneySpec(resolvedLine) : CLAIMS_JOURNEY_SPECS["Motor"];
+  const isMotor = resolvedLine === "Motor";
+
+  const primaryResp = isMotor
+    ? `${nearest.police} (${mockDistPolice} km)`
+    : `${nearest.county} — ${spec.respondersByCounty.defaultPrimary}`;
+  const secondaryResp = isMotor
+    ? `${nearest.tow} (${mockDistTow} km)`
+    : spec.respondersByCounty.defaultSecondary;
   
   document.getElementById("geo-county").innerText = nearest.county;
-  document.getElementById("geo-police").innerText = `${nearest.police} (${mockDistPolice} km)`;
-  document.getElementById("geo-tow").innerText = `${nearest.tow} (${mockDistTow} km)`;
-  
-  document.getElementById("geo-status-indicator").innerText = `Map Pin: ${nearest.county} updated.`;
+  document.getElementById("geo-police").innerText = primaryResp;
+  document.getElementById("geo-tow").innerText = secondaryResp;
+  document.getElementById("geo-status-indicator").innerText = `Map Pin: ${nearest.county} (${resolvedLine}) updated.`;
   
   // Update claim details
+  currentFNOLClaim.coords = [lat, lng];
   currentFNOLClaim.county = nearest.county;
-  currentFNOLClaim.police = `${nearest.police} (${mockDistPolice} km)`;
-  currentFNOLClaim.tow = `${nearest.tow} (${mockDistTow} km)`;
+  currentFNOLClaim.police = primaryResp;
+  currentFNOLClaim.tow = secondaryResp;
 }
 
 // DRAWING CANVAS ANNOTATION
@@ -1385,27 +1542,32 @@ function redrawCanvas() {
   });
 }
 
-// AI ENGINE AUDITING
-function runAICoreAudit() {
-  const loader = document.getElementById("ai-analyzing-loader");
-  const report = document.getElementById("ai-report-content");
-  
-  loader.style.display = "block";
-  report.style.display = "none";
-  
-  setTimeout(() => {
-    loader.style.display = "none";
-    report.style.display = "block";
-    
-    // Dynamic Fraud scoring calculations based on inputs
-    let fraudIndex = 8; // default Green
-    let triageRoute = "Green";
-    let statusClass = "green";
-    let flagsList = ["EXIF Metadata matching successfully within 50m scene bounding box.", "Physical vehicle classification matching with KRA registration records."];
-    
-    const plate = currentFNOLClaim.plate;
+// MULTI-LINE DOMAIN AI & ACTUARIAL TRIAGE ENGINE
+function computeAndRenderFNOLAudit(silent = false) {
+  const selectedRawLine = currentFNOLClaim.insuranceLine || document.getElementById("fnol-insurance-line")?.value || activeFNOLInsuranceLine || "Motor";
+  const resolvedLine = typeof resolveClaimJourneyLine === "function" ? resolveClaimJourneyLine(selectedRawLine, currentFNOLClaim.plate) : "Motor";
+  const isMotor = resolvedLine === "Motor";
+  const spec = typeof getClaimJourneySpec === "function" ? getClaimJourneySpec(resolvedLine) : CLAIMS_JOURNEY_SPECS["Motor"];
+
+  const perilCode = currentFNOLClaim.perilCode || document.getElementById("fnol-peril-select")?.value || (spec.perils[0]?.code || "OWN_DAMAGE");
+  const perilObj = spec.perils.find(p => p.code === perilCode) || spec.perils[0];
+  const enteredCost = parseFloat(document.getElementById("claim-estimate-input")?.value || "0");
+
+  let fraudIndex = 8;
+  let triageRoute = "Green";
+  let statusClass = "green";
+  let flagsList = [];
+  let baseEstimate = enteredCost > 0 ? enteredCost : (perilObj ? perilObj.defaultCost : 142500);
+
+  if (isMotor) {
+    flagsList = [
+      "EXIF Metadata matching successfully within 50m accident scene bounding box.",
+      "Physical vehicle classification matching with NTSA / KRA registration records."
+    ];
+    const plate = (currentFNOLClaim.plate || document.getElementById("claim-plate")?.value || "KDG 123A").toUpperCase();
+    currentFNOLClaim.plate = plate;
+
     if (plate.startsWith("KBA")) {
-      // Mock triggers for High Fraud Risk profile
       fraudIndex = 82;
       triageRoute = "Red";
       statusClass = "red";
@@ -1415,7 +1577,6 @@ function runAICoreAudit() {
         "Multiple claim velocity trigger: policyholder has filed 3 claims in last 30 days."
       ];
     } else if (plate.startsWith("KCA")) {
-      // Mock Yellow Route
       fraudIndex = 35;
       triageRoute = "Yellow";
       statusClass = "yellow";
@@ -1448,80 +1609,166 @@ function runAICoreAudit() {
         ...flagsList
       ];
     }
-    
-    // Repair Estimate based on markings count
-    const baseEstimate = canvasCircles.length * 75000 + (Math.floor(Math.random() * 20000));
-    currentFNOLClaim.cost = baseEstimate;
-    currentFNOLClaim.fraudScore = fraudIndex;
-    currentFNOLClaim.triage = triageRoute;
-    currentFNOLClaim.flags = flagsList;
-    
-    // Populate report UI
-    document.getElementById("ai-report-fraud-pct").innerText = `Fraud Index: ${fraudIndex}%`;
-    document.getElementById("ai-status-header").className = `audit-status-strip ${statusClass}`;
-    document.getElementById("ai-status-header").firstElementChild.innerText = `AI AUDIT STATUS: ${triageRoute.toUpperCase()} PATH`;
-    
-    document.getElementById("ai-fraud-badge").innerText = fraudIndex > 60 ? "High Risk" : (fraudIndex > 25 ? "Medium Risk" : "Low Risk");
-    document.getElementById("ai-est-cost").innerText = "KSh " + baseEstimate.toLocaleString();
-    document.getElementById("ai-routing-route").innerText = triageRoute === "Green" ? "Instant Pass" : (triageRoute === "Yellow" ? "Adjuster Review" : "SIU Investigation");
-    document.getElementById("ai-next-action").innerText = triageRoute === "Green" ? "Instant Disburse" : "Manual Gate Auditor";
-    
-    document.getElementById("ai-score-number").innerText = fraudIndex + "%";
-    
-    // Circle progress ring
-    const ring = document.getElementById("ai-score-ring");
+
+    if (!enteredCost || enteredCost <= 0 || canvasCircles.length > 0) {
+      baseEstimate = canvasCircles.length > 0
+        ? canvasCircles.length * 45000 + 7500
+        : (enteredCost > 0 ? enteredCost : 142500);
+    }
+  } else {
+    // Non-Motor Domain-Specific Actuarial & Statutory Triage
+    const checkedDocs = Array.from(document.querySelectorAll("#fnol-doc-checklist .fnol-dossier-chk:checked"))
+      .map(chk => chk.getAttribute("data-doc-title"))
+      .filter(Boolean);
+    const docsCount = checkedDocs.length > 0 ? checkedDocs.length : (currentFNOLClaim.dossierDocs?.length || 0);
+    currentFNOLClaim.dossierDocs = checkedDocs.length > 0 ? checkedDocs : (currentFNOLClaim.dossierDocs || [...spec.docs]);
+
+    const selPolNo = currentFNOLClaim.policyNo || document.getElementById("fnol-policy-select")?.value || "";
+    const polObj = policies.find(p => p.policyNo === selPolNo);
+    const statRef = document.getElementById("fnol-statutory-ref")?.value.trim() || currentFNOLClaim.statutoryRef || spec.defaultStatRef;
+    currentFNOLClaim.statutoryRef = statRef;
+
+    // 1. Policy Standing Check
+    if (polObj && (polObj.status === "Cancelled" || polObj.status === "Revoked")) {
+      fraudIndex = 85;
+      triageRoute = "Red";
+      statusClass = "red";
+      flagsList.push(`CRITICAL COVERAGE BLOCK: Policy ${polObj.policyNo} is ${polObj.status.toUpperCase()} — zero active liability.`);
+    } else if (polObj) {
+      flagsList.push(`Policy Schedule ${polObj.policyNo} (${polObj.clientName}) verified ACTIVE with Sum Insured KSh ${Number(polObj.sumInsured || baseEstimate * 10).toLocaleString()}.`);
+    } else {
+      flagsList.push(`${resolvedLine} master policy & statutory cover limits verified in EIMS composite ledger.`);
+    }
+
+    // 2. Domain-Specific Statutory & Actuarial Rule Checks
+    if (resolvedLine === "Medical & Health") {
+      flagsList.push(`ICD-11 clinical coding & KPPB drug tariff verified under ${statRef}; mandatory SHA/SHIF primary bed rebate applied.`);
+    } else if (resolvedLine === "Property & Fire") {
+      flagsList.push(`Condition of Average (pro-rata under-insurance check), deductible excess & Kenya Re treaty layer audited (${statRef}).`);
+    } else if (resolvedLine === "Life & Pension") {
+      flagsList.push(`2-Year Contestability cleared; CRS reference (${statRef}) & Section 111 probate-exempt beneficiary nomination verified.`);
+    } else if (resolvedLine === "WIBA & Liability") {
+      flagsList.push(`WIBA 2007 First Schedule PD rating & 96-month statutory earnings cap audited under ${statRef}.`);
+    } else if (resolvedLine === "Marine & Transit") {
+      flagsList.push(`Section 20 Cap 487 KRA ICMS certificate, CIF+10% valuation & Carrier Letter of Reserve (${statRef}) verified.`);
+    } else if (resolvedLine === "Agriculture & Livestock") {
+      flagsList.push(`Geo-fenced UAI telemetry (${statRef}) & MoALD 50% KLIP/DRIVE subsidy standing verified.`);
+    }
+
+    // 3. Evidentiary Dossier & Peril Fast-Track Threshold Gate
+    if (triageRoute !== "Red") {
+      if (docsCount === 0) {
+        fraudIndex = 74;
+        triageRoute = "Red";
+        statusClass = "red";
+        flagsList.unshift(`COMPLIANCE HOLD: 0 of ${spec.docs.length} mandatory ${resolvedLine} statutory documents verified.`);
+      } else if (docsCount < 3 || !perilObj || perilObj.fastTrackCap === 0 || baseEstimate > perilObj.fastTrackCap) {
+        fraudIndex = docsCount < 3 ? 34 : 21;
+        triageRoute = "Yellow";
+        statusClass = "yellow";
+        flagsList.push(
+          docsCount < 3
+            ? `Dossier partial (${docsCount}/${spec.docs.length} docs) — routed to ${resolvedLine} Senior Claims Specialist.`
+            : `Quantum KSh ${baseEstimate.toLocaleString()} exceeds fast-track cap (KSh ${(perilObj?.fastTrackCap || 0).toLocaleString()}) — routed to Specialist Sign-Off (60-Min SLA).`
+        );
+      } else {
+        fraudIndex = resolvedLine === "Agriculture & Livestock" && perilObj.isParametric ? 4 : 7;
+        triageRoute = "Green";
+        statusClass = "green";
+        flagsList.push(`All ${docsCount} statutory documents verified & quantum within KSh ${perilObj.fastTrackCap.toLocaleString()} fast-track authority.`);
+      }
+    }
+  }
+
+  currentFNOLClaim.cost = Math.round(baseEstimate);
+  currentFNOLClaim.fraudScore = fraudIndex;
+  currentFNOLClaim.triage = triageRoute;
+  currentFNOLClaim.flags = flagsList;
+
+  // Populate Step 4 Report UI
+  const pctEl = document.getElementById("ai-report-fraud-pct");
+  if (pctEl) pctEl.innerText = `${isMotor ? "Fraud" : "Risk"} Index: ${fraudIndex}%`;
+  const hdrEl = document.getElementById("ai-status-header");
+  if (hdrEl) {
+    hdrEl.className = `audit-status-strip ${statusClass}`;
+    if (hdrEl.firstElementChild) {
+      hdrEl.firstElementChild.innerText = `${spec.auditHeaderTitle.toUpperCase()}: ${triageRoute.toUpperCase()} PATH`;
+    }
+  }
+
+  const badgeEl = document.getElementById("ai-fraud-badge");
+  if (badgeEl) badgeEl.innerText = fraudIndex > 60 ? "High Risk" : (fraudIndex > 20 ? "Specialist Review" : "Low Risk");
+  const costEl = document.getElementById("ai-est-cost");
+  if (costEl) costEl.innerText = "KSh " + currentFNOLClaim.cost.toLocaleString();
+  const routeEl = document.getElementById("ai-routing-route");
+  if (routeEl) {
+    routeEl.innerText = triageRoute === "Green"
+      ? (isMotor ? "Instant Pass" : "Fast-Track Approved")
+      : (triageRoute === "Yellow" ? "Specialist SLA Review" : "SIU / Compliance Hold");
+  }
+  const nextEl = document.getElementById("ai-next-action");
+  if (nextEl) {
+    nextEl.innerText = triageRoute === "Green" ? spec.fulfillmentLabel : "60-Min Approver Gate";
+  }
+
+  const scoreNumEl = document.getElementById("ai-score-number");
+  if (scoreNumEl) scoreNumEl.innerText = fraudIndex + "%";
+
+  const ring = document.getElementById("ai-score-ring");
+  if (ring) {
     const offset = 251.2 - (251.2 * fraudIndex) / 100;
     ring.style.strokeDashoffset = offset;
-    
-    // Style ring color
     if (triageRoute === "Green") ring.style.stroke = "var(--success)";
     else if (triageRoute === "Yellow") ring.style.stroke = "var(--warning)";
     else ring.style.stroke = "var(--danger)";
-    
-    // Flags list rendering
-    const listWrapper = document.querySelector(".audit-check-list");
+  }
+
+  const listWrapper = document.querySelector(".audit-check-list");
+  if (listWrapper) {
     listWrapper.innerHTML = "";
-    
     flagsList.forEach((flagText, idx) => {
       const isPass = triageRoute === "Green";
       const icon = isPass ? "✓" : (triageRoute === "Yellow" ? "!" : "✕");
       const iconClass = isPass ? "pass" : (triageRoute === "Yellow" ? "info" : "fail");
-      
+
       const li = document.createElement("li");
       li.className = "audit-check-item";
       li.innerHTML = `
         <div class="audit-check-icon ${iconClass}">${icon}</div>
         <div class="audit-check-details">
-          <h4>Security Gate Check #${idx + 1}</h4>
-          <p>${flagText}</p>
+          <h4>${escapeHTML(spec.lineName)} Audit Gate #${idx + 1}</h4>
+          <p>${escapeHTML(flagText)}</p>
         </div>
       `;
       listWrapper.appendChild(li);
     });
-    
-    showToast("AI Audit Complete", `Triaged into ${triageRoute} path.`, triageRoute === "Green" ? "success" : (triageRoute === "Yellow" ? "warning" : "danger"));
-  }, 2000);
-}
-
-// SAVE THE NOTICE
-function saveFNOLClaim() {
-  // Set submission dates & pending approval telemetry
-  currentFNOLClaim.date = new Date().toISOString().split("T")[0];
-  currentFNOLClaim.submittedAt = Date.now();
-  currentFNOLClaim.approvalStatus = "Awaiting Approval";
-  currentFNOLClaim.status = "Pending";
-  
-  claims.push(currentFNOLClaim);
-  
-  // Automatically dispatch Email Alert to Designated Email Address(es) showing Awaiting Approval
-  if (typeof dispatchDesignatedEmailAlert === "function") {
-    dispatchDesignatedEmailAlert("CLAIM_AWAITING_APPROVAL", currentFNOLClaim);
-  } else {
-    showToast("Notice Registered (Awaiting Approval)", `Claim file ${currentFNOLClaim.id} created and queued for approval.`, "success");
   }
+
+  if (!silent) {
+    showToast(
+      `${spec.lineName} Audit Complete`,
+      `Triaged into ${triageRoute} path (KSh ${currentFNOLClaim.cost.toLocaleString()}).`,
+      triageRoute === "Green" ? "success" : (triageRoute === "Yellow" ? "warning" : "danger")
+    );
+  }
+}
+window.computeAndRenderFNOLAudit = computeAndRenderFNOLAudit;
+
+function runAICoreAudit() {
+  const loader = document.getElementById("ai-analyzing-loader");
+  const report = document.getElementById("ai-report-content");
   
-  // Transition View
-  navigateToView("dashboard");
+  // Compute immediately so state is always synchronous if user registers right away
+  computeAndRenderFNOLAudit(true);
+
+  if (loader) loader.style.display = "block";
+  if (report) report.style.display = "none";
+  
+  setTimeout(() => {
+    if (loader) loader.style.display = "none";
+    if (report) report.style.display = "block";
+    computeAndRenderFNOLAudit(false);
+  }, 450);
 }
 
 // ================= CLAIMS DIRECTORY VIEW =================
@@ -1559,6 +1806,8 @@ function renderClaimsDirectory() {
       (c.owner || "").toLowerCase().includes(query) ||
       (c.plate || "").toLowerCase().includes(query) ||
       (c.id || "").toLowerCase().includes(query) ||
+      (c.perilType || "").toLowerCase().includes(query) ||
+      (c.statutoryRef || "").toLowerCase().includes(query) ||
       claimLine.toLowerCase().includes(query);
     const matchesLine = lineFilter === "ALL"
       ? true
@@ -1576,18 +1825,23 @@ function renderClaimsDirectory() {
   filtered.forEach(c => {
     const tr = document.createElement("tr");
     const claimLine = c.insuranceLine || "Motor";
-    const lineSub = claimLine !== "Motor"
-      ? `<div style="font-size:10.5px; color:#c89565; font-weight:700; margin-top:2px;">${escapeHTML(claimLine)}</div>`
-      : "";
+    const stg = typeof getClaimJourneyStage === "function" ? getClaimJourneyStage(c) : 3;
+    const stgLabel = typeof getClaimJourneyStageLabel === "function" ? getClaimJourneyStageLabel(c) : `Stage ${stg}/5`;
+    const subMeta = claimLine !== "Motor"
+      ? `<div style="font-size:10.5px; color:#c89565; font-weight:700; margin-top:2px;">${escapeHTML(claimLine)}${c.perilType ? " • " + escapeHTML(c.perilType) : ""}</div>`
+      : (c.perilType ? `<div style="font-size:10px; color:var(--text-muted); margin-top:2px;">Motor • ${escapeHTML(c.perilType)}</div>` : "");
     tr.innerHTML = `
       <td><strong>${escapeHTML(c.id)}</strong></td>
-      <td><code>${escapeHTML(c.plate)}</code>${lineSub}</td>
+      <td><code>${escapeHTML(c.plate)}</code>${subMeta}</td>
       <td>${escapeHTML(c.owner)}</td>
       <td>${escapeHTML(c.date)}</td>
       <td>KSh ${Number(c.cost || 0).toLocaleString()}</td>
       <td><span class="fraud-pill ${getFraudClass(c.fraudScore)}">${c.fraudScore}%</span></td>
-      <td><span class="status-badge ${c.triage.toLowerCase()}">${c.triage}</span></td>
-      <td><span class="status-badge ${getStatusClass(c.status)}">${c.status}</span></td>
+      <td><span class="status-badge ${(c.triage || "Green").toLowerCase()}">${escapeHTML(c.triage || "Green")}</span></td>
+      <td>
+        <span class="status-badge ${getStatusClass(c.status)}">${escapeHTML(c.status)}</span>
+        <div style="margin-top:4px;"><span class="journey-stage-pill" title="${escapeHTML(stgLabel)}">Stage ${stg}/5</span></div>
+      </td>
       <td>
         <div style="display:flex; gap:6px;">
           <button class="btn btn-secondary" onclick="openAuditModal('${c.id}')" style="padding:4px 8px; font-size:11px;">Audit</button>
@@ -1608,10 +1862,12 @@ function getStatusClass(status) {
 
 // EXPORT TO CSV
 function exportClaimsCSV() {
-  let csv = "Claim ID,Plate,Claimant Name,Mobile Number,Loss Date,Damage Estimate,Fraud Index,Triage Route,Processing Status\n";
+  let csv = "Claim ID,Insurance Line,Subject / Plate,Covered Peril,Claimant Name,Mobile Number,Loss Date,Claimed Amount,Fraud Index,Triage Route,Processing Status,Journey Stage\n";
   
   claims.forEach(c => {
-    csv += `"${c.id}","${c.plate}","${c.owner}","${c.phone}","${c.date}",${c.cost},${c.fraudScore},"${c.triage}","${c.status}"\n`;
+    const ln = c.insuranceLine || "Motor";
+    const stg = typeof getClaimJourneyStageLabel === "function" ? getClaimJourneyStageLabel(c) : c.status;
+    csv += `"${c.id}","${ln}","${c.plate}","${c.perilType || ln}","${c.owner}","${c.phone}","${c.date}",${c.cost},${c.fraudScore},"${c.triage}","${c.status}","${stg}"\n`;
   });
   
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -1622,7 +1878,7 @@ function exportClaimsCSV() {
   link.click();
   document.body.removeChild(link);
   
-  showToast("CSV Downloaded", "Claims export file saved.", "success");
+  showToast("CSV Downloaded", "Multi-line claims export file saved.", "success");
 }
 
 // EXPORT TO JSON
@@ -1642,6 +1898,7 @@ function exportClaimsJSON() {
 // ================= MODAL DETAILS CONTROLLER =================
 function setupModalHandlers() {
   const modal = document.getElementById("audit-modal");
+  if (!modal) return;
   
   document.getElementById("modal-close-x").addEventListener("click", () => {
     modal.classList.remove("active");
@@ -1653,28 +1910,38 @@ function setupModalHandlers() {
   document.getElementById("modal-btn-approve").addEventListener("click", () => {
     if (currentFNOLClaim) {
       currentFNOLClaim.status = "Approved";
+      currentFNOLClaim.approvalStatus = "Approved";
       currentFNOLClaim.triage = "Green";
-      currentFNOLClaim.fraudScore = Math.min(currentFNOLClaim.fraudScore, 10);
-      showToast("Claim Approved", `File ${currentFNOLClaim.id} updated and signed.`, "success");
+      currentFNOLClaim.fraudScore = Math.min(Number(currentFNOLClaim.fraudScore || 8), 10);
+      currentFNOLClaim.journeyStage = Math.max(typeof getClaimJourneyStage === "function" ? getClaimJourneyStage(currentFNOLClaim) : 3, 4);
+      showToast("Claim Approved", `File ${currentFNOLClaim.id} (${currentFNOLClaim.insuranceLine || "Motor"}) approved at Stage 4.`, "success");
       modal.classList.remove("active");
       renderClaimsDirectory();
       renderDashboard();
+      if (typeof renderMpesaGateway === "function") renderMpesaGateway();
+      if (typeof renderGarageNetwork === "function") renderGarageNetwork();
+      if (typeof renderAllInsuranceLineModules === "function") renderAllInsuranceLineModules();
+      if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
     }
   });
   
   document.getElementById("modal-btn-investigate").addEventListener("click", () => {
     if (currentFNOLClaim) {
       currentFNOLClaim.status = "Under Investigation";
+      currentFNOLClaim.approvalStatus = "Under SIU Investigation";
       currentFNOLClaim.triage = "Red";
-      currentFNOLClaim.fraudScore = Math.max(currentFNOLClaim.fraudScore, 75);
-      showToast("SIU Audited", `File ${currentFNOLClaim.id} sent to Special Investigations Unit.`, "danger");
+      currentFNOLClaim.fraudScore = Math.max(Number(currentFNOLClaim.fraudScore || 75), 75);
+      currentFNOLClaim.journeyStage = 2;
+      showToast("SIU / Compliance Hold", `File ${currentFNOLClaim.id} escalated for specialist compliance investigation.`, "danger");
       modal.classList.remove("active");
       renderClaimsDirectory();
       renderDashboard();
+      if (typeof renderAllInsuranceLineModules === "function") renderAllInsuranceLineModules();
+      if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
     }
   });
   
-  // PRINT KIRA FORM 104 REPORT
+  // PRINT STATUTORY IRA VOUCHER / FORM 104 REPORT
   document.getElementById("modal-btn-kira").addEventListener("click", () => {
     if (!currentFNOLClaim) return;
     printKIRADocument(currentFNOLClaim);
@@ -1686,72 +1953,159 @@ function openAuditModal(claimId) {
   if (!c) return;
   
   currentFNOLClaim = c; // Reference for status updates
+  const isMotor = typeof isMotorClaimRecord === "function" ? isMotorClaimRecord(c) : (!c.insuranceLine || c.insuranceLine === "Motor");
+  const spec = typeof getClaimJourneySpec === "function" ? getClaimJourneySpec(c) : CLAIMS_JOURNEY_SPECS["Motor"];
+  const stg = typeof getClaimJourneyStage === "function" ? getClaimJourneyStage(c) : 3;
+  const coords = Array.isArray(c.coords) && c.coords.length >= 2 ? c.coords : [-1.286389, 36.817223];
+  const flags = Array.isArray(c.flags) && c.flags.length > 0 ? c.flags : [`${spec.lineName} statutory dossier verified.`];
+  const annotations = Array.isArray(c.annotations) ? c.annotations : [];
   
-  document.getElementById("modal-claim-id").innerText = `Claim Details: ${c.id}`;
-  document.getElementById("modal-timestamp").innerText = `Registered on: ${c.date}`;
+  document.getElementById("modal-claim-id").innerText = `Claim Dossier: ${c.id}`;
+  document.getElementById("modal-timestamp").innerText = `Registered on: ${c.date} • County: ${c.county || "Nairobi County"}`;
   document.getElementById("modal-status-badge").innerText = c.status;
   document.getElementById("modal-status-badge").className = `status-badge ${getStatusClass(c.status)}`;
+
+  const lineBadge = document.getElementById("modal-line-badge");
+  if (lineBadge) lineBadge.innerText = c.insuranceLine || spec.lineName;
+  const perilBadge = document.getElementById("modal-peril-badge");
+  if (perilBadge) perilBadge.innerText = c.perilType || spec.perils[0]?.label || spec.lineName;
+
+  // Dynamic Labels
+  const claimantLbl = document.getElementById("modal-claimant-label");
+  if (claimantLbl) claimantLbl.innerText = spec.claimantLabel;
+  const subjectLbl = document.getElementById("modal-subject-label");
+  if (subjectLbl) subjectLbl.innerText = spec.subjectLabel;
+  const amountLbl = document.getElementById("modal-amount-label");
+  if (amountLbl) amountLbl.innerText = spec.estimateLabel;
+  const mapTitle = document.getElementById("modal-map-title");
+  if (mapTitle) mapTitle.innerText = isMotor ? "Accident Scene Geolocation" : `${spec.lineName} Jurisdiction & Facility Pin`;
+  const auditTitle = document.getElementById("modal-audit-title");
+  if (auditTitle) auditTitle.innerText = spec.auditHeaderTitle;
+
+  document.getElementById("modal-claimant").innerText = c.owner || "Claimant";
+  document.getElementById("modal-plate").innerText = c.plate || "N/A";
+  document.getElementById("modal-phone").innerText = c.phone || "+254 712 345678";
+  document.getElementById("modal-est-cost").innerText = "KSh " + Number(c.cost || 0).toLocaleString();
   
-  document.getElementById("modal-claimant").innerText = c.owner;
-  document.getElementById("modal-plate").innerText = c.plate;
-  document.getElementById("modal-phone").innerText = c.phone;
-  document.getElementById("modal-est-cost").innerText = "KSh " + c.cost.toLocaleString();
+  document.getElementById("modal-coords").innerText = `GPS Pin: ${Number(coords[0]).toFixed(5)}, ${Number(coords[1]).toFixed(5)} (${c.county || "Nairobi County"})`;
+  const respLine = document.getElementById("modal-responders-line");
+  if (respLine) {
+    const p1 = c.police || spec.respondersByCounty.defaultPrimary;
+    const p2 = c.tow || spec.respondersByCounty.defaultSecondary;
+    respLine.innerText = `${p1} • ${p2}`;
+  }
   
-  document.getElementById("modal-coords").innerText = `GPS Scene: ${c.coords[0].toFixed(5)}, ${c.coords[1].toFixed(5)}`;
+  const fScore = Number(c.fraudScore || 0);
+  const triageVal = c.triage || "Green";
+  document.getElementById("modal-fraud-badge").innerText = `Risk Score: ${fScore}%`;
+  document.getElementById("modal-fraud-badge").className = `fraud-pill ${getFraudClass(fScore)}`;
   
-  document.getElementById("modal-fraud-badge").innerText = `Fraud Score: ${c.fraudScore}%`;
-  document.getElementById("modal-fraud-badge").className = `fraud-pill ${getFraudClass(c.fraudScore)}`;
+  document.getElementById("modal-triage-badge").innerText = `${triageVal} Path`;
+  document.getElementById("modal-triage-badge").style.backgroundColor = triageVal === "Green" ? "var(--success-bg)" : (triageVal === "Yellow" ? "var(--warning-bg)" : "var(--danger-bg)");
+  document.getElementById("modal-triage-badge").style.color = triageVal === "Green" ? "var(--success)" : (triageVal === "Yellow" ? "var(--warning)" : "var(--danger)");
   
-  document.getElementById("modal-triage-badge").innerText = `${c.triage} Path`;
-  document.getElementById("modal-triage-badge").style.backgroundColor = c.triage === "Green" ? "var(--success-bg)" : (c.triage === "Yellow" ? "var(--warning-bg)" : "var(--danger-bg)");
-  document.getElementById("modal-triage-badge").style.color = c.triage === "Green" ? "var(--success)" : (c.triage === "Yellow" ? "var(--warning)" : "var(--danger)");
-  
-  document.getElementById("modal-audit-summary").innerText = c.flags.join(", ");
-  
-  // Render Annotations overlays in modal preview
-  const annotationBox = document.getElementById("modal-annotation-overlays");
-  annotationBox.innerHTML = "";
-  
-  c.annotations.forEach(circle => {
-    const dot = document.createElement("div");
-    dot.style.position = "absolute";
-    
-    // Scale coordinates to cover box
-    const leftPct = (circle.x / 460) * 100; // base scale
-    const topPct = (circle.y / 380) * 100;
-    
-    dot.style.left = `${leftPct}%`;
-    dot.style.top = `${topPct}%`;
-    dot.style.width = "20px";
-    dot.style.height = "20px";
-    dot.style.borderRadius = "50%";
-    dot.style.transform = "translate(-50%, -50%)";
-    
-    if (circle.type === "dent") {
-      dot.style.backgroundColor = "rgba(239, 68, 68, 0.7)";
-      dot.style.border = "2px solid #ef4444";
-    } else if (circle.type === "scratch") {
-      dot.style.backgroundColor = "rgba(245, 158, 11, 0.7)";
-      dot.style.border = "2px solid #f59e0b";
-    } else {
-      dot.style.backgroundColor = "rgba(164, 106, 52, 0.7)";
-      dot.style.border = "2px solid #a46a34";
+  document.getElementById("modal-audit-summary").innerText = flags.join(" • ");
+
+  // 5-Stage Domain Journey Stepper
+  const stepperEl = document.getElementById("modal-journey-stepper");
+  if (stepperEl) {
+    stepperEl.innerHTML = spec.stages.map((label, idx) => {
+      const sNum = idx + 1;
+      const cls = sNum < stg ? "done" : (sNum === stg ? "current" : "");
+      return `<div class="modal-journey-step ${cls}">${escapeHTML(label)}</div>`;
+    }).join("");
+  }
+  const advBtn = document.getElementById("modal-btn-advance-stage");
+  if (advBtn) {
+    advBtn.disabled = stg >= 5;
+    advBtn.innerText = stg >= 5 ? "Stage 5 Settled" : `Advance to Stage ${stg + 1} ->`;
+  }
+  const fulBtn = document.getElementById("modal-btn-fulfillment");
+  if (fulBtn) {
+    fulBtn.innerText = spec.fulfillmentLabel;
+  }
+  const kiraBtn = document.getElementById("modal-btn-kira");
+  if (kiraBtn) {
+    kiraBtn.innerText = isMotor ? "Print IRA Form 104" : "Print IRA Statutory Voucher";
+  }
+
+  // Toggle Motor Damage Canvas vs Non-Motor Statutory Evidence Dossier
+  const motorBox = document.getElementById("modal-motor-evidence-box");
+  const dossierBox = document.getElementById("modal-multiline-dossier-box");
+  if (isMotor) {
+    if (motorBox) motorBox.style.display = "block";
+    if (dossierBox) dossierBox.style.display = "none";
+    const annotationBox = document.getElementById("modal-annotation-overlays");
+    if (annotationBox) {
+      annotationBox.innerHTML = "";
+      annotations.forEach(circle => {
+        const dot = document.createElement("div");
+        dot.style.position = "absolute";
+        const leftPct = ((circle.x || 200) / 460) * 100;
+        const topPct = ((circle.y || 180) / 380) * 100;
+        dot.style.left = `${leftPct}%`;
+        dot.style.top = `${topPct}%`;
+        dot.style.width = "20px";
+        dot.style.height = "20px";
+        dot.style.borderRadius = "50%";
+        dot.style.transform = "translate(-50%, -50%)";
+        if (circle.type === "dent") {
+          dot.style.backgroundColor = "rgba(239, 68, 68, 0.7)";
+          dot.style.border = "2px solid #ef4444";
+        } else if (circle.type === "scratch") {
+          dot.style.backgroundColor = "rgba(245, 158, 11, 0.7)";
+          dot.style.border = "2px solid #f59e0b";
+        } else {
+          dot.style.backgroundColor = "rgba(164, 106, 52, 0.7)";
+          dot.style.border = "2px solid #a46a34";
+        }
+        annotationBox.appendChild(dot);
+      });
     }
-    
-    annotationBox.appendChild(dot);
-  });
+  } else {
+    if (motorBox) motorBox.style.display = "none";
+    if (dossierBox) dossierBox.style.display = "block";
+    const dossierTitle = document.getElementById("modal-dossier-title");
+    if (dossierTitle) dossierTitle.innerText = `${spec.lineName} Statutory Evidence & Regulatory Dossier`;
+    const dossierContent = document.getElementById("modal-dossier-content");
+    if (dossierContent) {
+      const docsList = Array.isArray(c.dossierDocs) && c.dossierDocs.length > 0 ? c.dossierDocs : spec.docs;
+      const canSubrog = typeof allowsClaimSubrogation === "function" ? allowsClaimSubrogation(c) : spec.allowSubrogation;
+      dossierContent.innerHTML = `
+        <div class="modal-dossier-row">
+          <span>Statutory / Regulatory Reference</span>
+          <strong>${escapeHTML(c.statutoryRef || spec.defaultStatRef)}</strong>
+        </div>
+        <div class="modal-dossier-row">
+          <span>Policy Contract &amp; Peril Trigger</span>
+          <strong>${escapeHTML(c.policyNo || c.plate)} — ${escapeHTML(c.perilType || spec.lineName)}</strong>
+        </div>
+        <div class="modal-dossier-row">
+          <span>Verified Evidentiary Documents (${docsList.length})</span>
+          <div style="margin-top:4px; display:grid; gap:3px;">
+            ${docsList.map(d => `<div style="font-size:11.5px; color:#d4d4d8;">✓ ${escapeHTML(d)}</div>`).join("")}
+          </div>
+        </div>
+        <div class="modal-dossier-row">
+          <span>Legal Subrogation &amp; Fulfillment Basis</span>
+          <strong>${canSubrog ? "Eligible — " + escapeHTML(spec.subrogationBasis) : "Exempt — " + escapeHTML(spec.subrogationBasis)}</strong>
+        </div>
+      `;
+    }
+  }
   
   // Show Modal
   const modal = document.getElementById("audit-modal");
   modal.classList.add("active");
   
-  // Init modal sub-map
+  // Init modal sub-map safely
   setTimeout(() => {
-    initModalMap(c.coords);
+    initModalMap(coords);
   }, 200);
 }
 
 function initModalMap(coords) {
+  if (typeof L === "undefined" || !document.getElementById("modal-map-container")) return;
   if (modalMap) {
     modalMap.setView(coords, 14);
     modalMarker.setLatLng(coords);
@@ -1768,81 +2122,102 @@ function initModalMap(coords) {
   modalMarker = L.marker(coords).addTo(modalMap);
 }
 
-// PRINT SHIELD REGULATORY DOC
+// PRINT STATUTORY REGULATORY DOCUMENT (ALL 7 INSURANCE LINES)
 function printKIRADocument(claim) {
-  const printWindow = window.open("", "_blank");
+  if (!claim) return;
+  const spec = typeof getClaimJourneySpec === "function" ? getClaimJourneySpec(claim) : CLAIMS_JOURNEY_SPECS["Motor"];
+  const coords = Array.isArray(claim.coords) && claim.coords.length >= 2 ? claim.coords : [-1.286389, 36.817223];
+  const flags = Array.isArray(claim.flags) && claim.flags.length > 0 ? claim.flags : [`${spec.lineName} statutory verification complete.`];
+  const docs = Array.isArray(claim.dossierDocs) && claim.dossierDocs.length > 0 ? claim.dossierDocs : spec.docs;
+  const stgLabel = typeof getClaimJourneyStageLabel === "function" ? getClaimJourneyStageLabel(claim) : claim.status;
+
+  const printWindow = typeof window.open === "function" ? window.open("", "_blank") : null;
+  if (!printWindow || !printWindow.document) {
+    showToast("Statutory Voucher Ready", `Prepared ${spec.statutoryFormTitle} for ${claim.id}.`, "info");
+    return;
+  }
+
   const html = `
     <html>
     <head>
-      <title>KIRA Regulatory Report - ${claim.id}</title>
+      <title>${escapeHTML(spec.statutoryFormTitle)} - ${escapeHTML(claim.id)}</title>
       <style>
         body { font-family: Arial, sans-serif; padding: 40px; color: #333; line-height: 1.5; }
         .header { text-align: center; border-bottom: 3px double #6f4520; padding-bottom: 20px; }
-        .logo { font-size: 24px; font-weight: bold; color: #6f4520; text-transform: uppercase; }
-        .doc-title { font-size: 18px; font-weight: bold; margin-top: 10px; }
-        .meta-table { width: 100%; border-collapse: collapse; margin-top: 30px; }
-        .meta-table td { padding: 8px 12px; border: 1px solid #ddd; }
-        .meta-table td.label { font-weight: bold; background-color: #f5f7f8; width: 30%; }
-        .section-title { font-size: 14px; font-weight: bold; margin-top: 30px; border-bottom: 1px solid #333; padding-bottom: 4px; }
-        .audit-list { padding-left: 20px; margin-top: 10px; }
-        .footer { margin-top: 60px; font-size: 11px; text-align: center; border-top: 1px solid #ddd; padding-top: 10px; color: #777; }
+        .logo { font-size: 22px; font-weight: bold; color: #6f4520; text-transform: uppercase; }
+        .doc-title { font-size: 17px; font-weight: bold; margin-top: 10px; }
+        .meta-table { width: 100%; border-collapse: collapse; margin-top: 26px; }
+        .meta-table td { padding: 8px 12px; border: 1px solid #ddd; font-size: 13px; }
+        .meta-table td.label { font-weight: bold; background-color: #f5f7f8; width: 34%; }
+        .section-title { font-size: 14px; font-weight: bold; margin-top: 26px; border-bottom: 1px solid #333; padding-bottom: 4px; }
+        .audit-list { padding-left: 20px; margin-top: 10px; font-size: 13px; }
+        .footer { margin-top: 50px; font-size: 11px; text-align: center; border-top: 1px solid #ddd; padding-top: 10px; color: #777; }
         @media print { .no-print { display: none; } }
       </style>
     </head>
     <body>
       <div class="header">
-        <div class="logo">Insurance Regulatory Authority (KIRA)</div>
-        <div class="doc-title">Notice of Motor Accident Claim Registration (Form 104)</div>
-        <p style="font-size:12px; color:#555;">Generated via Digital EIMS Gateway</p>
+        <div class="logo">${escapeHTML(spec.regulatorHeader)}</div>
+        <div class="doc-title">${escapeHTML(spec.statutoryFormTitle)}</div>
+        <p style="font-size:12px; color:#555;">Generated via EIMS ProSystem Composite Insurance Gateway</p>
       </div>
       
       <table class="meta-table">
         <tr>
-          <td class="label">Claim ID Reference</td>
-          <td>${claim.id}</td>
+          <td class="label">Claim ID &amp; Insurance Line</td>
+          <td><strong>${escapeHTML(claim.id)}</strong> — ${escapeHTML(claim.insuranceLine || spec.lineName)}</td>
         </tr>
         <tr>
-          <td class="label">Vehicle Registration Plate</td>
-          <td>${claim.plate}</td>
+          <td class="label">${escapeHTML(spec.subjectLabel)}</td>
+          <td>${escapeHTML(claim.plate)}</td>
         </tr>
         <tr>
-          <td class="label">Policyholder Full Name</td>
-          <td>${claim.owner}</td>
+          <td class="label">Covered Peril / Benefit Event</td>
+          <td>${escapeHTML(claim.perilType || spec.lineName)}</td>
         </tr>
         <tr>
-          <td class="label">Registrant Mobile</td>
-          <td>${claim.phone}</td>
+          <td class="label">${escapeHTML(spec.statutoryRefLabel)}</td>
+          <td>${escapeHTML(claim.statutoryRef || spec.defaultStatRef)}</td>
         </tr>
         <tr>
-          <td class="label">Accident Scene Location</td>
-          <td>GPS Lat/Lng: ${claim.coords[0].toFixed(5)}, ${claim.coords[1].toFixed(5)} (${claim.county})</td>
+          <td class="label">${escapeHTML(spec.claimantLabel)}</td>
+          <td>${escapeHTML(claim.owner)} (${escapeHTML(claim.phone || "+254 712 345678")})</td>
         </tr>
         <tr>
-          <td class="label">Damage Repair Estimate</td>
-          <td><strong>KSh ${claim.cost.toLocaleString()}</strong></td>
+          <td class="label">Jurisdiction &amp; GIS Coordinates</td>
+          <td>${Number(coords[0]).toFixed(5)}, ${Number(coords[1]).toFixed(5)} (${escapeHTML(claim.county || "Nairobi County")})</td>
         </tr>
         <tr>
-          <td class="label">AI Fraud Risk Assessment</td>
-          <td>${claim.fraudScore}% (Triaged: ${claim.triage} Path)</td>
+          <td class="label">${escapeHTML(spec.estimateLabel)}</td>
+          <td><strong>KSh ${Number(claim.cost || 0).toLocaleString()}</strong></td>
         </tr>
         <tr>
-          <td class="label">Processing State Gate</td>
-          <td>${claim.status}</td>
+          <td class="label">Actuarial / Fraud Triage</td>
+          <td>${Number(claim.fraudScore || 0)}% Risk (${escapeHTML(claim.triage || "Green")} Path)</td>
+        </tr>
+        <tr>
+          <td class="label">Current Journey Stage</td>
+          <td>${escapeHTML(stgLabel)} (Status: ${escapeHTML(claim.status)})</td>
         </tr>
       </table>
-      
-      <div class="section-title">Telemetry Audits & Security Logs</div>
+
+      <div class="section-title">Verified Statutory Evidentiary Dossier</div>
       <ul class="audit-list">
-        ${claim.flags.map(f => `<li>${f}</li>`).join("")}
+        ${docs.map(d => `<li>${escapeHTML(d)}</li>`).join("")}
       </ul>
       
-      <div class="section-title">Authorized Dispatch Signatures</div>
-      <p style="margin-top:20px; font-size:13px;">
-        This document has been digitally verified and countersigned by the EIMS neural audit core on <strong>${claim.date}</strong>. No physical stamp required under the Kenyan Insurance Act.
+      <div class="section-title">Actuarial, Compliance &amp; Telemetry Audit Logs</div>
+      <ul class="audit-list">
+        ${flags.map(f => `<li>${escapeHTML(f)}</li>`).join("")}
+      </ul>
+      
+      <div class="section-title">Authorized Digital Countersignature</div>
+      <p style="margin-top:16px; font-size:13px;">
+        Digitally verified and countersigned by the EIMS ProSystem Composite Claims Core on <strong>${escapeHTML(claim.date)}</strong> in accordance with the Insurance Act (Cap 487 Laws of Kenya).
       </p>
       
       <div class="footer">
-        KIRA Registry Compliance Office &copy; 2026. Nairobi, Kenya.
+        IRA Statutory Compliance Desk &copy; 2026. Republic of Kenya.
       </div>
       
       <script>
@@ -1898,37 +2273,43 @@ function triggerAlertTelegramDispatch() {
   if (!c) return;
 
   c.status = status;
-  showToast(" Notification Telegram Dispatched", `Dispatched multi-channel SMS, WhatsApp & Email telemetry for ${c.id} (${c.plate}).`, "success");
+  c.journeyStage = typeof getClaimJourneyStage === "function" ? getClaimJourneyStage({ ...c, journeyStage: 0 }) : 3;
+  const claimLine = c.insuranceLine || "Motor";
+  showToast("Notification Telegram Dispatched", `Dispatched multi-channel SMS, WhatsApp & Email telemetry for ${claimLine} file ${c.id} (${c.plate}).`, "success");
 
   const logs = document.getElementById("alerts-console-logs");
   if (logs) {
     const logTime = new Date().toLocaleTimeString();
-    logs.innerHTML += `<div style="color:#34d399; font-weight:700;">[${logTime}] Dispatched SMS, WhatsApp & Rich Email to ${c.phone}</div>`;
-    logs.innerHTML += `<div style="color:var(--text-secondary);">[${logTime}] Payload: "EIMS Notice: Claim ${c.id} for plate ${c.plate} is ${status.toLowerCase()}."</div>`;
+    logs.innerHTML += `<div style="color:#34d399; font-weight:700;">[${logTime}] Dispatched ${escapeHTML(claimLine)} SMS, WhatsApp &amp; Rich Email to ${escapeHTML(c.phone || "+254 712 345678")}</div>`;
+    logs.innerHTML += `<div style="color:var(--text-secondary);">[${logTime}] Payload: "EIMS ${escapeHTML(claimLine)} Notice: Claim ${escapeHTML(c.id)} (${escapeHTML(c.plate)}) is ${escapeHTML(status.toLowerCase())}."</div>`;
     logs.scrollTop = logs.scrollHeight;
   }
 
   populateAlertPreviews(c, status);
+  if (typeof renderClaimsDirectory === "function") renderClaimsDirectory();
+  if (typeof renderAllInsuranceLineModules === "function") renderAllInsuranceLineModules();
 }
 
 function renderAlertsSimulator() {
-  // Populate claims selector dropdown
   const selector = document.getElementById("alert-claim-selector");
+  if (!selector) return;
+  const prevVal = selector.value;
   selector.innerHTML = "";
   
   claims.forEach(c => {
     const op = document.createElement("option");
     op.value = c.id;
-    op.innerText = `${c.id} (${c.owner} - ${c.plate})`;
+    const ln = c.insuranceLine || "Motor";
+    op.innerText = `${c.id} (${ln} — ${c.owner} — ${c.plate})`;
     selector.appendChild(op);
   });
   
-  // Set default selected
   if (claims.length > 0) {
-    const lastClaim = claims[claims.length - 1];
-    selector.value = lastClaim.id;
-    document.getElementById("alert-status-trigger").value = lastClaim.status;
-    populateAlertPreviews(lastClaim, lastClaim.status);
+    const chosen = (prevVal && claims.find(cl => cl.id === prevVal)) || claims[0];
+    selector.value = chosen.id;
+    const trig = document.getElementById("alert-status-trigger");
+    if (trig) trig.value = chosen.status;
+    populateAlertPreviews(chosen, chosen.status);
   }
 
   renderNotificationDispatchTable();
@@ -1944,25 +2325,44 @@ function selectAlertTab(tabName) {
 }
 
 function populateAlertPreviews(c, status) {
+  const isMotor = typeof isMotorClaimRecord === "function" ? isMotorClaimRecord(c) : (!c.insuranceLine || c.insuranceLine === "Motor");
+  const spec = typeof getClaimJourneySpec === "function" ? getClaimJourneySpec(c) : null;
+  const claimLine = spec ? spec.lineName : (c.insuranceLine || "Motor");
+  const costFormatted = Number(c.cost || 0).toLocaleString();
+  const firstName = (c.owner || "Client").split(" ")[0];
+  const channelLabel = (c.payoutChannel || (spec ? spec.defaultChannel : "mpesa")) === "bank" ? "EFT / RTGS Bank Settlement" : "M-PESA B2C";
+
   // 1. SMS bubble rendering
   const smsContainer = document.getElementById("sms-messages-container");
   smsContainer.innerHTML = "";
   
   let msgText = "";
-  if (status === "Pending") {
-    msgText = `EIMS Notice: Claim ${c.id} for plate ${c.plate} is registered. Security score audits are pending manually review.`;
-  } else if (status === "Approved") {
-    msgText = `EIMS Notice: Great news! Your claim ${c.id} has been Approved. KSh ${c.cost.toLocaleString()} is authorized for repairs.`;
-  } else if (status === "Under Investigation") {
-    msgText = `EIMS Notice Alert: Your claim ${c.id} is flagged for SIU review due to metadata inconsistencies. Check email for details.`;
+  if (isMotor) {
+    if (status === "Pending") {
+      msgText = `EIMS Motor Notice: Claim ${c.id} for vehicle ${c.plate} is registered. ANPR, NTSA & AKI Cap 405 checks are under review.`;
+    } else if (status === "Approved") {
+      msgText = `EIMS Motor Notice: Claim ${c.id} (${c.plate}) is Approved. KSh ${costFormatted} repair/settlement authority issued.`;
+    } else if (status === "Under Investigation") {
+      msgText = `EIMS Alert: Motor claim ${c.id} (${c.plate}) is referred to SIU due to EXIF/AKI verification flags.`;
+    } else {
+      msgText = `EIMS Settlement: KSh ${costFormatted} for Motor claim ${c.id} has been disbursed via ${channelLabel}.`;
+    }
   } else {
-    msgText = `EIMS Notice: KSh ${c.cost.toLocaleString()} has been disbursed to your mobile line via M-PESA. Txn Ref: MP-${Math.floor(Math.random()*100000)}.`;
+    if (status === "Pending") {
+      msgText = `EIMS ${claimLine}: Claim ${c.id} (${c.plate}) is registered under ${c.perilType || claimLine}. Statutory dossier audit in progress.`;
+    } else if (status === "Approved") {
+      msgText = `EIMS ${claimLine}: Claim ${c.id} is Approved for KSh ${costFormatted} following ${spec ? spec.auditHeaderTitle : "statutory verification"}.`;
+    } else if (status === "Under Investigation") {
+      msgText = `EIMS ${claimLine} Alert: Claim ${c.id} (${c.plate}) requires specialist compliance review of statutory documentation.`;
+    } else {
+      msgText = `EIMS ${claimLine} Settlement: KSh ${costFormatted} for claim ${c.id} has been settled via ${channelLabel}.`;
+    }
   }
   
   const smsDiv = document.createElement("div");
   smsDiv.className = "sms-bubble";
   smsDiv.innerHTML = `
-    ${msgText}
+    ${escapeHTML(msgText)}
     <div class="sms-timestamp">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
   `;
   smsContainer.appendChild(smsDiv);
@@ -1974,7 +2374,9 @@ function populateAlertPreviews(c, status) {
   const waSent = document.createElement("div");
   waSent.className = "wa-bubble sent";
   waSent.innerHTML = `
-    First Notice of Loss submitted for vehicle ${c.plate}.
+    ${isMotor
+      ? `First Notice of Loss submitted for vehicle ${escapeHTML(c.plate)}.`
+      : `${escapeHTML(claimLine)} Notice submitted for ${escapeHTML(c.plate)} (${escapeHTML(c.perilType || claimLine)}).`}
     <div class="sms-timestamp" style="color:var(--text-muted)">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
   `;
   waContainer.appendChild(waSent);
@@ -1983,14 +2385,26 @@ function populateAlertPreviews(c, status) {
   waReceived.className = "wa-bubble";
   
   let waText = "";
-  if (status === "Pending") {
-    waText = `Habari ${c.owner.split(" ")[0]}, your claim *${c.id}* has been logged. Our neural audit engine is processing your photos.`;
-  } else if (status === "Approved") {
-    waText = `Habari ${c.owner.split(" ")[0]}, claim *${c.id}* is *Approved*. Repair payout of *KSh ${c.cost.toLocaleString()}* is authorized.`;
-  } else if (status === "Under Investigation") {
-    waText = `Habari ${c.owner.split(" ")[0]}, claim *${c.id}* requires manual investigation. Kindly upload physical inspection records.`;
+  if (isMotor) {
+    if (status === "Pending") {
+      waText = `Habari ${escapeHTML(firstName)}, your Motor claim *${escapeHTML(c.id)}* (${escapeHTML(c.plate)}) is logged for ANPR & assessor review.`;
+    } else if (status === "Approved") {
+      waText = `Habari ${escapeHTML(firstName)}, Motor claim *${escapeHTML(c.id)}* is *Approved*. Repair/settlement of *KSh ${costFormatted}* is authorized.`;
+    } else if (status === "Under Investigation") {
+      waText = `Habari ${escapeHTML(firstName)}, Motor claim *${escapeHTML(c.id)}* requires physical vehicle inspection & OB verification.`;
+    } else {
+      waText = `Habari ${escapeHTML(firstName)}, settlement of *KSh ${costFormatted}* for *${escapeHTML(c.id)}* has been disbursed via ${channelLabel}.`;
+    }
   } else {
-    waText = `Habari ${c.owner.split(" ")[0]}, payout of *KSh ${c.cost.toLocaleString()}* has been disbursed to your line. Thank you!`;
+    if (status === "Pending") {
+      waText = `Habari ${escapeHTML(firstName)}, your ${escapeHTML(claimLine)} claim *${escapeHTML(c.id)}* (${escapeHTML(c.statutoryRef || c.plate)}) is undergoing ${escapeHTML(spec ? spec.stages[1] : "statutory")} review.`;
+    } else if (status === "Approved") {
+      waText = `Habari ${escapeHTML(firstName)}, ${escapeHTML(claimLine)} claim *${escapeHTML(c.id)}* is *Approved* for *KSh ${costFormatted}* (${escapeHTML(spec ? spec.fulfillmentLabel : "Ready for Settlement")}).`;
+    } else if (status === "Under Investigation") {
+      waText = `Habari ${escapeHTML(firstName)}, ${escapeHTML(claimLine)} claim *${escapeHTML(c.id)}* requires additional statutory evidence (${escapeHTML(spec && spec.docs[0] ? spec.docs[0] : "supporting dossier")}).`;
+    } else {
+      waText = `Habari ${escapeHTML(firstName)}, ${escapeHTML(claimLine)} benefit/indemnity of *KSh ${costFormatted}* for *${escapeHTML(c.id)}* has been settled via ${channelLabel}.`;
+    }
   }
   
   waReceived.innerHTML = `
@@ -2008,51 +2422,78 @@ function populateAlertPreviews(c, status) {
   let emailHeader = "";
   let emailBodyText = "";
   
-  if (status === "Pending") {
-    emailSubject = "Claim Registration Acknowledged";
-    emailHeader = "First Notice of Loss Registered";
-    emailBodyText = "We acknowledge receipt of your digital claim filing. EIMS is currently auditing plate OCR registries and EXIF metadata.";
-  } else if (status === "Approved") {
-    emailSubject = "Insurance Claim Approved";
-    emailHeader = "Repair Claim Authorized";
-    emailBodyText = "Congratulations. Your motor claim file has successfully cleared computer vision alignment checks. A repair voucher has been issued.";
-  } else if (status === "Under Investigation") {
-    emailSubject = "SIU Security Audit Required";
-    emailHeader = "Special Investigations Review Filed";
-    emailBodyText = "Please be advised that your motor claim notice was flagged by the automated audit engine due to duplicate photo structures.";
+  if (isMotor) {
+    if (status === "Pending") {
+      emailSubject = `Motor Claim ${c.id} Registration Acknowledged`;
+      emailHeader = "Motor First Notice of Loss Registered";
+      emailBodyText = "We acknowledge receipt of your motor accident filing. EIMS is verifying NTSA logbook details, Cap 405 AKI certificate standing, and EXIF scene telemetry.";
+    } else if (status === "Approved") {
+      emailSubject = `Motor Claim ${c.id} Approved`;
+      emailHeader = "Motor Repair / Settlement Authorized";
+      emailBodyText = "Your motor claim dossier has cleared computer vision damage alignment and AKI DMVIC verification. Accredited garage / payout authorization is active.";
+    } else if (status === "Under Investigation") {
+      emailSubject = `SIU Audit Required — ${c.id}`;
+      emailHeader = "Special Investigations Review Initiated";
+      emailBodyText = "Your motor claim notice has been referred to SIU for physical vehicle inspection and Traffic Police OB verification.";
+    } else {
+      emailSubject = `Motor Claim ${c.id} Settled`;
+      emailHeader = `${channelLabel} Completed`;
+      emailBodyText = "This confirms that the authorized motor claim settlement has been disbursed to the designated recipient account.";
+    }
   } else {
-    emailSubject = "Claim Funds Disbursed";
-    emailHeader = "M-PESA Payout Completed";
-    emailBodyText = "This is to confirm that the authorized repair settlement value has been transferred to your registered mobile wallet.";
+    if (status === "Pending") {
+      emailSubject = `${claimLine} Claim ${c.id} Registered`;
+      emailHeader = `${claimLine} Notice of Claim Logged`;
+      emailBodyText = `We confirm receipt of your ${claimLine} claim (${c.perilType || "Covered Peril"}). Our specialist desk is executing ${spec ? spec.step2Title.replace("Step 2: ", "") : "statutory registry verification"}.`;
+    } else if (status === "Approved") {
+      emailSubject = `${claimLine} Claim ${c.id} Approved`;
+      emailHeader = `${claimLine} Adjudication Approved`;
+      emailBodyText = `Your ${claimLine} dossier (${c.statutoryRef || c.plate}) has passed ${spec ? spec.auditHeaderTitle : "actuarial & statutory adjudication"} and is authorized for ${channelLabel}.`;
+    } else if (status === "Under Investigation") {
+      emailSubject = `${claimLine} Compliance Review — ${c.id}`;
+      emailHeader = "Statutory & Specialist Verification Required";
+      emailBodyText = `Please note that ${claimLine} file ${c.id} requires specialist verification of ${spec && spec.docs[0] ? spec.docs[0] : "statutory claim documentation"} prior to release.`;
+    } else {
+      emailSubject = `${claimLine} Claim ${c.id} Settled`;
+      emailHeader = `${claimLine} ${channelLabel} Executed`;
+      emailBodyText = `This confirms full settlement of KSh ${costFormatted} under ${spec ? spec.statutoryFormTitle : claimLine} via ${channelLabel}.`;
+    }
   }
   
-  document.querySelector(".email-frame h1").innerText = emailSubject;
+  const frameTitle = document.querySelector(".email-frame h1");
+  if (frameTitle) frameTitle.innerText = emailSubject;
+  const subjectFieldLabel = spec ? spec.subjectLabel : (isMotor ? "Vehicle Plate" : "Policy / Insured Subject");
+  const amountFieldLabel = spec ? spec.estimateLabel : (isMotor ? "Repair Settlement" : "Approved Quantum");
   
   emailContainer.innerHTML = `
-    <h2>${emailHeader}</h2>
-    <p>Dear ${c.owner},</p>
-    <p>${emailBodyText}</p>
+    <h2>${escapeHTML(emailHeader)}</h2>
+    <p>Dear ${escapeHTML(c.owner)},</p>
+    <p>${escapeHTML(emailBodyText)}</p>
     
     <table class="email-details-table">
       <tr>
-        <td class="label">Claim ID Reference</td>
-        <td>${c.id}</td>
+        <td class="label">Claim ID &amp; Line</td>
+        <td><strong>${escapeHTML(c.id)}</strong> (${escapeHTML(claimLine)})</td>
       </tr>
       <tr>
-        <td class="label">Vehicle Plate</td>
-        <td>${c.plate}</td>
+        <td class="label">${escapeHTML(subjectFieldLabel)}</td>
+        <td>${escapeHTML(c.plate)}</td>
       </tr>
       <tr>
-        <td class="label">Repair Settlement</td>
-        <td>KSh ${c.cost.toLocaleString()}</td>
+        <td class="label">Covered Peril / Benefit</td>
+        <td>${escapeHTML(c.perilType || claimLine)}</td>
       </tr>
       <tr>
-        <td class="label">Audited Fraud Index</td>
-        <td>${c.fraudScore}%</td>
+        <td class="label">${escapeHTML(amountFieldLabel)}</td>
+        <td><strong>KSh ${costFormatted}</strong></td>
+      </tr>
+      <tr>
+        <td class="label">Journey Stage &amp; Risk Index</td>
+        <td>${escapeHTML(typeof getClaimJourneyStageLabel === "function" ? getClaimJourneyStageLabel({ ...c, status }) : status)} (${c.fraudScore}% Risk)</td>
       </tr>
     </table>
     
-    <p>For inquiries, contact the Digital Support Desk.</p>
+    <p>For inquiries, contact the EIMS ${escapeHTML(claimLine)} Claims Desk.</p>
     <center><a href="#" class="email-btn" style="color:#ffffff;">Open EIMS Portal</a></center>
   `;
 }
@@ -3136,10 +3577,18 @@ function renderScheduledPayouts() {
 function openSchedulePaymentModal(claimId) {
   const modal = document.getElementById("schedule-disbursement-modal");
   if (!modal) return;
-  
-  if (claimId) {
-    const select = document.getElementById("sched-claim-select");
-    if (select) select.value = claimId;
+
+  const select = document.getElementById("sched-claim-select");
+  if (select && typeof claims !== "undefined" && Array.isArray(claims)) {
+    const candidates = claims.filter(c => c.status !== "Disbursed");
+    const list = candidates.length > 0 ? candidates : claims;
+    select.innerHTML = list.map(c => {
+      const ln = c.insuranceLine || "Motor";
+      return `<option value="${escapeHTML(c.id)}">${escapeHTML(c.id)} — ${escapeHTML(c.owner)} (${escapeHTML(ln)}) • KSh ${Number(c.cost || 0).toLocaleString()}</option>`;
+    }).join("");
+    if (claimId && list.some(c => c.id === claimId)) {
+      select.value = claimId;
+    }
     onSchedClaimSelectChange();
   }
   
@@ -3154,17 +3603,26 @@ function closeSchedulePaymentModal() {
 function onSchedClaimSelectChange() {
   const val = document.getElementById("sched-claim-select")?.value;
   const amtInput = document.getElementById("sched-payout-amount");
-  
-  if (val === "CLM-2026-001" && amtInput) amtInput.value = 142500;
-  if (val === "CLM-2026-003" && amtInput) amtInput.value = 450000;
-  if (val === "CLM-2026-005" && amtInput) amtInput.value = 320000;
+  const chanSelect = document.getElementById("sched-payout-channel");
+  const claimObj = claims.find(c => c.id === val);
+
+  if (claimObj) {
+    if (amtInput) amtInput.value = Number(claimObj.cost || 142500);
+    if (chanSelect) {
+      const spec = typeof getClaimJourneySpec === "function" ? getClaimJourneySpec(claimObj) : null;
+      const pref = claimObj.payoutChannel || (spec ? spec.defaultChannel : "mpesa");
+      if (pref === "bank") chanSelect.value = "PesaLink EFT";
+      else if (pref === "airtel") chanSelect.value = "Airtel Money";
+      else chanSelect.value = "M-PESA B2C";
+    }
+  }
 }
 
 function confirmSchedulePayment() {
   const claimId = document.getElementById("sched-claim-select")?.value || "CLM-2026-001";
   const channel = document.getElementById("sched-payout-channel")?.value || "M-PESA B2C";
   const amount = parseFloat(document.getElementById("sched-payout-amount")?.value || 142500);
-  const relDate = document.getElementById("sched-release-date")?.value || "2026-08-10";
+  const relDate = document.getElementById("sched-release-date")?.value || "2026-11-10";
   const relTime = document.getElementById("sched-release-time")?.value || "09:00";
   const note = document.getElementById("sched-finance-notes")?.value || "Finance Officer Authorized";
   
@@ -3174,6 +3632,7 @@ function confirmSchedulePayment() {
     id: "SCH-" + Math.floor(10000 + Math.random() * 89999),
     claimId: claimId,
     plate: claimObj.plate,
+    insuranceLine: claimObj.insuranceLine || "Motor",
     claimant: claimObj.owner,
     phone: claimObj.phone,
     channel: channel,
@@ -3189,7 +3648,7 @@ function confirmSchedulePayment() {
   renderScheduledPayouts();
 
   showToast(
-    " Payment Schedule Locked!",
+    "Payment Schedule Locked",
     `Authorized KSh ${amount.toLocaleString()} disbursement for ${claimObj.owner} (${claimObj.plate}) scheduled on ${relDate} at ${relTime}.`,
     "success"
   );
@@ -3200,10 +3659,20 @@ function releaseScheduledPayoutNow(schId) {
   if (!sch) return;
 
   sch.status = "Disbursed";
+  const linkedClaim = claims.find(c => c.id === sch.claimId);
+  if (linkedClaim) {
+    linkedClaim.status = "Disbursed";
+    linkedClaim.approvalStatus = "Approved";
+    linkedClaim.journeyStage = 5;
+  }
   renderScheduledPayouts();
+  renderMpesaGateway();
+  renderClaimsDirectory();
+  renderDashboard();
+  if (typeof renderAllInsuranceLineModules === "function") renderAllInsuranceLineModules();
 
   showToast(
-    " Instant Payout Released!",
+    "Instant Payout Released",
     `Disbursed KSh ${sch.amount.toLocaleString()} via ${sch.channel} to ${sch.claimant} (${sch.phone}). Transaction Ref: QK89X201L9.`,
     "success"
   );
@@ -4043,21 +4512,37 @@ function advanceGarageRepairStage() {
 window.advanceGarageRepairStage = advanceGarageRepairStage;
 
 function renderGarageNetwork() {
+  const motorSel = document.getElementById("garage-motor-claim-select");
+  if (motorSel && typeof claims !== "undefined" && Array.isArray(claims)) {
+    const prevVal = motorSel.value;
+    const motorClaims = claims.filter(c => typeof isMotorClaimRecord === "function" ? isMotorClaimRecord(c) : (!c.insuranceLine || c.insuranceLine === "Motor"));
+    motorSel.innerHTML = motorClaims.map(c =>
+      `<option value="${escapeHTML(c.id)}">${escapeHTML(c.id)} — ${escapeHTML(c.plate)} (${escapeHTML(c.owner)}) • KSh ${Number(c.cost || 0).toLocaleString()}</option>`
+    ).join("");
+    if (prevVal && motorClaims.some(c => c.id === prevVal)) {
+      motorSel.value = prevVal;
+    }
+    if (motorSel.value && typeof onGarageMotorClaimSelectChange === "function") {
+      onGarageMotorClaimSelectChange(motorSel.value);
+    }
+  }
+
   const tbody = document.querySelector("#garage-table tbody");
   if (!tbody) return;
   
   tbody.innerHTML = "";
   garages.forEach((g, idx) => {
+    const safeGarage = String(g.name || "").replace(/'/g, "\\'");
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td><strong>${g.name}</strong></td>
-      <td>${g.location}</td>
-      <td>${g.rating}</td>
+      <td><strong>${escapeHTML(g.name)}</strong></td>
+      <td>${escapeHTML(g.location)}</td>
+      <td>${escapeHTML(g.rating)}</td>
       <td><span class="status-badge pending">${g.activeRepairs} Vehicles</span></td>
-      <td><strong style="color:var(--success);">${g.slaScore}</strong></td>
+      <td><strong style="color:var(--success);">${escapeHTML(g.slaScore)}</strong></td>
       <td>
         <div style="display:flex; gap:6px;">
-          <button class="btn btn-secondary" onclick="assignGarageClaim('${g.name}')" style="padding:4px 8px; font-size:11px;">Assign Claim</button>
+          <button class="btn btn-secondary" onclick="assignGarageClaim('${safeGarage}')" style="padding:4px 8px; font-size:11px;">Assign Claim</button>
           <button class="btn btn-secondary" onclick="openEditGarage(${idx})" style="padding:4px 8px; font-size:11px;"> Edit</button>
         </div>
       </td>
@@ -4071,6 +4556,12 @@ function renderGarageNetwork() {
   if (issueBtn) {
     issueBtn.onclick = () => {
       const assignedText = document.getElementById("track-garage-name")?.innerText || "Accredited Garage";
+      const selId = document.getElementById("garage-motor-claim-select")?.value;
+      const selClaim = claims.find(c => c.id === selId);
+      if (selClaim) {
+        selClaim.journeyStage = 5;
+        renderClaimsDirectory();
+      }
       showToast("Voucher Issued", `Digital Repair Release Voucher authorized (${assignedText}).`, "success");
       window.print();
     };
@@ -4078,11 +4569,21 @@ function renderGarageNetwork() {
 }
 
 function assignGarageClaim(garageName) {
+  const selId = document.getElementById("garage-motor-claim-select")?.value;
+  const selClaim = claims.find(c => c.id === selId);
   const trackName = document.getElementById("track-garage-name");
-  if (trackName) trackName.innerText = `Assigned to: ${garageName}`;
+  if (trackName) {
+    trackName.innerText = selClaim
+      ? `Assigned to: ${garageName} (${selClaim.id} • ${selClaim.plate})`
+      : `Assigned to: ${garageName}`;
+  }
+  if (selClaim) {
+    selClaim.assignedGarage = garageName;
+    selClaim.journeyStage = Math.max(Number(selClaim.journeyStage) || 3, 4);
+  }
   currentGarageRepairStage = 1;
   updateGarageRepairStageDOM();
-  showToast("Garage Assigned", `Claim assigned to ${garageName} for Stage 1 Vehicle Intake.`, "info");
+  showToast("Garage Assigned", `${selClaim ? selClaim.id + " (" + selClaim.plate + ")" : "Motor claim"} assigned to ${garageName} for Stage 1 Vehicle Intake.`, "info");
 }
 
 // 2. MULTI-CHANNEL CLAIMS SETTLEMENT GATEWAY (M-PESA, AIRTEL MONEY, BANK TRANSFER)
@@ -4109,13 +4610,18 @@ function renderMpesaGateway() {
   
   approvedClaims.forEach(c => {
     if (c.status !== "Disbursed") {
-      pendingDisbursement += c.cost;
+      pendingDisbursement += Number(c.cost || 0);
     }
     
-    // Assign default payment channel if not set
-    if (!c.payoutChannel) c.payoutChannel = "mpesa";
-    if (!c.bankDetails) c.bankDetails = "KCB Bank (Acc: 1109823471)";
+    const spec = typeof getClaimJourneySpec === "function" ? getClaimJourneySpec(c) : null;
+    if (!c.payoutChannel) c.payoutChannel = spec ? spec.defaultChannel : "mpesa";
+    if (!c.bankDetails) c.bankDetails = spec ? spec.defaultBank : "KCB Bank (Acc: 1109823471)";
     
+    const claimLine = c.insuranceLine || "Motor";
+    const lineChip = claimLine !== "Motor"
+      ? `<div style="font-size:10.5px; color:#c89565; font-weight:700; margin-top:2px;">${escapeHTML(claimLine)}</div>`
+      : "";
+
     const tr = document.createElement("tr");
     let statusBadge = c.status === "Disbursed" 
       ? `<span class="status-badge approved">Settled (${c.payoutChannel.toUpperCase()})</span>` 
@@ -4132,19 +4638,19 @@ function renderMpesaGateway() {
       `;
       
     let accountInfo = c.payoutChannel === "bank" 
-      ? `<span style="font-size:12px; white-space:nowrap;">${c.bankDetails}</span>` 
-      : `<code style="white-space:nowrap;">${c.phone}</code>`;
+      ? `<span style="font-size:12px; white-space:nowrap;">${escapeHTML(c.bankDetails)}</span>` 
+      : `<code style="white-space:nowrap;">${escapeHTML(c.phone || "+254 712 345678")}</code>`;
       
     let actionBtn = c.status === "Disbursed" 
       ? `<button class="btn btn-secondary" disabled style="opacity:0.65; padding:6px 12px; font-size:12px; white-space:nowrap;">Settled</button>` 
       : `<button class="btn btn-primary" onclick="executeChannelPayout('${c.id}')" style="padding:6px 14px; font-size:12px; white-space:nowrap;">Execute Settlement</button>`;
       
     tr.innerHTML = `
-      <td style="white-space:nowrap;"><strong>${c.id}</strong></td>
-      <td style="white-space:nowrap; font-weight:500;">${c.owner}</td>
+      <td style="white-space:nowrap;"><strong>${escapeHTML(c.id)}</strong>${lineChip}</td>
+      <td style="white-space:nowrap; font-weight:500;">${escapeHTML(c.owner)}</td>
       <td style="white-space:nowrap;">${accountInfo}</td>
       <td>${channelSelect}</td>
-      <td style="white-space:nowrap; font-variant-numeric:tabular-nums;"><strong style="color:var(--accent-color);">KSh ${c.cost.toLocaleString()}</strong></td>
+      <td style="white-space:nowrap; font-variant-numeric:tabular-nums;"><strong style="color:var(--accent-color);">KSh ${Number(c.cost || 0).toLocaleString()}</strong></td>
       <td style="white-space:nowrap;">${statusBadge}</td>
       <td style="text-align:right; white-space:nowrap;">${actionBtn}</td>
     `;
@@ -4175,7 +4681,10 @@ function executeChannelPayout(claimId) {
   if (!c) return;
   
   c.status = "Disbursed";
+  c.approvalStatus = "Approved";
+  c.journeyStage = 5;
   const channel = c.payoutChannel || "mpesa";
+  const amountNum = Number(c.cost || 0);
   let receiptCode = "";
   let channelTitle = "";
   let channelText = "";
@@ -4184,17 +4693,17 @@ function executeChannelPayout(claimId) {
     receiptCode = "QK" + Math.floor(10000000 + Math.random() * 90000000);
     channelTitle = "✓ Safaricom M-PESA B2C Successful";
     channelText = "M-PESA B2C Express Gateway";
-    channelTotals.mpesa += c.cost;
+    channelTotals.mpesa += amountNum;
   } else if (channel === "airtel") {
     receiptCode = "AM-" + Math.floor(10000000 + Math.random() * 90000000) + "-KE";
     channelTitle = "✓ Airtel Money B2C Transfer Successful";
     channelText = "Airtel Money B2C Gateway";
-    channelTotals.airtel += c.cost;
+    channelTotals.airtel += amountNum;
   } else {
     receiptCode = "PSL-2026-" + Math.floor(100000 + Math.random() * 900000);
     channelTitle = "✓ EFT / PesaLink Bank Transfer Executed";
     channelText = `PesaLink KITS Clearing Bank (${c.bankDetails || "KCB Bank"})`;
-    channelTotals.bank += c.cost;
+    channelTotals.bank += amountNum;
   }
   
   const box = document.getElementById("mpesa-last-receipt-box");
@@ -4203,14 +4712,17 @@ function executeChannelPayout(claimId) {
     document.getElementById("mpesa-receipt-channel-title").innerText = channelTitle;
     document.getElementById("mpesa-receipt-code").innerText = receiptCode;
     document.getElementById("mpesa-receipt-channel").innerText = channelText;
-    document.getElementById("mpesa-receipt-name").innerText = c.owner;
-    document.getElementById("mpesa-receipt-amount").innerText = `KSh ${c.cost.toLocaleString()}`;
+    document.getElementById("mpesa-receipt-name").innerText = `${c.owner} (${c.insuranceLine || "Motor"})`;
+    document.getElementById("mpesa-receipt-amount").innerText = `KSh ${amountNum.toLocaleString()}`;
     document.getElementById("mpesa-receipt-time").innerText = new Date().toLocaleString();
   }
   
-  showToast("Settlement Executed", `Disbursed KSh ${c.cost.toLocaleString()} to ${c.owner} via ${channelText}. Ref: ${receiptCode}`, "success");
+  showToast("Settlement Executed", `Disbursed KSh ${amountNum.toLocaleString()} to ${c.owner} (${c.id}) via ${channelText}. Ref: ${receiptCode}`, "success");
   renderMpesaGateway();
   renderClaimsDirectory();
+  renderDashboard();
+  if (typeof renderAllInsuranceLineModules === "function") renderAllInsuranceLineModules();
+  if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
 }
 
 // 3. LOSS ASSESSORS
@@ -4223,21 +4735,37 @@ let assessors = [
 ];
 
 function renderLossAssessors() {
+  const claimSel = document.getElementById("assessor-claim-select");
+  if (claimSel && typeof claims !== "undefined" && Array.isArray(claims)) {
+    const prevVal = claimSel.value;
+    claimSel.innerHTML = claims.map(c => {
+      const ln = c.insuranceLine || "Motor";
+      return `<option value="${escapeHTML(c.id)}">${escapeHTML(c.id)} — ${escapeHTML(ln)} — ${escapeHTML(c.plate)} (KSh ${Number(c.cost || 0).toLocaleString()})</option>`;
+    }).join("");
+    if (prevVal && claims.some(c => c.id === prevVal)) {
+      claimSel.value = prevVal;
+    }
+    if (claimSel.value && typeof onAssessorClaimSelectChange === "function") {
+      onAssessorClaimSelectChange(claimSel.value);
+    }
+  }
+
   const tbody = document.querySelector("#assessors-table tbody");
   if (!tbody) return;
   
   tbody.innerHTML = "";
   assessors.forEach(a => {
+    const safeName = String(a.name || "").replace(/'/g, "\\'");
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td><strong>${a.name}</strong></td>
-      <td>${a.location}</td>
-      <td>${a.spec}</td>
-      <td>${a.rating}</td>
+      <td><strong>${escapeHTML(a.name)}</strong></td>
+      <td>${escapeHTML(a.location)}</td>
+      <td>${escapeHTML(a.spec)}</td>
+      <td>${escapeHTML(a.rating)}</td>
       <td>
         <div style="display:flex; gap:6px;">
-          <button class="btn btn-secondary" onclick="dispatchAssessor('${a.name}')" style="padding:4px 8px; font-size:11px;">Dispatch Request</button>
-          <button class="btn btn-secondary" onclick="openEditAssessor('${a.name}')" style="padding:4px 8px; font-size:11px;"> Edit</button>
+          <button class="btn btn-secondary" onclick="dispatchAssessor('${safeName}')" style="padding:4px 8px; font-size:11px;">Dispatch Request</button>
+          <button class="btn btn-secondary" onclick="openEditAssessor('${safeName}')" style="padding:4px 8px; font-size:11px;"> Edit</button>
         </div>
       </td>
     `;
@@ -4246,16 +4774,43 @@ function renderLossAssessors() {
 }
 
 function dispatchAssessor(firmName) {
+  const selId = document.getElementById("assessor-claim-select")?.value;
+  const selClaim = claims.find(c => c.id === selId) || claims[0] || null;
+  const spec = selClaim && typeof getClaimJourneySpec === "function" ? getClaimJourneySpec(selClaim) : null;
+  const ln = selClaim ? (selClaim.insuranceLine || "Motor") : "Motor";
+
   const firmEl = document.getElementById("assessor-report-firm");
   const refEl = document.getElementById("assessor-report-ref");
+  const detailsEl = document.getElementById("assessor-report-details");
   const verdictEl = document.getElementById("assessor-report-verdict");
-  if (firmEl) firmEl.innerText = `Physical valuation report assigned to ${firmName}.`;
-  if (refEl) refEl.innerText = `Report Ref: GAR-${Math.floor(1000 + Math.random() * 8999)}-2026`;
+  const reportRef = `SUR-${Math.floor(1000 + Math.random() * 8999)}-2026`;
+
+  if (selClaim) {
+    selClaim.assignedAssessor = firmName;
+    selClaim.journeyStage = Math.max(Number(selClaim.journeyStage) || 2, 3);
+  }
+
+  if (firmEl) {
+    firmEl.innerText = selClaim
+      ? `${ln} specialist survey assigned to ${firmName} for ${selClaim.id} (${selClaim.plate}).`
+      : `Specialist valuation report assigned to ${firmName}.`;
+  }
+  if (refEl) refEl.innerText = `Survey Dossier Ref: ${reportRef} • Statutory Gate: ${spec ? spec.stages[2] : "Stage 3 Assessment"}`;
+  if (detailsEl && selClaim) {
+    detailsEl.innerHTML = `
+      <div>• <strong>Insured Subject &amp; Peril:</strong> ${escapeHTML(selClaim.plate)} — ${escapeHTML(selClaim.perilType || ln)}</div>
+      <div>• <strong>Statutory Reference Verified:</strong> ${escapeHTML(selClaim.statutoryRef || (spec ? spec.defaultStatRef : "Verified"))}</div>
+      <div>• <strong>Assessed Net Reserve Quantum:</strong> KSh ${Number(selClaim.cost || 0).toLocaleString()} (within policy schedule &amp; excess terms)</div>
+      <div>• <strong>Assigned Specialist Firm:</strong> ${escapeHTML(firmName)} (${escapeHTML(selClaim.county || "Nairobi County")})</div>
+    `;
+  }
   if (verdictEl) {
-    verdictEl.innerText = `Assessor Verdict: Field Inspection Dispatched (${firmName})`;
+    verdictEl.innerText = `Specialist Verdict: ${ln} Survey Instructed & Verified (${firmName})`;
     verdictEl.style.color = "var(--primary)";
   }
-  showToast("Assessor Dispatched", `Physical inspection request dispatched to ${firmName}.`, "info");
+  if (typeof renderClaimsDirectory === "function") renderClaimsDirectory();
+  if (typeof renderAllInsuranceLineModules === "function") renderAllInsuranceLineModules();
+  showToast("Specialist Assessor Dispatched", `Dispatched ${firmName} for ${selClaim ? selClaim.id + " (" + ln + ")" : "field inspection"}.`, "info");
 }
 
 // 4. REINSURANCE CEDING
@@ -4464,45 +5019,83 @@ function exportIRAReturnForm() {
 
 // 7. SUBROGATION RECOVERIES
 let subrogationCases = [
-  { claimId: "CLM-2026-001", vehicle: "KDG 123A", thirdPartyInsurer: "APA Insurance Ltd", fault: "100% Third-Party", amount: "KSh 480,000", status: "Demand Notice Sent" },
-  { claimId: "CLM-2026-002", vehicle: "KBA 456X", thirdPartyInsurer: "Jubilee Insurance Kenya", fault: "80% Third-Party", amount: "KSh 420,000", status: "Recovered" },
-  { claimId: "CLM-2026-003", vehicle: "KCC 789Y", thirdPartyInsurer: "CIC General Insurance", fault: "100% Third-Party", amount: "KSh 420,000", status: "Under Dispute" },
-  { claimId: "CLM-2026-008", vehicle: "KDA 554P", thirdPartyInsurer: "Britam General Insurance", fault: "100% Third-Party", amount: "KSh 540,000", status: "Demand Notice Sent" },
-  { claimId: "CLM-2026-010", vehicle: "KDB 991S", thirdPartyInsurer: "ICEA LION General", fault: "90% Third-Party", amount: "KSh 310,000", status: "Demand Notice Sent" }
+  { claimId: "CLM-2026-001", vehicle: "KDG 123A", insuranceLine: "Motor", thirdPartyInsurer: "APA Insurance Ltd", fault: "100% Third-Party", amount: "KSh 480,000", status: "Demand Notice Sent" },
+  { claimId: "CLM-2026-002", vehicle: "KBA 456X", insuranceLine: "Motor", thirdPartyInsurer: "Jubilee Insurance Kenya", fault: "80% Third-Party", amount: "KSh 420,000", status: "Recovered" },
+  { claimId: "CLM-2026-003", vehicle: "KCC 789Y", insuranceLine: "Motor", thirdPartyInsurer: "CIC General Insurance", fault: "100% Third-Party", amount: "KSh 420,000", status: "Under Dispute" },
+  { claimId: "CLM-2026-008", vehicle: "KDA 554P", insuranceLine: "Motor", thirdPartyInsurer: "Britam General Insurance", fault: "100% Third-Party", amount: "KSh 540,000", status: "Demand Notice Sent" },
+  { claimId: "CLM-2026-010", vehicle: "KDB 991S", insuranceLine: "Motor", thirdPartyInsurer: "ICEA LION General", fault: "90% Third-Party", amount: "KSh 310,000", status: "Demand Notice Sent" }
 ];
 
 function renderSubrogationRecovery() {
+  const claimSel = document.getElementById("subrogation-claim-select");
+  if (claimSel && typeof claims !== "undefined" && Array.isArray(claims)) {
+    const prevVal = claimSel.value;
+    const eligibleClaims = claims.filter(c => typeof allowsClaimSubrogation === "function" ? allowsClaimSubrogation(c) : true);
+    claimSel.innerHTML = eligibleClaims.map(c => {
+      const ln = c.insuranceLine || "Motor";
+      return `<option value="${escapeHTML(c.id)}">${escapeHTML(c.id)} — ${escapeHTML(ln)} — ${escapeHTML(c.plate)} (KSh ${Number(c.cost || 0).toLocaleString()})</option>`;
+    }).join("");
+    if (prevVal && eligibleClaims.some(c => c.id === prevVal)) {
+      claimSel.value = prevVal;
+    }
+  }
+
   const tbody = document.querySelector("#subrogation-table tbody");
   if (!tbody) return;
   tbody.innerHTML = "";
+
+  let activeCount = 0;
+  let totalDemandsNum = 0;
+  let totalRecoveredNum = 0;
+
   subrogationCases.forEach(s => {
+    const amtNum = Number(String(s.amount || "0").replace(/[^0-9.]/g, "")) || 0;
+    totalDemandsNum += amtNum;
+    if (s.status === "Recovered") {
+      totalRecoveredNum += amtNum;
+    } else {
+      activeCount++;
+    }
+
     const tr = document.createElement("tr");
     let badge = s.status === "Recovered" 
       ? `<span class="status-badge approved">Recovered</span>` 
       : s.status === "Under Dispute" 
       ? `<span class="status-badge pending">Under Dispute</span>` 
       : `<span class="status-badge pending">Demand Sent</span>`;
+    const ln = s.insuranceLine || "Motor";
+    const lineTag = ln !== "Motor"
+      ? `<div style="font-size:10.5px; color:#c89565; font-weight:700; margin-top:2px;">${escapeHTML(ln)}</div>`
+      : "";
+    const safeInsurer = String(s.thirdPartyInsurer || "").replace(/'/g, "\\'");
       
     tr.innerHTML = `
-      <td><strong>${s.claimId}</strong></td>
-      <td>${s.vehicle}</td>
-      <td>${s.thirdPartyInsurer}</td>
-      <td><strong style="color:var(--primary);">${s.fault}</strong></td>
-      <td><strong>${s.amount}</strong></td>
+      <td><strong>${escapeHTML(s.claimId)}</strong></td>
+      <td>${escapeHTML(s.vehicle)}${lineTag}</td>
+      <td>${escapeHTML(s.thirdPartyInsurer)}</td>
+      <td><strong style="color:var(--primary);">${escapeHTML(s.fault)}</strong></td>
+      <td><strong>${escapeHTML(s.amount)}</strong></td>
       <td>${badge}</td>
       <td>
         <div style="display:flex; gap:6px;">
-          <button class="btn btn-secondary" onclick="issueSubrogationNotice('${s.claimId}', '${s.thirdPartyInsurer}')" style="padding:4px 8px; font-size:11px;">Demand Notice</button>
+          <button class="btn btn-secondary" onclick="issueSubrogationNotice('${s.claimId}', '${safeInsurer}')" style="padding:4px 8px; font-size:11px;">Demand Notice</button>
           <button class="btn btn-secondary" onclick="openEditSubrogation('${s.claimId}')" style="padding:4px 8px; font-size:11px;"> Edit</button>
         </div>
       </td>
     `;
     tbody.appendChild(tr);
   });
+
+  const kpiAct = document.getElementById("subrog-kpi-active");
+  const kpiDem = document.getElementById("subrog-kpi-demands");
+  const kpiRec = document.getElementById("subrog-kpi-recovered");
+  if (kpiAct) kpiAct.innerText = `${activeCount} Files`;
+  if (kpiDem) kpiDem.innerText = `KSh ${(totalDemandsNum / 1000000).toFixed(2)}M`;
+  if (kpiRec) kpiRec.innerText = `KSh ${totalRecoveredNum >= 1000000 ? (totalRecoveredNum / 1000000).toFixed(2) + "M" : Math.round(totalRecoveredNum / 1000) + "K"}`;
 }
 
 function issueSubrogationNotice(claimId, insurer) {
-  showToast("Subrogation Demand Notice", `Notice of Subrogation Demand issued to ${insurer} for file ${claimId}.`, "success");
+  showToast("Subrogation Demand Notice", `Notice of Subrogation Demand issued to ${insurer} for indemnity file ${claimId}.`, "success");
 }
 
 // 8. COUNTY & CORPORATE FLEET UNDERWRITING (END-TO-END ENGINE)
@@ -5430,24 +6023,33 @@ function openEditClaim(claimId) {
   if (!claim) return;
   
   activeEditRecord = { type: "claim", data: claim };
+  const spec = typeof getClaimJourneySpec === "function" ? getClaimJourneySpec(claim) : null;
+  const isMotor = typeof isMotorClaimRecord === "function" ? isMotorClaimRecord(claim) : true;
+  const curStage = typeof getClaimJourneyStage === "function" ? getClaimJourneyStage(claim) : 3;
+  const subjectLbl = spec ? spec.subjectLabel : (isMotor ? "Vehicle Plate" : "Subject / Policy Ref");
+  const claimantLbl = spec ? spec.claimantLabel : "Policyholder / Claimant Name";
+  const costLbl = spec ? spec.estimateLabel : (isMotor ? "Damage Estimate (KSh)" : "Claimed / Benefit Amount (KSh)");
+  const stageOptions = (spec ? spec.stages : ["Stage 1", "Stage 2", "Stage 3", "Stage 4", "Stage 5"])
+    .map((label, idx) => `<option value="${idx + 1}" ${curStage === idx + 1 ? "selected" : ""}>${escapeHTML(label)}</option>`)
+    .join("");
   
-  document.getElementById("edit-modal-title").innerText = ` Edit Claim File: ${claim.id}`;
+  document.getElementById("edit-modal-title").innerText = `Edit ${claim.insuranceLine || "Motor"} Claim File: ${claim.id}`;
   document.getElementById("edit-record-id").value = claim.id;
   document.getElementById("edit-record-type").value = "claim";
   
   const fieldsContainer = document.getElementById("edit-modal-fields");
   fieldsContainer.innerHTML = `
     <div>
-      <label class="form-label">Policyholder / Claimant Name</label>
+      <label class="form-label">${escapeHTML(claimantLbl)}</label>
       <input type="text" class="form-control" id="edit-claim-owner" value="${escapeHTML(claim.owner)}">
     </div>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
       <div>
-        <label class="form-label">Vehicle Plate</label>
+        <label class="form-label">${escapeHTML(subjectLbl)}</label>
         <input type="text" class="form-control" id="edit-claim-plate" value="${escapeHTML(claim.plate)}">
       </div>
       <div>
-        <label class="form-label">Damage Estimate (KSh)</label>
+        <label class="form-label">${escapeHTML(costLbl)}</label>
         <input type="number" class="form-control" id="edit-claim-cost" value="${claim.cost}">
       </div>
     </div>
@@ -5470,9 +6072,15 @@ function openEditClaim(claimId) {
         </select>
       </div>
     </div>
-    <div>
-      <label class="form-label">Fraud Risk Score (%)</label>
-      <input type="number" min="0" max="100" class="form-control" id="edit-claim-fraud" value="${claim.fraudScore}">
+    <div style="display:grid; grid-template-columns:1.3fr 0.7fr; gap:12px;">
+      <div>
+        <label class="form-label">5-Stage Domain Journey Milestone</label>
+        <select class="form-control" id="edit-claim-stage">${stageOptions}</select>
+      </div>
+      <div>
+        <label class="form-label">Fraud Risk Score (%)</label>
+        <input type="number" min="0" max="100" class="form-control" id="edit-claim-fraud" value="${claim.fraudScore}">
+      </div>
     </div>
   `;
   
@@ -5749,10 +6357,21 @@ function saveEditedRecord() {
       claim.approvalStatus = claim.status === "Pending" ? "Awaiting Approval" : "Approved";
       claim.triage = document.getElementById("edit-claim-triage").value;
       claim.fraudScore = parseInt(document.getElementById("edit-claim-fraud").value) || claim.fraudScore;
+      const stageVal = parseInt(document.getElementById("edit-claim-stage")?.value || "0", 10);
+      if (stageVal >= 1 && stageVal <= 5) {
+        claim.journeyStage = stageVal;
+      } else if (typeof getClaimJourneyStage === "function") {
+        claim.journeyStage = getClaimJourneyStage(claim);
+      }
       
       showToast("Claim Saved", `Claim ${claim.id} updated successfully.`, "success");
       renderClaimsDirectory();
       renderDashboard();
+      if (typeof renderMpesaGateway === "function") renderMpesaGateway();
+      if (typeof renderGarageNetwork === "function") renderGarageNetwork();
+      if (typeof renderLossAssessors === "function") renderLossAssessors();
+      if (typeof renderSubrogationRecovery === "function") renderSubrogationRecovery();
+      if (typeof renderAllInsuranceLineModules === "function") renderAllInsuranceLineModules();
       if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
     }
   } else if (type === "policy") {
@@ -6025,43 +6644,120 @@ function loadHighResDemoPhoto() {
 }
 
 function autoFillDemoClaimData() {
-  document.getElementById("claim-plate").value = "KDG 123A";
-  document.getElementById("claim-owner").value = "Boniface Mwangi";
-  document.getElementById("claim-phone").value = "+254 712 345678";
-  
-  if (!annotationImageLoaded) {
-    loadHighResDemoPhoto();
+  const selectedRawLine = document.getElementById("fnol-insurance-line")?.value || activeFNOLInsuranceLine || "Motor";
+  const resolvedLine = typeof resolveClaimJourneyLine === "function" ? resolveClaimJourneyLine(selectedRawLine, "") : "Motor";
+
+  if (resolvedLine === "Motor") {
+    document.getElementById("claim-plate").value = "KDG 123A";
+    document.getElementById("claim-owner").value = "Boniface Mwangi";
+    document.getElementById("claim-phone").value = "+254 712 345678";
+    const estEl = document.getElementById("claim-estimate-input");
+    if (estEl) estEl.value = 142500;
+
+    if (!annotationImageLoaded) {
+      loadHighResDemoPhoto();
+    }
+
+    showToast("Demo Data Auto-Filled", "Registration, claimant name, mobile, and vehicle telemetry loaded.", "success");
+    return;
   }
-  
-  showToast("Demo Data Auto-Filled", "Registration, claimant name, mobile, and vehicle telemetry loaded.", "success");
+
+  const spec = getClaimJourneySpec(resolvedLine);
+  const matchingPol = policies.find(p => resolveClaimJourneyLine(p.insuranceLine || p.line, p.plate) === resolvedLine) || null;
+  const perilObj = spec.perils[0];
+
+  const polSel = document.getElementById("fnol-policy-select");
+  if (polSel && matchingPol) polSel.value = matchingPol.policyNo;
+  document.getElementById("claim-plate").value = matchingPol ? (matchingPol.plate || matchingPol.policyNo) : spec.subjectPlaceholder.replace("e.g., ", "");
+  document.getElementById("claim-owner").value = matchingPol ? matchingPol.clientName : "County Institutional Policyholder";
+  document.getElementById("claim-phone").value = "+254 722 418 900";
+
+  const estEl = document.getElementById("claim-estimate-input");
+  if (estEl) estEl.value = perilObj ? perilObj.defaultCost : 250000;
+  const statEl = document.getElementById("fnol-statutory-ref");
+  if (statEl) statEl.value = spec.defaultStatRef;
+  const notesEl = document.getElementById("fnol-incident-notes");
+  if (notesEl) notesEl.value = `${perilObj ? perilObj.label : resolvedLine} verified against statutory dossier and active policy schedule.`;
+
+  if (typeof verifyAllFNOLDossierDocs === "function") verifyAllFNOLDossierDocs();
+  showToast("Line Demo Dossier Loaded", `Auto-filled ${resolvedLine} policy, statutory reference, and verified dossier checklist.`, "success");
 }
 
 function quickSubmitDemoClaim() {
+  const selectedRawLine = document.getElementById("fnol-insurance-line")?.value || activeFNOLInsuranceLine || "Motor";
+  const resolvedLine = typeof resolveClaimJourneyLine === "function" ? resolveClaimJourneyLine(selectedRawLine, "") : "Motor";
+
   autoFillDemoClaimData();
-  runANPRScanSimulation();
-  
+
+  if (resolvedLine === "Motor") {
+    runANPRScanSimulation();
+
+    currentFNOLClaim = {
+      id: "CLM-2026-00" + (claims.length + 1),
+      plate: "KDG 123A",
+      insuranceLine: selectedRawLine,
+      perilCode: "OWN_DAMAGE",
+      perilType: "Own Damage Collision (Comprehensive)",
+      statutoryRef: "OB 44/08/11/2026 Central Police",
+      owner: "Boniface Mwangi",
+      phone: "+254 712 345678",
+      date: new Date().toISOString().split("T")[0],
+      cost: 142500,
+      fraudScore: 8,
+      triage: "Green",
+      status: "Approved",
+      journeyStage: 4,
+      coords: [-1.286389, 36.817223],
+      county: "Nairobi County",
+      police: "Central Police Station (0.4 km)",
+      tow: "Nairobi Towing Logistics (0.9 km)",
+      annotations: [
+        { x: 650, y: 290, type: "dent" },
+        { x: 420, y: 260, type: "scratch" },
+        { x: 325, y: 138, type: "crack" }
+      ],
+      flags: ["EXIF metadata verified", "NTSA database matching", "Instant Pass Approved"]
+    };
+
+    saveFNOLClaim();
+    return;
+  }
+
+  const spec = getClaimJourneySpec(resolvedLine);
+  if (typeof runMultiLineRegistryVerification === "function") runMultiLineRegistryVerification();
+  const perilObj = spec.perils[0];
+  const costVal = Number(document.getElementById("claim-estimate-input")?.value || perilObj.defaultCost || 240000);
+  const isFastTrack = perilObj.fastTrackCap > 0 && costVal <= perilObj.fastTrackCap;
+
   currentFNOLClaim = {
-    id: "CLM-2026-00" + (claims.length + 1),
-    plate: "KDG 123A",
-    owner: "Boniface Mwangi",
-    phone: "+254 712 345678",
+    id: `${spec.claimPrefix}2026-${120 + claims.length}`,
+    plate: document.getElementById("claim-plate")?.value || spec.subjectPlaceholder.replace("e.g., ", ""),
+    policyNo: document.getElementById("fnol-policy-select")?.value || "",
+    insuranceLine: resolvedLine,
+    perilCode: perilObj.code,
+    perilType: perilObj.label,
+    statutoryRef: document.getElementById("fnol-statutory-ref")?.value || spec.defaultStatRef,
+    owner: document.getElementById("claim-owner")?.value || "Verified Claimant",
+    phone: document.getElementById("claim-phone")?.value || "+254 722 418 900",
     date: new Date().toISOString().split("T")[0],
-    cost: 142500,
-    fraudScore: 8,
-    triage: "Green",
-    status: "Approved",
+    cost: costVal,
+    fraudScore: isFastTrack ? 8 : 22,
+    triage: isFastTrack ? "Green" : "Yellow",
+    status: isFastTrack ? "Approved" : "Pending",
+    journeyStage: isFastTrack ? 4 : 3,
     coords: [-1.286389, 36.817223],
     county: "Nairobi County",
-    police: "Central Police Station (0.4 km)",
-    tow: "Nairobi Towing Logistics (0.9 km)",
-    annotations: [
-      { x: 650, y: 290, type: "dent" },
-      { x: 420, y: 260, type: "scratch" },
-      { x: 325, y: 138, type: "crack" }
-    ],
-    flags: ["EXIF metadata verified", "NTSA database matching", "Instant Pass Approved"]
+    police: spec.respondersByCounty.defaultPrimary,
+    tow: spec.respondersByCounty.defaultSecondary,
+    dossierDocs: [...spec.docs],
+    annotations: [],
+    flags: [
+      `${resolvedLine} active policy schedule & sum insured verified.`,
+      `Statutory reference (${spec.defaultStatRef}) validated.`,
+      `All ${spec.docs.length} mandatory domain evidentiary documents verified.`
+    ]
   };
-  
+
   saveFNOLClaim();
 }
 
@@ -9645,25 +10341,29 @@ function dispatchDesignatedEmailAlert(eventType, record) {
     refId = record.id || "CLM-2026-NEW";
     const owner = record.owner || "Claimant";
     const plate = record.plate || "KDG 123A";
+    const claimLine = record.insuranceLine || "Motor";
+    const isMotor = typeof isMotorClaimRecord === "function" ? isMotorClaimRecord(record) : claimLine === "Motor";
+    const subjectRowLabel = isMotor ? "Vehicle Registration" : "Policy / Insured Subject";
     const cost = Number(record.cost || 142500).toLocaleString();
     const triage = record.triage || "Yellow";
-    subject = `[ALERT: AWAITING APPROVAL] Claim ${refId} (${plate}) - KSh ${cost}`;
-    triggerLabel = "Claim Filed (Awaiting Approval)";
-    smsSummary = `EIMS EMAIL ALERT -> [${recipientsStr}]: Claim ${refId} (${plate}) by ${owner} for KSh ${cost} is AWAITING APPROVAL.`;
+    subject = `[ALERT: AWAITING APPROVAL] ${claimLine} Claim ${refId} (${plate}) - KSh ${cost}`;
+    triggerLabel = `Claim Filed - ${claimLine} (Awaiting Approval)`;
+    smsSummary = `EIMS EMAIL ALERT -> [${recipientsStr}]: ${claimLine} Claim ${refId} (${plate}) by ${owner} for KSh ${cost} is AWAITING APPROVAL.`;
     emailHtmlBody = `
       <div style="background:#dc2626; color:#ffffff; padding:6px 10px; border-radius:6px; font-size:11px; font-weight:800; margin-bottom:10px; display:inline-block;">
         STATUS: AWAITING APPROVAL
       </div>
       <h2>New Claim Alert: Awaiting Approval</h2>
       <p><strong>To Designated Approvers:</strong> ${recipientsStr}</p>
-      <p>A new insurance claim has been registered in EIMS ProSystem on <strong>${dateStr} at ${nowStr}</strong> and requires executive approval within the <strong>60-Minute SLA window</strong>:</p>
+      <p>A new <strong>${escapeHTML(claimLine)}</strong> insurance claim has been registered in EIMS ProSystem on <strong>${dateStr} at ${nowStr}</strong> and requires executive approval within the <strong>60-Minute SLA window</strong>:</p>
       <table class="email-details-table">
-        <tr><td class="label">Claim Reference</td><td><strong>${refId}</strong></td></tr>
+        <tr><td class="label">Claim Reference</td><td><strong>${escapeHTML(refId)}</strong></td></tr>
+        <tr><td class="label">Insurance Line</td><td><strong>${escapeHTML(claimLine)}${record.perilType ? " - " + escapeHTML(record.perilType) : ""}</strong></td></tr>
         <tr><td class="label">Approval Status</td><td><strong style="color:#dc2626;">AWAITING APPROVAL (60-Min SLA Timer Active)</strong></td></tr>
-        <tr><td class="label">Claimant / Insured</td><td>${owner}</td></tr>
-        <tr><td class="label">Vehicle Registration</td><td>${plate}</td></tr>
+        <tr><td class="label">Claimant / Insured</td><td>${escapeHTML(owner)}</td></tr>
+        <tr><td class="label">${subjectRowLabel}</td><td>${escapeHTML(plate)}</td></tr>
         <tr><td class="label">Estimated Claim Reserve</td><td>KSh ${cost}</td></tr>
-        <tr><td class="label">AI Triage Route</td><td>${triage} Path</td></tr>
+        <tr><td class="label">AI Triage Route</td><td>${escapeHTML(triage)} Path</td></tr>
       </table>
       <p style="font-size:11.5px; color:#dc2626; font-weight:700;">Note: If unapproved after 60 minutes, this claim will trigger a Critical Red SLA Escalation on the Executive Dashboard.</p>
       <center><a href="#" onclick="navigateToView('dashboard'); return false;" class="email-btn">Review &amp; Approve on Dashboard</a></center>
@@ -9841,10 +10541,11 @@ function getPendingApprovalItems() {
     if (c.status === "Pending" || c.approvalStatus === "Awaiting Approval") {
       const submittedAt = c.submittedAt || (now - 75 * 60 * 1000);
       const elapsedMins = Math.max(0, Math.floor((now - submittedAt) / 60000));
+      const claimLine = c.insuranceLine || "Motor";
       items.push({
         type: "CLAIM",
         id: c.id,
-        categoryLabel: "Claim (FNOL)",
+        categoryLabel: claimLine !== "Motor" ? `Claim (${claimLine})` : "Claim (FNOL)",
         name: `${c.owner} (${c.plate})`,
         valueFormatted: `KSh ${Number(c.cost || 0).toLocaleString()}`,
         elapsedMins: elapsedMins,
@@ -10356,6 +11057,7 @@ function approvePendingItem(type, id) {
     if (claim) {
       claim.status = "Approved";
       claim.approvalStatus = "Approved";
+      claim.journeyStage = Math.max(Number(claim.journeyStage) || 3, 4);
       showToast("Claim Approved", `Claim ${id} (${claim.plate}) approved and cleared from the 60-Minute SLA queue.`, "success");
     }
   } else if (type === "POLICY") {
@@ -10378,6 +11080,10 @@ function approvePendingItem(type, id) {
   if (typeof renderPolicyRegistry === "function") renderPolicyRegistry();
   if (typeof renderFleetUnderwriting === "function") renderFleetUnderwriting();
   if (typeof renderIRACompliance === "function") renderIRACompliance();
+  if (typeof renderMpesaGateway === "function") renderMpesaGateway();
+  if (typeof renderGarageNetwork === "function") renderGarageNetwork();
+  if (typeof renderLossAssessors === "function") renderLossAssessors();
+  if (typeof renderSubrogationRecovery === "function") renderSubrogationRecovery();
   if (typeof renderAllInsuranceLineModules === "function") renderAllInsuranceLineModules();
 }
 
@@ -10391,6 +11097,7 @@ function approveAllOverdueItems() {
     if (item.type === "CLAIM" && item.raw) {
       item.raw.status = "Approved";
       item.raw.approvalStatus = "Approved";
+      item.raw.journeyStage = Math.max(Number(item.raw.journeyStage) || 3, 4);
     } else if (item.type === "POLICY" && item.raw) {
       item.raw.status = "Active";
       item.raw.approvalStatus = "Approved";
@@ -10408,6 +11115,10 @@ function approveAllOverdueItems() {
   if (typeof renderPolicyRegistry === "function") renderPolicyRegistry();
   if (typeof renderFleetUnderwriting === "function") renderFleetUnderwriting();
   if (typeof renderIRACompliance === "function") renderIRACompliance();
+  if (typeof renderMpesaGateway === "function") renderMpesaGateway();
+  if (typeof renderGarageNetwork === "function") renderGarageNetwork();
+  if (typeof renderLossAssessors === "function") renderLossAssessors();
+  if (typeof renderSubrogationRecovery === "function") renderSubrogationRecovery();
   if (typeof renderAllInsuranceLineModules === "function") renderAllInsuranceLineModules();
   showToast("All Pending Approvals Cleared", `Approved ${pending.length} pending claim & underwriting files.`, "success");
 }
@@ -13006,6 +13717,1209 @@ function executeLineSpecialOperation(lineKey) {
 }
 window.executeLineSpecialOperation = executeLineSpecialOperation;
 
+// ============================================================================
+// END-TO-END MULTI-LINE CLAIMS JOURNEY ENGINE (ALL 7 INSURANCE LINES)
+// ============================================================================
+
+const CLAIMS_JOURNEY_SPECS = {
+  "Motor": {
+    key: "motor",
+    lineName: "Motor",
+    claimPrefix: "CLM-2026-",
+    stepLabels: ["1. Accident & Media", "2. ANPR & AKI Check", "3. Scene & Police OB", "4. AI Damage Triage"],
+    stages: [
+      "1. Accident FNOL & Scene Media",
+      "2. ANPR, NTSA & AKI DMVIC Check",
+      "3. Police OB & Assessor Valuation",
+      "4. Repair Authority / DV Offer",
+      "5. Garage Release / Settlement"
+    ],
+    subjectLabel: "Vehicle Registration Plate",
+    subjectPlaceholder: "e.g., KDG 123A",
+    claimantLabel: "Policyholder / Driver Full Name",
+    estimateLabel: "Estimated Repair / Claim Cost (KSh)",
+    statutoryRefLabel: "Traffic Police OB Number",
+    statutoryRefPlaceholder: "e.g., OB 44/08/11/2026 Central Police",
+    defaultStatRef: "OB 44/08/11/2026 Central Police",
+    perils: [
+      { code: "OWN_DAMAGE", label: "Own Damage Collision (Comprehensive)", defaultCost: 142500, fastTrackCap: 200000 },
+      { code: "WINDSCREEN", label: "Windscreen & Glass Fast-Track", defaultCost: 58000, fastTrackCap: 150000 },
+      { code: "TP_CAP405", label: "Third-Party Property / Injury (Cap 405)", defaultCost: 380000, fastTrackCap: 150000 },
+      { code: "THEFT_HIJACK", label: "Comprehensive Theft / Carjacking", defaultCost: 1850000, fastTrackCap: 0 },
+      { code: "EV_BATTERY", label: "EV High-Voltage Battery / Drive Impact", defaultCost: 420000, fastTrackCap: 180000 }
+    ],
+    docs: [
+      "Traffic Police Abstract / OB Extract",
+      "Driver's License & NTSA Smart DL Check",
+      "EXIF Geo-Tagged Accident Scene Photos",
+      "AKI DMVIC Active Certificate Verification"
+    ],
+    step2Title: "Step 2: Optical ANPR & NTSA / AKI Registry Verification",
+    step2Subtitle: "Verify vehicle registration, chassis VIN, and Cap 405 AKI Digital Certificate.",
+    step3Title: "Step 3: Accident Geolocation & Emergency Responders",
+    step3Subtitle: "Pin the collision scene to identify nearest Traffic Police station and accredited breakdown recovery.",
+    geoPrimaryLabel: "Nearest Traffic Police Station:",
+    geoSecondaryLabel: "Accredited Towing & Recovery:",
+    respondersByCounty: {
+      defaultPrimary: "Central Traffic Police Base (0.6 km)",
+      defaultSecondary: "AA Kenya / Nairobi Recovery Flatbed (1.1 km)"
+    },
+    step4Title: "Step 4: Computer Vision Damage & Fraud Triage",
+    auditHeaderTitle: "Neural CV & EXIF Telemetry Audit",
+    allowGarage: true,
+    allowSubrogation: true,
+    subrogationBasis: "Knock-for-Knock / Negligent Third-Party Motorist Insurer",
+    defaultChannel: "mpesa",
+    defaultBank: "KCB Bank Motor Repair Escrow (Acc: 1109823471)",
+    fulfillmentView: "garage-network",
+    fulfillmentLabel: "Assign Accredited Garage",
+    regulatorHeader: "Insurance Regulatory Authority (IRA) • Cap 405 Motor Desk",
+    statutoryFormTitle: "Notice of Motor Accident Claim Registration (IRA Form 104)"
+  },
+  "Medical & Health": {
+    key: "medical",
+    lineName: "Medical & Health",
+    claimPrefix: "CLM-MED-",
+    stepLabels: ["1. Member & Clinical Docs", "2. Smart Card & SHA Check", "3. Hospital & Specialist", "4. ICD-11 Clinical Audit"],
+    stages: [
+      "1. Biometric Member & Pre-Auth (GOP)",
+      "2. SHA/SHIF Offset & Benefit Check",
+      "3. ICD-11 Clinical & Pharmacy Audit",
+      "4. Care Manager Discharge Sign-Off",
+      "5. Hospital Panel EFT / Reimbursement"
+    ],
+    subjectLabel: "Member Smart Card / Policy Schedule Ref",
+    subjectPlaceholder: "e.g., POL-MED-4011-2026 • MBR-8841",
+    claimantLabel: "Patient / Principal Member Name",
+    estimateLabel: "Claimed Hospital / Medical Bill (KSh)",
+    statutoryRefLabel: "Hospital Pre-Auth (GOP) & ICD-11 Code",
+    statutoryRefPlaceholder: "e.g., GOP-2026-914 • ICD-11 FA20.0",
+    defaultStatRef: "GOP-2026-914 • ICD-11 S82.2 (Orthopedic Inpatient)",
+    perils: [
+      { code: "INPATIENT_GOP", label: "Cashless Inpatient Admission (GOP)", defaultCost: 285000, fastTrackCap: 350000 },
+      { code: "DAYCASE_SURGERY", label: "Day-Case Surgical / Endoscopy Procedure", defaultCost: 145000, fastTrackCap: 250000 },
+      { code: "OUTPATIENT_SPEC", label: "Outpatient Specialist, Lab & Radiology", defaultCost: 28500, fastTrackCap: 100000 },
+      { code: "MATERNITY_CARE", label: "Maternity & Neonatal Delivery Package", defaultCost: 180000, fastTrackCap: 250000 },
+      { code: "OPTICAL_DENTAL", label: "Optical / Dental Member Reimbursement", defaultCost: 34000, fastTrackCap: 75000 },
+      { code: "TP_ROAD_INJURY", label: "Third-Party Road / Assault Injury Admission", defaultCost: 410000, fastTrackCap: 150000 }
+    ],
+    docs: [
+      "Accredited Hospital Pre-Authorization / GOP Form",
+      "ICD-11 Coded Itemized Hospital & KPPB Drug Tariff Bill",
+      "Mandatory SHA / SHIF Primary Bed-Rebate Offset Slip",
+      "Attending KMPDC Specialist Signed Discharge Summary"
+    ],
+    step2Title: "Step 2: Biometric Smart Card, Annual Sub-Limits & SHA/SHIF Offset Check",
+    step2Subtitle: "Verify member eligibility, family/corporate sub-limits, waiting periods, and mandatory SHA primary bed rebate.",
+    step3Title: "Step 3: Accredited Treating Hospital & KMPDC Specialist Verification",
+    step3Subtitle: "Confirm accredited healthcare facility panel tier and attending KMPDC specialist registration.",
+    geoPrimaryLabel: "Accredited Panel Hospital:",
+    geoSecondaryLabel: "Attending KMPDC Specialist / Care Nurse:",
+    respondersByCounty: {
+      defaultPrimary: "The Nairobi Hospital / Aga Khan Panel Tier 1",
+      defaultSecondary: "KMPDC Reg #A8841 • EIMS Clinical Care Manager"
+    },
+    step4Title: "Step 4: ICD-11 Clinical Utilization & Tariff Audit",
+    auditHeaderTitle: "ICD-11 Clinical, KPPB Pharmacy & SHA Offset Audit",
+    allowGarage: false,
+    allowSubrogation: true,
+    subrogationBasis: "Third-Party Tortfeasor / Motor Insurer Injury Recovery",
+    defaultChannel: "bank",
+    defaultBank: "Stanbic Bank Hospital Panel Clearing (Acc: 0100004829101)",
+    fulfillmentView: "mpesa-gateway",
+    fulfillmentLabel: "Settle Hospital EFT / Reimburse",
+    regulatorHeader: "Insurance Regulatory Authority (IRA Class 08) & SHA/SHIF Desk",
+    statutoryFormTitle: "Clinical Claims Adjudication & SHA/SHIF Offset Voucher"
+  },
+  "Property & Fire": {
+    key: "property",
+    lineName: "Property & Fire",
+    claimPrefix: "CLM-PRP-",
+    stepLabels: ["1. Loss Notice & BoQ", "2. Schedule & Average Check", "3. Premises & Fire Brigade", "4. Adjuster & Treaty Triage"],
+    stages: [
+      "1. Loss Notice & Peril Mitigation",
+      "2. Policy Schedule & Condition of Average",
+      "3. County Fire Report & Chartered Survey",
+      "4. Net Quantum & Treaty Cash-Call",
+      "5. Reinstatement / EFT & Subrogation"
+    ],
+    subjectLabel: "Premises LR Number / Plant Asset Tag",
+    subjectPlaceholder: "e.g., POL-PRP-4021-2026 • LR 209/8841",
+    claimantLabel: "Insured Property Owner / Institution",
+    estimateLabel: "Estimated Reinstatement / Repair Quantum (KSh)",
+    statutoryRefLabel: "County Fire Brigade / Police Incident Ref",
+    statutoryRefPlaceholder: "e.g., NBI-FIRE-2026-309 • OB 19/11/2026",
+    defaultStatRef: "NBI-FIRE-2026-309 • Chartered Survey Instructed",
+    perils: [
+      { code: "FIRE_ALLIED", label: "Structural Fire, Lightning & Allied Perils", defaultCost: 1850000, fastTrackCap: 300000 },
+      { code: "MACHINERY_SURGE", label: "Machinery Breakdown / Utility Power Surge", defaultCost: 640000, fastTrackCap: 350000 },
+      { code: "CAR_SITE_LOSS", label: "Contractors All Risks (CAR) Site Damage", defaultCost: 920000, fastTrackCap: 300000 },
+      { code: "BURGLARY_FORCIBLE", label: "Burglary & Forcible Entry Stock Loss", defaultCost: 310000, fastTrackCap: 250000 },
+      { code: "BUSINESS_INT", label: "Business Interruption (Consequential Loss)", defaultCost: 2400000, fastTrackCap: 0 }
+    ],
+    docs: [
+      "County Fire Brigade Attendance / Police Forcible Entry Report",
+      "Chartered Loss Adjuster Preliminary Site Survey",
+      "Itemized Contractor Bill of Quantities (BoQ) & Asset Register",
+      "Pre-Loss Valuation Certificate (Condition of Average Check)"
+    ],
+    step2Title: "Step 2: Policy Schedule, Sum Insured & Condition of Average Verification",
+    step2Subtitle: "Audit asset schedule, under-insurance pro-rata Condition of Average, policy excess, and Kenya Re / Africa Re treaty layers.",
+    step3Title: "Step 3: Insured Premises GIS Pin, Fire Brigade & Loss Adjuster",
+    step3Subtitle: "Verify LR parcel coordinates, County Fire Station jurisdiction, and assigned IRA-licensed Chartered Loss Adjuster.",
+    geoPrimaryLabel: "County Fire & Disaster Brigade:",
+    geoSecondaryLabel: "Assigned Chartered Loss Adjuster:",
+    respondersByCounty: {
+      defaultPrimary: "Nairobi County Fire Station HQ (1.4 km)",
+      defaultSecondary: "McLarens / General Adjusters Chartered Engineers"
+    },
+    step4Title: "Step 4: Condition of Average, Excess & Reinsurance Triage",
+    auditHeaderTitle: "Engineering Quantum, Average Clause & Treaty Audit",
+    allowGarage: false,
+    allowSubrogation: true,
+    subrogationBasis: "Negligent Neighbour / Contractor / Utility Surge Recovery",
+    defaultChannel: "bank",
+    defaultBank: "Equity Corporate Reinstatement RTGS (Acc: 0180299481200)",
+    fulfillmentView: "loss-assessors",
+    fulfillmentLabel: "Dispatch Chartered Loss Adjuster",
+    regulatorHeader: "Insurance Regulatory Authority (IRA Classes 03, 04 & 05)",
+    statutoryFormTitle: "Property, Fire & Engineering Loss Adjustment Certificate"
+  },
+  "Life & Pension": {
+    key: "life",
+    lineName: "Life & Pension",
+    claimPrefix: "CLM-LIF-",
+    stepLabels: ["1. Claimant & CRS Docs", "2. Bond & Sec 111 Check", "3. Registrar & Trustees", "4. Actuarial Benefit Audit"],
+    stages: [
+      "1. Beneficiary / Trustee Event Notice",
+      "2. Policy Bond, Contestability & CRS Check",
+      "3. Sec 111 Nomination / Medical Review",
+      "4. Actuarial Benefit & KRA Tax Clearance",
+      "5. 48h Funeral M-PESA / Trust EFT"
+    ],
+    subjectLabel: "Life Policy Bond / GLA Scheme Member Ref",
+    subjectPlaceholder: "e.g., POL-LIF-4031-2026 • STAFF-204",
+    claimantLabel: "Nominated Beneficiary / Scheme Trustee",
+    estimateLabel: "Sum Assured / Maturity / Funeral Benefit (KSh)",
+    statutoryRefLabel: "Civil Registration Cert / Burial Permit / RBA Ref",
+    statutoryRefPlaceholder: "e.g., CRS-DTH-2026-77412 • SEC111-NOM",
+    defaultStatRef: "CRS-DTH-2026-77412 • Sec 111 Probate-Exempt Nomination",
+    perils: [
+      { code: "LAST_EXPENSE_48H", label: "Last Expense / Funeral Cash Rider (48h SLA)", defaultCost: 200000, fastTrackCap: 300000 },
+      { code: "GLA_DEATH_SERVICE", label: "Group Life Death-in-Service (3x Annual Salary)", defaultCost: 2700000, fastTrackCap: 500000 },
+      { code: "ENDOWMENT_MATURITY", label: "Education / Endowment Maturity Discharge", defaultCost: 1200000, fastTrackCap: 1500000 },
+      { code: "CRITICAL_ILLNESS", label: "Critical Illness Dread Disease 50% Drawdown", defaultCost: 950000, fastTrackCap: 400000 },
+      { code: "PENSION_VESTING", label: "Umbrella Pension Retirement Vesting (RBA)", defaultCost: 3400000, fastTrackCap: 1000000 }
+    ],
+    docs: [
+      "Civil Registration Services (CRS) Burial Permit / Death Certificate",
+      "Original Policy Bond / Maturity Discharge Voucher",
+      "Section 111 Nominated Beneficiary National ID & KRA PIN",
+      "Employer HR Salary Confirmation / Attending Physician Statement"
+    ],
+    step2Title: "Step 2: Policy Bond, 2-Year Contestability & Civil Registration Check",
+    step2Subtitle: "Verify premium paid-up standing, 2-year contestability period, CRS registry match, and Section 111 probate-exempt nomination.",
+    step3Title: "Step 3: Civil Registration Jurisdiction & Scheme Trustees",
+    step3Subtitle: "Confirm Civil Registrar district office and RBA / Group Life scheme administrator.",
+    geoPrimaryLabel: "Civil Registration Services (CRS) Office:",
+    geoSecondaryLabel: "Life Claims Actuary / Scheme Trustee:",
+    respondersByCounty: {
+      defaultPrimary: "Civil Registration Services — Hass Plaza / County HQ",
+      defaultSecondary: "EIMS Long-Term Life Actuary & Sec 111 Trust Desk"
+    },
+    step4Title: "Step 4: Actuarial Benefit, Bonus & Tax Relief Verification",
+    auditHeaderTitle: "Long-Term Assurance Cap 487 & RBA Benefit Audit",
+    allowGarage: false,
+    allowSubrogation: false, // Contingency benefit contract — subrogation NEVER applies in law
+    subrogationBasis: "Not Applicable — Contingency Assurance Contract (Cap 487)",
+    defaultChannel: "bank",
+    defaultBank: "Co-operative Bank Beneficiary Trust EFT (Acc: 01120099481200)",
+    fulfillmentView: "mpesa-gateway",
+    fulfillmentLabel: "Execute Beneficiary / Trust Payout",
+    regulatorHeader: "Insurance Regulatory Authority (Long-Term Cap 487) & RBA",
+    statutoryFormTitle: "Section 111 Life Assurance & Pension Benefit Discharge Voucher"
+  },
+  "WIBA & Liability": {
+    key: "wiba",
+    lineName: "WIBA & Liability",
+    claimPrefix: "CLM-WIB-",
+    stepLabels: ["1. DOSHS Form 1 Intake", "2. Wage-Roll & Cover Check", "3. Workplace & Med Board", "4. Statutory 96-Mo Calc"],
+    stages: [
+      "1. DOSHS Form 1 Employer Notice",
+      "2. Policy, OSHA Log & Wage-Roll Audit",
+      "3. KMPDC / DOSHS Form 4 PD Rating",
+      "4. Statutory 96-Month Earnings Award",
+      "5. DOSHS / Worker EFT & Recovery"
+    ],
+    subjectLabel: "Employer Policy & Injured Worker Payroll ID",
+    subjectPlaceholder: "e.g., POL-WIB-4041-2026 • EMP-3902",
+    claimantLabel: "Injured Employee / Third-Party Claimant",
+    estimateLabel: "Computed WIBA / Liability Award (KSh)",
+    statutoryRefLabel: "DOSHS Form 1 / Form 4 Statutory Reference",
+    statutoryRefPlaceholder: "e.g., DOSHS-F1-2026-812 • 12% PD",
+    defaultStatRef: "DOSHS-F1-2026-812 • Form 4 Signed (12% Permanent Disablement)",
+    perils: [
+      { code: "WIBA_TTD_MED", label: "Occupational Injury — Temporary Disability & Medical", defaultCost: 165000, fastTrackCap: 250000 },
+      { code: "WIBA_PPD_FORM4", label: "Permanent Disablement Award (DOSHS Form 4 %)", defaultCost: 486000, fastTrackCap: 300000 },
+      { code: "WIBA_FATAL_96M", label: "Fatal Workplace Accident (96 Months Earnings Cap)", defaultCost: 2880000, fastTrackCap: 0 },
+      { code: "PUBLIC_PROF_LIAB", label: "Public Liability / Professional Indemnity Demand", defaultCost: 1150000, fastTrackCap: 0 },
+      { code: "FIDELITY_GUARANTEE", label: "Fidelity Guarantee Pecuniary Loss Audit", defaultCost: 750000, fastTrackCap: 0 }
+    ],
+    docs: [
+      "Statutory DOSHS Form 1 Notice of Accident by Employer",
+      "DOSHS Form 4 Medical Practitioner Final PD Assessment",
+      "Certified 12-Month Pre-Accident Payslips / Payroll Extract",
+      "Workplace OSHA Safety Register & Supervisor Statement"
+    ],
+    step2Title: "Step 2: WIBA 2007 Policy, Employee Roster & 96-Month Earnings Audit",
+    step2Subtitle: "Verify declared occupational class, certified 12-month earnings, and WIBA First Schedule disability percentage.",
+    step3Title: "Step 3: Workplace Site GIS, DOSHS Labour Office & Medical Board",
+    step3Subtitle: "Locate occupational site, County DOSHS Directorate office, and designated occupational medical practitioner.",
+    geoPrimaryLabel: "Directorate of Occupational Safety (DOSHS):",
+    geoSecondaryLabel: "Occupational Medical Board / Legal Counsel:",
+    respondersByCounty: {
+      defaultPrimary: "County DOSHS & Labour Officer Desk (Commercial St)",
+      defaultSecondary: "Designated KMPDC Occupational Health Assessment Panel"
+    },
+    step4Title: "Step 4: Statutory WIBA 2007 Formula & Liability Audit",
+    auditHeaderTitle: "WIBA 2007 First Schedule & Causation Audit",
+    allowGarage: false,
+    allowSubrogation: true,
+    subrogationBasis: "WIBA Sec 17 Recovery Against Negligent Third-Party Subcontractor",
+    defaultChannel: "bank",
+    defaultBank: "NCBA Statutory WIBA Compensation Escrow (Acc: 6501992831)",
+    fulfillmentView: "mpesa-gateway",
+    fulfillmentLabel: "Settle DOSHS Statutory Award",
+    regulatorHeader: "Republic of Kenya • WIBA (2007), DOSHS & IRA Class 11/13",
+    statutoryFormTitle: "Work Injury Benefits Act (WIBA 2007) Compensation Award Voucher"
+  },
+  "Marine & Transit": {
+    key: "marine",
+    lineName: "Marine & Transit",
+    claimPrefix: "CLM-MAR-",
+    stepLabels: ["1. Cargo & B/L Notice", "2. Sec 20 KRA ICMS Check", "3. Port / SGR Survey", "4. ICC & Subrogation Audit"],
+    stages: [
+      "1. Cargo Loss Notice & Carrier Reserve",
+      "2. Sec 20 KRA ICMS & CIF+10% Check",
+      "3. KPA Outturn & Lloyd's Cargo Survey",
+      "4. ICC (A/B/C) & General Average Calc",
+      "5. Consignee EFT & Carrier Subrogation"
+    ],
+    subjectLabel: "MCI Certificate / Bill of Lading / Container No.",
+    subjectPlaceholder: "e.g., MCI-KRA-2026-4051 • MSKU4928102",
+    claimantLabel: "Importer / Consignee / Freight Owner",
+    estimateLabel: "Damaged / Short-Landed CIF+10% Value (KSh)",
+    statutoryRefLabel: "Bill of Lading (B/L), KRA IDF & Outturn Ref",
+    statutoryRefPlaceholder: "e.g., B/L MAEU992018 • IDF-26KE0041902",
+    defaultStatRef: "B/L MAEU992018 • KPA Short-Landing & Carrier Reserve Filed",
+    perils: [
+      { code: "ICC_A_WET_DMG", label: "Sea Cargo Container Wet / Handling Damage — ICC (A)", defaultCost: 780000, fastTrackCap: 250000 },
+      { code: "KPA_SHORT_LAND", label: "Port of Mombasa / Nairobi ICD Short-Landing", defaultCost: 420000, fastTrackCap: 300000 },
+      { code: "GIT_SGR_HIGHWAY", label: "SGR / Northern Corridor Goods-in-Transit Loss", defaultCost: 610000, fastTrackCap: 250000 },
+      { code: "GENERAL_AVERAGE", label: "General Average & Salvage Security Guarantee", defaultCost: 1950000, fastTrackCap: 0 },
+      { code: "AIR_COLD_CHAIN", label: "JKIA Airfreight Perishable Cold-Chain Excursion", defaultCost: 340000, fastTrackCap: 250000 }
+    ],
+    docs: [
+      "Original Bill of Lading (B/L) / Air Waybill & Commercial Invoice",
+      "Section 20 KRA ICMS / KenTrade Local Marine Certificate (MCI)",
+      "KPA Port Outturn Report / Tally Sheet / Survey Certificate",
+      "Statutory Letter of Reserve Holding Carrier / Bailee Liable"
+    ],
+    step2Title: "Step 2: Section 20 Cap 487 KRA ICMS, KenTrade IDF & Voyage Check",
+    step2Subtitle: "Verify local marine certificate on KRA ICMS / KenTrade Single Window, CIF+10% valuation, and Institute Cargo Clauses.",
+    step3Title: "Step 3: Port Berth / ICD / Corridor Pin & Marine Cargo Surveyor",
+    step3Subtitle: "Pin discharge berth, Inland Container Depot (ICD), or Northern Corridor transit node and assign Marine Surveyor.",
+    geoPrimaryLabel: "Port / ICD / Customs Station:",
+    geoSecondaryLabel: "Accredited Marine & Transit Surveyor:",
+    respondersByCounty: {
+      defaultPrimary: "Port of Mombasa Berth 16 / Embakasi ICD Customs",
+      defaultSecondary: "McLarens / Lloyd's Agency Marine Surveyors Kenya"
+    },
+    step4Title: "Step 4: Institute Cargo Clauses (ICC) & Carrier Subrogation Triage",
+    auditHeaderTitle: "Marine Survey, CIF+10% & Hague-Visby Subrogation Audit",
+    allowGarage: false,
+    allowSubrogation: true,
+    subrogationBasis: "Hague-Visby Rules / Carrier & Freight Forwarder Bailee Recovery",
+    defaultChannel: "bank",
+    defaultBank: "Absa Bank Trade & Marine Settlement RTGS (Acc: 2041998271)",
+    fulfillmentView: "subrogation-recovery",
+    fulfillmentLabel: "Settle & Pursue Carrier Subrogation",
+    regulatorHeader: "Section 20 Insurance Act (Cap 487) • KRA ICMS & KenTrade Marine",
+    statutoryFormTitle: "Marine Cargo / GIT Survey Adjustment & Subrogation Certificate"
+  },
+  "Agriculture & Livestock": {
+    key: "agri",
+    lineName: "Agriculture & Livestock",
+    claimPrefix: "CLM-AGR-",
+    stepLabels: ["1. UAI / Vet Loss Notice", "2. KLIP/DRIVE & Geo-Fence", "3. Agro-Zone & County Vet", "4. NDVI / Vet AI Triage"],
+    stages: [
+      "1. Satellite UAI Trigger / Vet Notice",
+      "2. Geo-Fenced UAI & KLIP/DRIVE Check",
+      "3. Sentinel-2 NDVI / Vet Post-Mortem",
+      "4. Parametric Strike / Indemnity Calc",
+      "5. Automated Smallholder Bulk M-PESA"
+    ],
+    subjectLabel: "Unit Area of Insurance (UAI) / RFID Herd Tag",
+    subjectPlaceholder: "e.g., POL-AGR-4062-2026 • UAI-LAIKIPIA-05",
+    claimantLabel: "Smallholder Farmer / Pastoralist Cooperative",
+    estimateLabel: "Triggered Parametric / Livestock Payout (KSh)",
+    statutoryRefLabel: "Sentinel-2 NDVI Reading / County Vet Cert No.",
+    statutoryRefPlaceholder: "e.g., NDVI-0.27-STRIKE • KVB-PM-2026-412",
+    defaultStatRef: "NDVI 0.27 (< 0.32 Strike) • MoALD KLIP/DRIVE Verified",
+    perils: [
+      { code: "NDVI_DROUGHT_STRIKE", label: "Parametric Drought Index Breach (NDVI < 0.32 Strike)", defaultCost: 245000, fastTrackCap: 600000, isParametric: true },
+      { code: "LIVESTOCK_MORTALITY", label: "RFID Verified Livestock Disease / Drought Mortality", defaultCost: 190000, fastTrackCap: 350000, isParametric: false },
+      { code: "MPCI_HAIL_FLOOD", label: "Multi-Peril Crop Hail / Excess Rain / Frost Damage", defaultCost: 310000, fastTrackCap: 300000, isParametric: false },
+      { code: "GREENHOUSE_SOLAR", label: "Greenhouse & Solar Drip Irrigation Windstorm Loss", defaultCost: 460000, fastTrackCap: 250000, isParametric: false }
+    ],
+    docs: [
+      "MODIS / Copernicus Sentinel-2 UAI Dekadal NDVI Telemetry Log",
+      "Kenya Veterinary Board (KVB) Post-Mortem & RFID Ear-Tag Scan",
+      "Ward Smallholder / Pastoralist TLU Geo-Fenced Registry Match",
+      "MoALD / County 50% KLIP/DRIVE Co-Subsidy Standing Verification"
+    ],
+    step2Title: "Step 2: Unit Area of Insurance (UAI) Geo-Fence & KLIP/DRIVE Check",
+    step2Subtitle: "Validate ward agro-ecological zone, acreage/TLU schedule, 50% government subsidy standing, and satellite NDVI index.",
+    step3Title: "Step 3: Agro-Ecological Zone GPS & County Veterinary / Extension Officer",
+    step3Subtitle: "Confirm farm/rangeland coordinates, County Agriculture Ward Officer, and KVB Veterinary Surgeon.",
+    geoPrimaryLabel: "Agro-Ecological UAI / Ward Office:",
+    geoSecondaryLabel: "County Veterinary Surgeon / Extension Officer:",
+    respondersByCounty: {
+      defaultPrimary: "County Dept of Agriculture & Livestock UAI Desk",
+      defaultSecondary: "KVB Licensed County Veterinary Surgeon & NDVI Oracle"
+    },
+    step4Title: "Step 4: Satellite NDVI Strike & Biometric Herd Triage",
+    auditHeaderTitle: "Sentinel-2 NDVI Parametric & Veterinary Audit",
+    allowGarage: false,
+    allowSubrogation: false, // Parametric weather index / natural peril — no third-party subrogation by default
+    subrogationBasis: "Not Applicable for Weather-Index / Natural Peril Claims",
+    defaultChannel: "mpesa",
+    defaultBank: "Co-operative Bank Agribusiness Coop Account (Acc: 0110928374100)",
+    fulfillmentView: "mpesa-gateway",
+    fulfillmentLabel: "Trigger Smallholder M-PESA Payout",
+    regulatorHeader: "Republic of Kenya • IRA Agricultural Desk & MoALD KLIP / DRIVE",
+    statutoryFormTitle: "KLIP / DRIVE Agriculture & Parametric NDVI Settlement Schedule"
+  }
+};
+
+let activeFNOLInsuranceLine = "Motor";
+let multiLineClaimsSeeded = false;
+
+function resolveClaimJourneyLine(lineInput, plateInput = "") {
+  const raw = String(lineInput || "").trim();
+  if (!raw || raw === "Motor" || raw === "Electric Vehicle" || raw === "County Fleet" || raw.toLowerCase().includes("motor") || raw.toLowerCase().includes("fleet") || raw.toLowerCase().includes("electric")) {
+    return "Motor";
+  }
+  if (CLAIMS_JOURNEY_SPECS[raw]) return raw;
+  const cfg = getMultiLineConfigByLineName(raw);
+  if (cfg && CLAIMS_JOURNEY_SPECS[cfg.lineName]) return CLAIMS_JOURNEY_SPECS[cfg.lineName].lineName;
+  if (typeof isMotorUnderwritingLine === "function" && isMotorUnderwritingLine(raw, plateInput)) return "Motor";
+  return "Property & Fire";
+}
+window.resolveClaimJourneyLine = resolveClaimJourneyLine;
+
+function isMotorClaimRecord(claim) {
+  if (!claim) return true;
+  return resolveClaimJourneyLine(claim.insuranceLine || "Motor", claim.plate || "") === "Motor";
+}
+window.isMotorClaimRecord = isMotorClaimRecord;
+
+function getClaimJourneySpec(lineOrClaim) {
+  if (typeof lineOrClaim === "object" && lineOrClaim !== null) {
+    const resolved = resolveClaimJourneyLine(lineOrClaim.insuranceLine || "Motor", lineOrClaim.plate || "");
+    return CLAIMS_JOURNEY_SPECS[resolved] || CLAIMS_JOURNEY_SPECS["Motor"];
+  }
+  const resolved = resolveClaimJourneyLine(lineOrClaim || "Motor", "");
+  return CLAIMS_JOURNEY_SPECS[resolved] || CLAIMS_JOURNEY_SPECS["Motor"];
+}
+window.getClaimJourneySpec = getClaimJourneySpec;
+
+function getClaimJourneyStage(claim) {
+  if (!claim) return 1;
+  const explicit = Number(claim.journeyStage);
+  if (explicit >= 1 && explicit <= 5) return explicit;
+  if (claim.status === "Disbursed") return 5;
+  if (claim.status === "Approved") return 4;
+  if (claim.status === "Under Investigation") return 2;
+  return 3; // Pending / Awaiting Approval
+}
+window.getClaimJourneyStage = getClaimJourneyStage;
+
+function getClaimJourneyStageLabel(claim) {
+  const spec = getClaimJourneySpec(claim);
+  const stg = getClaimJourneyStage(claim);
+  return spec.stages[stg - 1] || `Stage ${stg}/5`;
+}
+window.getClaimJourneyStageLabel = getClaimJourneyStageLabel;
+
+// Statutory Kenyan Insurance Law Subrogation Gate:
+// Subrogation is strictly a corollary of the principle of Indemnity.
+// 1) Life & Pension contracts are contingency assurance contracts — subrogation NEVER applies.
+// 2) Parametric Weather-Index (NDVI) Agriculture payouts trigger on index breach without fault/indemnity subrogation.
+function allowsClaimSubrogation(claim) {
+  if (!claim) return false;
+  const line = resolveClaimJourneyLine(claim.insuranceLine || "Motor", claim.plate || "");
+  if (line === "Life & Pension") return false;
+  if (line === "Agriculture & Livestock") {
+    const perilStr = `${claim.perilCode || ""} ${claim.perilType || ""} ${claim.description || ""}`.toLowerCase();
+    if (perilStr.includes("ndvi") || perilStr.includes("parametric") || perilStr.includes("drought") || !claim.thirdPartyFault) {
+      return false;
+    }
+    return Boolean(claim.thirdPartyFault);
+  }
+  return Boolean(CLAIMS_JOURNEY_SPECS[line]?.allowSubrogation);
+}
+window.allowsClaimSubrogation = allowsClaimSubrogation;
+
+function seedMultiLineClaimsAndEcosystem() {
+  if (multiLineClaimsSeeded || typeof claims === "undefined" || !Array.isArray(claims)) return;
+  multiLineClaimsSeeded = true;
+
+  // Enrich baseline Motor claims with explicit insuranceLine, perilType & journeyStage
+  claims.forEach((c, idx) => {
+    if (!c.insuranceLine) c.insuranceLine = "Motor";
+    if (!c.perilType) {
+      c.perilType = idx === 0 ? "Windscreen & Glass Fast-Track" : "Own Damage Collision (Comprehensive)";
+    }
+    if (!c.statutoryRef) c.statutoryRef = `OB ${20 + idx}/08/2026 Traffic Base`;
+    if (!c.journeyStage) c.journeyStage = getClaimJourneyStage(c);
+    if (!Array.isArray(c.annotations)) c.annotations = [];
+    if (!Array.isArray(c.flags)) c.flags = ["EXIF & NTSA motor telemetry verified."];
+    if (!Array.isArray(c.coords) || c.coords.length < 2) c.coords = [-1.286389, 36.817223];
+    if (!c.county) c.county = "Nairobi County";
+  });
+
+  const now = Date.now();
+  const seededNonMotorClaims = [
+    {
+      id: "CLM-MED-2026-101",
+      plate: "POL-MED-4011-2026 • MBR-8841",
+      policyNo: "POL-MED-4011-2026",
+      insuranceLine: "Medical & Health",
+      perilCode: "INPATIENT_GOP",
+      perilType: "Cashless Inpatient Admission (GOP)",
+      statutoryRef: "GOP-2026-881 • ICD-11 S82.2 • SHA Rebate Offset KSh 33,600",
+      owner: "Dr. Grace Wanjiku (Nairobi Hospital Panel)",
+      phone: "+254 722 319 440",
+      date: "2026-11-06",
+      cost: 284000,
+      fraudScore: 7,
+      triage: "Green",
+      status: "Approved",
+      approvalStatus: "Approved",
+      submittedAt: now - 220 * 60 * 1000,
+      journeyStage: 4,
+      payoutChannel: "bank",
+      bankDetails: "Stanbic Bank — The Nairobi Hospital Panel (Acc: 0100004829101)",
+      coords: [-1.2962, 36.8044],
+      county: "Nairobi County",
+      police: "The Nairobi Hospital Tier-1 Inpatient Desk",
+      tow: "KMPDC Reg #A8841 • EIMS Clinical Care Nurse",
+      dossierDocs: CLAIMS_JOURNEY_SPECS["Medical & Health"].docs,
+      annotations: [],
+      flags: [
+        "Biometric Smart Card & corporate inpatient sub-limit verified (KSh 5,000,000).",
+        "Mandatory SHA/SHIF primary bed rebate (KSh 33,600) netted off gross hospital invoice.",
+        "ICD-11 procedure & KPPB drug tariff line-items cleared with zero upcoding."
+      ]
+    },
+    {
+      id: "CLM-PRP-2026-102",
+      plate: "POL-PRP-4022-2026 • LR 4953/1102",
+      policyNo: "POL-PRP-4022-2026",
+      insuranceLine: "Property & Fire",
+      perilCode: "MACHINERY_SURGE",
+      perilType: "Machinery Breakdown / Utility Power Surge",
+      statutoryRef: "THK-FIRE-2026-114 • McLarens Survey Ref #PR-902",
+      owner: "Thika Agro-Processing & Cold Storage Complex",
+      phone: "+254 733 810 220",
+      date: "2026-11-07",
+      cost: 860000,
+      fraudScore: 22,
+      triage: "Yellow",
+      status: "Pending",
+      approvalStatus: "Awaiting Approval",
+      submittedAt: now - 76 * 60 * 1000,
+      journeyStage: 3,
+      payoutChannel: "bank",
+      bankDetails: "Equity Corporate Reinstatement RTGS (Acc: 0180299481200)",
+      coords: [-1.0388, 37.0834],
+      county: "Kiambu / Thika Industrial Zone",
+      police: "Kiambu County Fire & Rescue Brigade (Thika)",
+      tow: "McLarens Kenya Chartered Loss Adjusters",
+      dossierDocs: CLAIMS_JOURNEY_SPECS["Property & Fire"].docs,
+      annotations: [],
+      flags: [
+        "Sum Insured KSh 165M matches pre-loss plant valuation — zero Condition of Average penalty.",
+        "10% deductible excess netted off ammonia compressor reinstatement BoQ.",
+        "Awaiting Chartered Loss Adjuster final sign-off & 60-Min SLA executive release."
+      ]
+    },
+    {
+      id: "CLM-LIF-2026-103",
+      plate: "POL-LIF-4031-2026 • GLA-NKU-204",
+      policyNo: "POL-LIF-4031-2026",
+      insuranceLine: "Life & Pension",
+      perilCode: "LAST_EXPENSE_48H",
+      perilType: "Last Expense / Funeral Cash Rider (48h SLA)",
+      statutoryRef: "CRS-BURIAL-2026-55190 • Sec 111 Direct Beneficiary",
+      owner: "Esther Chebet Kiprop (Sec 111 Nominated Spouse)",
+      phone: "+254 710 552 910",
+      date: "2026-11-07",
+      cost: 200000,
+      fraudScore: 4,
+      triage: "Green",
+      status: "Approved",
+      approvalStatus: "Approved",
+      submittedAt: now - 140 * 60 * 1000,
+      journeyStage: 4,
+      payoutChannel: "mpesa",
+      bankDetails: "Co-operative Bank Sec 111 Family Trust (Acc: 01120099481200)",
+      coords: [-0.3031, 36.0800],
+      county: "Nakuru County",
+      police: "Civil Registration Services (CRS) — Nakuru East",
+      tow: "EIMS Long-Term Actuary & Sec 111 Trust Officer",
+      dossierDocs: CLAIMS_JOURNEY_SPECS["Life & Pension"].docs,
+      annotations: [],
+      flags: [
+        "Civil Registration Services (CRS) Burial Permit #55190 verified authentic.",
+        "Policy active beyond contestability window; premiums 100% paid-up.",
+        "Section 111 Insurance Act probate-exempt nomination verified for 48-hour funeral cash release."
+      ]
+    },
+    {
+      id: "CLM-WIB-2026-104",
+      plate: "POL-WIB-4041-2026 • DOSHS-771",
+      policyNo: "POL-WIB-4041-2026",
+      insuranceLine: "WIBA & Liability",
+      perilCode: "WIBA_PPD_FORM4",
+      perilType: "Permanent Disablement Award (DOSHS Form 4 %)",
+      statutoryRef: "DOSHS-F1-771 & DOSHS-F4-2026 • 12% PD Rating",
+      owner: "Josephat Kiprop (Nairobi Water Line Technician)",
+      phone: "+254 724 609 118",
+      date: "2026-11-05",
+      cost: 384000,
+      fraudScore: 9,
+      triage: "Green",
+      status: "Approved",
+      approvalStatus: "Approved",
+      submittedAt: now - 190 * 60 * 1000,
+      journeyStage: 4,
+      payoutChannel: "bank",
+      bankDetails: "NCBA WIBA Statutory Award Account (Acc: 6501992831)",
+      coords: [-1.3048, 36.8473],
+      county: "Nairobi Industrial Area",
+      police: "Directorate of Occupational Safety & Health (DOSHS HQ)",
+      tow: "Designated KMPDC Occupational Medical Board",
+      dossierDocs: CLAIMS_JOURNEY_SPECS["WIBA & Liability"].docs,
+      annotations: [],
+      flags: [
+        "Statutory DOSHS Form 1 filed within 24 hours of trenching incident.",
+        "DOSHS Form 4 signed at 12% Permanent Disablement; verified against 96-month WIBA First Schedule.",
+        "12-month certified payroll matches declared WIBA wage-roll audit."
+      ]
+    },
+    {
+      id: "CLM-MAR-2026-105",
+      plate: "POL-MAR-4051-2026 • MSKU4928102",
+      policyNo: "POL-MAR-4051-2026",
+      insuranceLine: "Marine & Transit",
+      perilCode: "ICC_A_WET_DMG",
+      perilType: "Sea Cargo Container Wet / Handling Damage — ICC (A)",
+      statutoryRef: "MCI-KRA-2026-4051 • B/L MAEU992018 • KPA Outturn #419",
+      owner: "Coast Inter-County Medical & Solar Imports",
+      phone: "+254 720 994 310",
+      date: "2026-11-04",
+      cost: 740000,
+      fraudScore: 11,
+      triage: "Green",
+      status: "Approved",
+      approvalStatus: "Approved",
+      submittedAt: now - 260 * 60 * 1000,
+      journeyStage: 4,
+      payoutChannel: "bank",
+      bankDetails: "Absa Bank Trade & Marine RTGS (Acc: 2041998271)",
+      coords: [-4.0435, 39.6682],
+      county: "Mombasa Port (Kilindini Berth 16)",
+      police: "KPA Kilindini Port Customs & KRA ICMS Desk",
+      tow: "Lloyd's Agency Mombasa Marine Cargo Surveyors",
+      dossierDocs: CLAIMS_JOURNEY_SPECS["Marine & Transit"].docs,
+      annotations: [],
+      flags: [
+        "Section 20 Cap 487 Local Marine Certificate MCI-KRA-2026-4051 matched on KRA ICMS & KenTrade.",
+        "Joint port survey confirmed seawater ingress on 14 solar inverter pallets under ICC (A).",
+        "Letter of Reserve served on ocean carrier — cleared for Hague-Visby subrogation recovery."
+      ]
+    },
+    {
+      id: "CLM-AGR-2026-106",
+      plate: "POL-AGR-4062-2026 • UAI-LAIKIPIA-05",
+      policyNo: "POL-AGR-4062-2026",
+      insuranceLine: "Agriculture & Livestock",
+      perilCode: "NDVI_DROUGHT_STRIKE",
+      perilType: "Parametric Drought Index Breach (NDVI < 0.32 Strike)",
+      statutoryRef: "SENTINEL2-NDVI-0.29 • DRIVE-SUBSIDY-VERIFIED",
+      owner: "Laikipia & Isiolo Pastoralist Livestock Coop (620 Herders)",
+      phone: "+254 718 402 775",
+      date: "2026-11-06",
+      cost: 465000,
+      fraudScore: 3,
+      triage: "Green",
+      status: "Disbursed",
+      approvalStatus: "Approved",
+      submittedAt: now - 320 * 60 * 1000,
+      journeyStage: 5,
+      payoutChannel: "mpesa",
+      bankDetails: "Safaricom Bulk M-PESA B2C Pastoralist Wallet",
+      coords: [0.3606, 36.7819],
+      county: "Laikipia North UAI-05 Rangeland",
+      police: "Laikipia County Livestock & UAI Agro-Met Desk",
+      tow: "Copernicus Sentinel-2 NDVI Oracle & KVB Vet Officer",
+      dossierDocs: CLAIMS_JOURNEY_SPECS["Agriculture & Livestock"].docs,
+      annotations: [],
+      flags: [
+        "Sentinel-2 dekadal vegetation index hit 0.29 (below 0.32 drought strike threshold) in UAI-LAIKIPIA-05.",
+        "50% DRIVE government co-subsidy & geo-fenced pastoralist TLU registry verified.",
+        "Automated parametric forage protection payout settled via M-PESA B2C."
+      ]
+    }
+  ];
+
+  seededNonMotorClaims.forEach(nc => {
+    if (!claims.some(existing => existing.id === nc.id)) {
+      claims.push(nc);
+    }
+  });
+
+  // Expand Loss Assessors & Specialist Panel across all lines (idempotent)
+  if (typeof assessors !== "undefined" && Array.isArray(assessors)) {
+    const extraSpecialists = [
+      { name: "McLarens Kenya Chartered Adjusters", location: "Nairobi / Mombasa", spec: "Property, Fire, Engineering & CAR Quantum", rating: "4.9 " },
+      { name: "Lloyd's Agency Marine Surveyors Ltd", location: "Port of Mombasa & Embakasi ICD", spec: "Marine Cargo ICC (A/B/C), Hull & GIT Outturn", rating: "4.9 " },
+      { name: "AfyaCare KMPDC Clinical Audit Panel", location: "National Tier-1 Hospital Network", spec: "Medical ICD-11, SHA/SHIF Offset & Pharmacy Audit", rating: "4.8 " },
+      { name: "DOSHS Occupational Medical & Safety Board", location: "Nairobi / Industrial Corridors", spec: "WIBA Form 4 PD Rating & Liability Forensics", rating: "4.8 " },
+      { name: "AgroVet & Copernicus NDVI Verification Desk", location: "Rift Valley / ASAL Counties", spec: "Crop Cut Yield, KVB Livestock Post-Mortem & NDVI", rating: "4.9 " }
+    ];
+    extraSpecialists.forEach(sp => {
+      if (!assessors.some(a => a.name === sp.name)) {
+        assessors.push(sp);
+      }
+    });
+  }
+
+  // Seed domain-accurate multi-line Indemnity Subrogation cases (NEVER Life or Parametric NDVI)
+  if (typeof subrogationCases !== "undefined" && Array.isArray(subrogationCases)) {
+    const extraSubrogation = [
+      {
+        claimId: "CLM-MAR-2026-105",
+        insuranceLine: "Marine & Transit",
+        vehicle: "MCI-KRA-2026-4051 • MSKU4928102",
+        thirdPartyInsurer: "Maersk Line / UK P&I Club (Carrier Liability)",
+        fault: "Carrier Hague-Visby Liability",
+        amount: "KSh 740,000",
+        status: "Demand Notice Sent"
+      },
+      {
+        claimId: "CLM-PRP-2026-102",
+        insuranceLine: "Property & Fire",
+        vehicle: "LR 4953/1102 • Cold Storage Plant",
+        thirdPartyInsurer: "ElectroGrid Switchgear Contractors (APA Liability)",
+        fault: "Contractor Negligence",
+        amount: "KSh 860,000",
+        status: "Demand Notice Sent"
+      }
+    ];
+    extraSubrogation.forEach(sc => {
+      if (!subrogationCases.some(s => s.claimId === sc.claimId)) {
+        subrogationCases.push(sc);
+      }
+    });
+  }
+}
+window.seedMultiLineClaimsAndEcosystem = seedMultiLineClaimsAndEcosystem;
+
+function renderFNOLJourneyPreviewStrip(spec) {
+  const strip = document.getElementById("fnol-journey-preview-strip");
+  if (!strip || !spec) return;
+  strip.innerHTML = spec.stages.map((stg, idx) =>
+    `<span class="fnol-stage-chip ${idx === 0 ? "active-stage" : ""}">${escapeHTML(stg)}</span>`
+  ).join("");
+}
+
+function populateFNOLPolicyDropdownForLine(lineName, preselectedPolicyNo = "") {
+  seedCompositeInsurancePortfolio();
+  const select = document.getElementById("fnol-policy-select");
+  if (!select || typeof policies === "undefined") return;
+
+  const resolved = resolveClaimJourneyLine(lineName, "");
+  const matching = policies.filter(p => {
+    if (p.status === "Cancelled") return false;
+    if (resolved === "Motor") {
+      return typeof isMotorUnderwritingLine === "function"
+        ? isMotorUnderwritingLine(p.line, p.plate)
+        : (p.line === "Motor" || p.line === "Electric Vehicle" || p.line === "County Fleet");
+    }
+    return p.line === resolved;
+  });
+
+  if (matching.length === 0) {
+    select.innerHTML = `<option value="">Manual Policy / Schedule Entry</option>`;
+    return;
+  }
+
+  select.innerHTML = matching.map(p =>
+    `<option value="${escapeHTML(p.policyNo)}">${escapeHTML(p.policyNo)} — ${escapeHTML(p.clientName)} (${escapeHTML(p.plate)})</option>`
+  ).join("");
+
+  if (preselectedPolicyNo && matching.some(p => p.policyNo === preselectedPolicyNo)) {
+    select.value = preselectedPolicyNo;
+  }
+}
+
+function populateFNOLPerilDropdownForLine(spec) {
+  const perilSel = document.getElementById("fnol-peril-select");
+  if (!perilSel || !spec) return;
+  perilSel.innerHTML = spec.perils.map((pr, idx) =>
+    `<option value="${escapeHTML(pr.code)}" ${idx === 0 ? "selected" : ""}>${escapeHTML(pr.label)}</option>`
+  ).join("");
+}
+
+function renderFNOLDossierChecklist(spec) {
+  const box = document.getElementById("fnol-doc-checklist");
+  if (!box || !spec) return;
+  box.innerHTML = spec.docs.map((docTitle, idx) => `
+    <label class="fnol-doc-item">
+      <input type="checkbox" class="fnol-dossier-chk" data-doc-title="${escapeHTML(docTitle)}" ${idx < 3 ? "checked" : ""}>
+      <span>${escapeHTML(docTitle)}</span>
+    </label>
+  `).join("");
+}
+
+function verifyAllFNOLDossierDocs() {
+  document.querySelectorAll("#fnol-doc-checklist .fnol-dossier-chk").forEach(chk => {
+    chk.checked = true;
+  });
+  showToast("Statutory Dossier Verified", "All mandatory line-specific claim documents marked verified & attached.", "success");
+}
+window.verifyAllFNOLDossierDocs = verifyAllFNOLDossierDocs;
+
+function switchFNOLInsuranceLine(lineName, preselectedPolicyNo = "") {
+  seedCompositeInsurancePortfolio();
+  seedMultiLineClaimsAndEcosystem();
+
+  const rawSelected = String(lineName || "Motor").trim();
+  activeFNOLInsuranceLine = rawSelected;
+  const resolved = resolveClaimJourneyLine(rawSelected, "");
+  const spec = getClaimJourneySpec(resolved);
+  const isMotor = resolved === "Motor";
+
+  const lineSel = document.getElementById("fnol-insurance-line");
+  if (lineSel && lineSel.value !== rawSelected) {
+    const hasOpt = Array.from(lineSel.options).some(o => o.value === rawSelected);
+    lineSel.value = hasOpt ? rawSelected : resolved;
+  }
+
+  populateFNOLPolicyDropdownForLine(resolved, preselectedPolicyNo);
+  populateFNOLPerilDropdownForLine(spec);
+  renderFNOLJourneyPreviewStrip(spec);
+  renderFNOLDossierChecklist(spec);
+
+  // Update Stepper Node Labels
+  spec.stepLabels.forEach((lbl, idx) => {
+    const el = document.getElementById(`fnol-step-label-${idx + 1}`);
+    if (el) el.innerText = lbl.replace(/^\d+\.\s*/, "");
+  });
+
+  const setTxt = (id, txt) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = txt;
+  };
+
+  setTxt("claim-subject-label", spec.subjectLabel);
+  setTxt("claim-owner-label", spec.claimantLabel);
+  setTxt("claim-estimate-label", spec.estimateLabel);
+  setTxt("fnol-statutory-ref-label", spec.statutoryRefLabel);
+  setTxt("fnol-dossier-title", `${spec.lineName} Statutory Evidence & Supporting Dossier`);
+  setTxt("fnol-step2-card-title", spec.step2Title);
+  setTxt("fnol-step2-card-subtitle", spec.step2Subtitle);
+  setTxt("fnol-step3-card-title", spec.step3Title);
+  setTxt("fnol-step3-card-subtitle", spec.step3Subtitle);
+  setTxt("geo-primary-label", spec.geoPrimaryLabel);
+  setTxt("geo-secondary-label", spec.geoSecondaryLabel);
+  setTxt("fnol-step4-card-title", spec.step4Title);
+  setTxt("ai-amount-label", isMotor ? "Damage Estimate" : "Assessed Benefit / Payable");
+
+  const plateInput = document.getElementById("claim-plate");
+  if (plateInput) plateInput.placeholder = spec.subjectPlaceholder;
+  const statRefInput = document.getElementById("fnol-statutory-ref");
+  if (statRefInput) {
+    statRefInput.placeholder = spec.statutoryRefPlaceholder;
+    statRefInput.value = spec.defaultStatRef;
+  }
+
+  // Toggle Motor Canvas/ANPR vs Non-Motor Statutory Dossier/Registry UI
+  const motorMedia = document.getElementById("fnol-motor-media-section");
+  const mlDossier = document.getElementById("fnol-multiline-dossier-section");
+  const motorStep2 = document.getElementById("fnol-motor-step2-grid");
+  const mlStep2 = document.getElementById("fnol-multiline-step2-grid");
+  const mlVerifBox = document.getElementById("multiline-verification-box");
+
+  if (motorMedia) motorMedia.style.display = isMotor ? "block" : "none";
+  if (mlDossier) mlDossier.style.display = isMotor ? "none" : "block";
+  if (motorStep2) motorStep2.style.display = isMotor ? "grid" : "none";
+  if (mlStep2) mlStep2.style.display = isMotor ? "none" : "block";
+  if (mlVerifBox) mlVerifBox.style.display = "none";
+
+  // Pre-fill from selected policy & peril
+  const chosenPolNo = document.getElementById("fnol-policy-select")?.value || preselectedPolicyNo;
+  if (chosenPolNo) {
+    onFNOLPolicySelectChange(chosenPolNo, true);
+  }
+  onFNOLPerilChange(document.getElementById("fnol-peril-select")?.value, true);
+
+  // Sync responder labels in Step 3
+  const geoPolice = document.getElementById("geo-police");
+  const geoTow = document.getElementById("geo-tow");
+  if (geoPolice) geoPolice.innerText = spec.respondersByCounty.defaultPrimary;
+  if (geoTow) geoTow.innerText = spec.respondersByCounty.defaultSecondary;
+
+  if (currentFNOLClaim && !claims.some(c => c === currentFNOLClaim)) {
+    currentFNOLClaim.id = isMotor
+      ? "CLM-2026-00" + (claims.length + 1)
+      : `${spec.claimPrefix}2026-${120 + claims.length + 1}`;
+    currentFNOLClaim.insuranceLine = isMotor ? rawSelected : resolved;
+    currentFNOLClaim.police = spec.respondersByCounty.defaultPrimary;
+    currentFNOLClaim.tow = spec.respondersByCounty.defaultSecondary;
+  }
+}
+window.switchFNOLInsuranceLine = switchFNOLInsuranceLine;
+
+function ensureFNOLSelectorInitialized() {
+  const lineSel = document.getElementById("fnol-insurance-line");
+  if (!lineSel) return;
+  const polSel = document.getElementById("fnol-policy-select");
+  if (!polSel || polSel.options.length === 0) {
+    switchFNOLInsuranceLine(lineSel.value || "Motor");
+  }
+}
+window.ensureFNOLSelectorInitialized = ensureFNOLSelectorInitialized;
+
+function onFNOLPolicySelectChange(policyNo, silent = false) {
+  if (!policyNo || typeof policies === "undefined") return;
+  const pol = policies.find(p => p.policyNo === policyNo);
+  if (!pol) return;
+
+  const resolved = resolveClaimJourneyLine(pol.line, pol.plate);
+  const plateInput = document.getElementById("claim-plate");
+  const ownerInput = document.getElementById("claim-owner");
+  const phoneInput = document.getElementById("claim-phone");
+
+  if (plateInput) {
+    plateInput.value = resolved === "Motor"
+      ? pol.plate
+      : `${pol.policyNo} • ${String(pol.plate || "").slice(0, 26)}`;
+  }
+  if (ownerInput) ownerInput.value = pol.clientName || "Policyholder";
+  if (phoneInput && !phoneInput.value.trim()) phoneInput.value = "+254 712 345678";
+
+  if (currentFNOLClaim) {
+    currentFNOLClaim.policyNo = pol.policyNo;
+    currentFNOLClaim.insuranceLine = pol.line || resolved;
+  }
+  if (!silent) {
+    showToast("Policy Linked to FNOL", `Loaded active schedule ${pol.policyNo} (${pol.clientName}).`, "info");
+  }
+}
+window.onFNOLPolicySelectChange = onFNOLPolicySelectChange;
+
+function onFNOLPerilChange(perilCode, silent = false) {
+  const spec = getClaimJourneySpec(activeFNOLInsuranceLine);
+  const peril = spec.perils.find(p => p.code === perilCode) || spec.perils[0];
+  if (!peril) return;
+
+  const estInput = document.getElementById("claim-estimate-input");
+  if (estInput) estInput.value = String(peril.defaultCost);
+
+  if (currentFNOLClaim) {
+    currentFNOLClaim.perilCode = peril.code;
+    currentFNOLClaim.perilType = peril.label;
+    currentFNOLClaim.cost = peril.defaultCost;
+  }
+  if (!silent) {
+    showToast("Peril Benchmark Applied", `${peril.label} — reserve benchmark KSh ${peril.defaultCost.toLocaleString()}.`, "info");
+  }
+}
+window.onFNOLPerilChange = onFNOLPerilChange;
+
+function runMultiLineRegistryVerification() {
+  const spec = getClaimJourneySpec(activeFNOLInsuranceLine);
+  const polNo = document.getElementById("fnol-policy-select")?.value || "";
+  const pol = policies.find(p => p.policyNo === polNo) || policies.find(p => p.line === spec.lineName) || null;
+  const statRef = (document.getElementById("fnol-statutory-ref")?.value || spec.defaultStatRef).trim();
+  const estVal = parseFloat(document.getElementById("claim-estimate-input")?.value || "185000") || 185000;
+
+  const box = document.getElementById("multiline-verification-box");
+  const titleEl = document.getElementById("ml-verif-title");
+  const badgeEl = document.getElementById("ml-verif-badge");
+  const listEl = document.getElementById("ml-verif-details-list");
+  if (!box || !listEl) return null;
+
+  const polStatus = pol ? (pol.status || "Active") : "Active";
+  const sumInsured = pol ? Number(pol.sumInsured || 25000000) : 25000000;
+  const certId = pol ? (pol.certId || mintMultiLineCertId(spec.lineName, "2026")) : mintMultiLineCertId(spec.lineName, "2026");
+
+  let domainChecks = [];
+  if (spec.lineName === "Medical & Health") {
+    const shaOffset = Math.min(36000, Math.round(estVal * 0.12));
+    domainChecks = [
+      ["Member / Corporate Scheme", `${pol ? pol.clientName : "Active Medical Scheme"} (${pol ? pol.policyNo : "POL-MED-4011-2026"})`],
+      ["Digital Smart Card / Cert", `${certId} (${polStatus.toUpperCase()})`],
+      ["Annual Benefit Ceiling", `KSh ${sumInsured.toLocaleString()} (Remaining Sub-Limit Sufficient)`],
+      ["Mandatory SHA / SHIF Offset", `KSh ${shaOffset.toLocaleString()} Primary Bed-Rebate Deducted`],
+      ["Pre-Auth GOP & ICD-11", statRef]
+    ];
+  } else if (spec.lineName === "Property & Fire") {
+    const avgRatio = estVal <= sumInsured ? "100% Adequately Insured (Condition of Average Waived)" : "Under-Insurance Pro-Rata Flagged";
+    domainChecks = [
+      ["Insured Premises / Schedule", `${pol ? pol.plate : "LR 209/8841"} (${pol ? pol.policyNo : "POL-PRP-4021-2026"})`],
+      ["IRA Policy Certificate", `${certId} (${polStatus.toUpperCase()})`],
+      ["Declared Sum Insured", `KSh ${sumInsured.toLocaleString()} — ${avgRatio}`],
+      ["Treaty Protection", "Kenya Re 35% Quota + Africa Re Compulsory Cession Active"],
+      ["Fire / Survey Reference", statRef]
+    ];
+  } else if (spec.lineName === "Life & Pension") {
+    domainChecks = [
+      ["Assurance Bond / Scheme", `${pol ? pol.policyNo : "POL-LIF-4031-2026"} — ${pol ? pol.clientName : "Assured Member"}`],
+      ["Bond & Premium Standing", `${certId} • Paid-Up & Beyond 2-Yr Contestability`],
+      ["Section 111 Nomination", "Direct Probate-Exempt Beneficiary Trust Verified"],
+      ["Subrogation Applicability", "EXEMPT — Contingency Benefit Contract (Cap 487)"],
+      ["CRS / RBA Statutory Ref", statRef]
+    ];
+  } else if (spec.lineName === "WIBA & Liability") {
+    domainChecks = [
+      ["Employer Policy Schedule", `${pol ? pol.policyNo : "POL-WIB-4041-2026"} (${pol ? pol.clientName : "Registered Employer"})`],
+      ["WIBA Compliance Cert", `${certId} (${polStatus.toUpperCase()})`],
+      ["Statutory Cap Check", "96 Months Earnings Ceiling & First Schedule PD Verified"],
+      ["Wage-Roll Reconciliation", "Certified 12-Month Payroll Matches Underwriting Declaration"],
+      ["DOSHS Statutory Filing", statRef]
+    ];
+  } else if (spec.lineName === "Marine & Transit") {
+    domainChecks = [
+      ["Local Marine / GIT Policy", `${pol ? pol.policyNo : "POL-MAR-4051-2026"} (${pol ? pol.makeModel : "ICC (A) Warehouse-to-Warehouse"})`],
+      ["Section 20 KRA ICMS MCI", `${certId} • Synced on KenTrade Single Window`],
+      ["CIF + 10% Valuation", `KSh ${sumInsured.toLocaleString()} Insured Voyage Limit`],
+      ["Subrogation Preservation", "Carrier / Bailee Letter of Reserve Logged (Hague-Visby)"],
+      ["B/L & Port Outturn Ref", statRef]
+    ];
+  } else {
+    domainChecks = [
+      ["Agro-Zone UAI Schedule", `${pol ? pol.policyNo : "POL-AGR-4062-2026"} (${pol ? pol.plate : "UAI Geo-Fenced Polygon"})`],
+      ["KLIP / DRIVE Subsidy", `${certId} • 50% Government Co-Subsidy Active`],
+      ["Sum Insured / TLU Cap", `KSh ${sumInsured.toLocaleString()} Seasonal Protection`],
+      ["Telemetry / Vet Oracle", statRef],
+      ["Settlement Rail", "Automated Smallholder / Pastoralist M-PESA B2C"]
+    ];
+  }
+
+  if (titleEl) titleEl.innerText = `${spec.lineName} Statutory & Coverage Match`;
+  if (badgeEl) {
+    badgeEl.className = polStatus === "Active" ? "status-badge approved" : "status-badge pending";
+    badgeEl.innerText = polStatus === "Active" ? "IN-FORCE & VERIFIED" : polStatus.toUpperCase();
+  }
+  listEl.innerHTML = domainChecks.map(([k, v]) => `
+    <div style="display:flex; justify-content:space-between; gap:12px; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.06); font-size:12px;">
+      <span style="color:var(--text-secondary);">${escapeHTML(k)}:</span>
+      <strong style="color:var(--text-primary); text-align:right;">${escapeHTML(v)}</strong>
+    </div>
+  `).join("");
+
+  box.style.display = "block";
+  if (currentFNOLClaim) {
+    currentFNOLClaim.registryVerified = true;
+    currentFNOLClaim.policyStatusAtLoss = polStatus;
+    currentFNOLClaim.certId = certId;
+  }
+  showToast(`${spec.lineName} Registry Verified`, `Verified ${certId} and statutory compliance checks.`, "success");
+  return { spec, pol, certId, polStatus };
+}
+window.runMultiLineRegistryVerification = runMultiLineRegistryVerification;
+
+function openGuidedFNOLForLine(lineKey, policyNo = "") {
+  const cfg = MULTI_LINE_CONFIG[lineKey];
+  const targetLine = cfg ? cfg.lineName : "Motor";
+  navigateToView("create-claim");
+  resetFNOLStepper();
+  switchFNOLInsuranceLine(targetLine, policyNo);
+  showToast(`Guided ${targetLine} FNOL`, `Loaded 4-step ${targetLine} statutory intake & adjudication workflow.`, "info");
+}
+window.openGuidedFNOLForLine = openGuidedFNOLForLine;
+
+function advanceClaimJourneyStage(claimId) {
+  const c = claimId ? claims.find(x => x.id === claimId) : currentFNOLClaim;
+  if (!c) return null;
+
+  const spec = getClaimJourneySpec(c);
+  const curStage = getClaimJourneyStage(c);
+  const nextStage = curStage < 5 ? curStage + 1 : 5;
+  c.journeyStage = nextStage;
+
+  if (nextStage === 4 && c.status === "Pending") {
+    c.status = "Approved";
+    c.approvalStatus = "Approved";
+  } else if (nextStage === 5 && c.status !== "Disbursed") {
+    c.status = "Approved";
+    c.approvalStatus = "Approved";
+  }
+
+  const stageName = spec.stages[nextStage - 1] || `Stage ${nextStage}`;
+  showToast("Claims Journey Advanced", `${c.id} (${spec.lineName}) -> ${stageName}`, "success");
+
+  renderClaimsDirectory();
+  renderDashboard();
+  renderAllInsuranceLineModules();
+  if (typeof renderMpesaGateway === "function") renderMpesaGateway();
+  if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
+
+  const modal = document.getElementById("audit-modal");
+  if (modal && modal.classList.contains("active") && currentFNOLClaim && currentFNOLClaim.id === c.id) {
+    openAuditModal(c.id);
+  }
+  return nextStage;
+}
+window.advanceClaimJourneyStage = advanceClaimJourneyStage;
+
+function routeClaimToFulfillmentChannel(claimId) {
+  const c = claimId ? claims.find(x => x.id === claimId) : currentFNOLClaim;
+  if (!c) return;
+  const spec = getClaimJourneySpec(c);
+  const modal = document.getElementById("audit-modal");
+  if (modal) modal.classList.remove("active");
+
+  const targetView = spec.fulfillmentView || "mpesa-gateway";
+  navigateToView(targetView);
+
+  if (targetView === "garage-network") {
+    const gSel = document.getElementById("garage-motor-claim-select");
+    if (gSel) {
+      gSel.value = c.id;
+      onGarageMotorClaimSelectChange(c.id);
+    }
+  } else if (targetView === "loss-assessors") {
+    const aSel = document.getElementById("assessor-claim-select");
+    if (aSel) {
+      aSel.value = c.id;
+      onAssessorClaimSelectChange(c.id);
+    }
+  } else if (targetView === "subrogation-recovery") {
+    const sSel = document.getElementById("subrogation-claim-select");
+    if (sSel && allowsClaimSubrogation(c)) {
+      sSel.value = c.id;
+    }
+  }
+  showToast("Routed to Domain Fulfillment", `Opened ${spec.fulfillmentLabel} desk for ${c.id} (${spec.lineName}).`, "info");
+}
+window.routeClaimToFulfillmentChannel = routeClaimToFulfillmentChannel;
+
+function onGarageMotorClaimSelectChange(claimId) {
+  const c = claims.find(x => x.id === claimId && isMotorClaimRecord(x));
+  if (!c) return;
+  const subEl = document.getElementById("track-vehicle-subtitle");
+  if (subEl) {
+    subEl.innerText = `Active Repair File: ${c.id} • Plate ${c.plate} (${c.owner}) • Est. KSh ${Number(c.cost || 0).toLocaleString()}`;
+  }
+}
+window.onGarageMotorClaimSelectChange = onGarageMotorClaimSelectChange;
+
+function onAssessorClaimSelectChange(claimId) {
+  const c = claims.find(x => x.id === claimId);
+  if (!c) return;
+  const spec = getClaimJourneySpec(c);
+  const guideEl = document.getElementById("assessor-line-guidance");
+  const firmEl = document.getElementById("assessor-report-firm");
+  const refEl = document.getElementById("assessor-report-ref");
+  const detailsEl = document.getElementById("assessor-report-details");
+  const verdictEl = document.getElementById("assessor-report-verdict");
+
+  if (guideEl) {
+    guideEl.innerText = `${spec.lineName}: Recommended specialist — ${spec.respondersByCounty.defaultSecondary}`;
+  }
+  if (firmEl) {
+    firmEl.innerText = `Selected Dossier: ${c.id} (${spec.lineName}) — ${c.owner} (${c.plate})`;
+  }
+  if (refEl) {
+    refEl.innerText = `Statutory Ref: ${c.statutoryRef || spec.defaultStatRef}`;
+  }
+  if (detailsEl) {
+    detailsEl.innerHTML = `
+      <div><strong>Peril / Claim Event:</strong> ${escapeHTML(c.perilType || spec.perils[0].label)}</div>
+      <div><strong>Location / Facility:</strong> ${escapeHTML(c.county || "Kenya")} &middot; ${escapeHTML(c.police || spec.respondersByCounty.defaultPrimary)}</div>
+      <div><strong>Reserve / Quantum:</strong> KSh ${Number(c.cost || 0).toLocaleString()} &middot; <strong>Stage:</strong> ${escapeHTML(getClaimJourneyStageLabel(c))}</div>
+    `;
+  }
+  if (verdictEl) {
+    verdictEl.innerText = `Status: ${c.status} (${c.triage} Triage — Fraud/Anomaly Score ${c.fraudScore}%)`;
+  }
+}
+window.onAssessorClaimSelectChange = onAssessorClaimSelectChange;
+
+function registerSubrogationFromClaim(explicitClaimId = "", explicitLiableParty = "", explicitFault = "") {
+  const sel = document.getElementById("subrogation-claim-select");
+  const partyInput = document.getElementById("subrogation-liable-party");
+  const faultSel = document.getElementById("subrogation-fault-select");
+
+  const claimId = explicitClaimId || (sel ? sel.value : "");
+  const c = claims.find(x => x.id === claimId);
+  if (!c) {
+    showToast("Select Eligible Claim", "Choose an indemnity claim file to initiate subrogation recovery.", "warning");
+    return false;
+  }
+
+  // Enforce Kenyan Insurance Law Indemnity-Only Subrogation Gate
+  if (!allowsClaimSubrogation(c)) {
+    const line = resolveClaimJourneyLine(c.insuranceLine, c.plate);
+    showToast(
+      "Subrogation Blocked by Insurance Law",
+      line === "Life & Pension"
+        ? `Claim ${c.id} (${line}) is a Contingency Assurance contract under Cap 487 — subrogation strictly does NOT apply.`
+        : `Claim ${c.id} (${line}) is a Parametric Weather-Index payout with no third-party tortfeasor — subrogation does NOT apply.`,
+      "danger"
+    );
+    return false;
+  }
+
+  const spec = getClaimJourneySpec(c);
+  const liableParty = (explicitLiableParty || (partyInput ? partyInput.value : "") || "").trim() || spec.subrogationBasis;
+  const faultBasis = explicitFault || (faultSel ? faultSel.value : "") || "100% Third-Party / Carrier";
+
+  const existing = subrogationCases.find(s => s.claimId === c.id);
+  if (existing) {
+    existing.thirdPartyInsurer = liableParty;
+    existing.fault = faultBasis;
+    existing.amount = `KSh ${Number(c.cost || 0).toLocaleString()}`;
+    existing.status = "Demand Notice Sent";
+  } else {
+    subrogationCases.unshift({
+      claimId: c.id,
+      insuranceLine: spec.lineName,
+      vehicle: c.plate,
+      thirdPartyInsurer: liableParty,
+      fault: faultBasis,
+      amount: `KSh ${Number(c.cost || 0).toLocaleString()}`,
+      status: "Demand Notice Sent"
+    });
+  }
+
+  if (partyInput) partyInput.value = "";
+  renderSubrogationRecovery();
+  showToast(
+    "Subrogation Demand Docked",
+    `Filed indemnity recovery demand for ${c.id} (${spec.lineName}) against ${liableParty} for KSh ${Number(c.cost || 0).toLocaleString()}.`,
+    "success"
+  );
+  return subrogationCases.find(s => s.claimId === c.id) || true;
+}
+window.registerSubrogationFromClaim = registerSubrogationFromClaim;
+
 function populateLineClaimPolicySelect(lineKey) {
   const cfg = MULTI_LINE_CONFIG[lineKey];
   const select = document.getElementById(`clm-${lineKey}-policy`);
@@ -13027,24 +14941,42 @@ function prefillLineClaimFromPolicy(lineKey, policyNo) {
 }
 window.prefillLineClaimFromPolicy = prefillLineClaimFromPolicy;
 
-// Submit a Line-Specific Claim synced with Master Claims Directory & 60-Min SLA Watchdog
+// Submit a Line-Specific Claim synced with Master Claims Directory, Audit Modal & 60-Min SLA Watchdog
 function submitInsuranceLineClaim(lineKey) {
   const cfg = MULTI_LINE_CONFIG[lineKey];
   if (!cfg) return null;
 
+  const spec = getClaimJourneySpec(cfg.lineName);
   const polNo = document.getElementById(`clm-${lineKey}-policy`)?.value || `${cfg.polPrefix}4011-2026`;
   const pol = policies.find(p => p.policyNo === polNo);
   const claimant = (document.getElementById(`clm-${lineKey}-claimant`)?.value || "").trim() || (pol ? pol.clientName : "Policyholder");
-  const amount = Math.max(5000, parseFloat(document.getElementById(`clm-${lineKey}-amount`)?.value) || 150000);
-  const desc = (document.getElementById(`clm-${lineKey}-desc`)?.value || "").trim() || `${cfg.lineName} Claim Assessment`;
+  const amount = Math.max(5000, parseFloat(document.getElementById(`clm-${lineKey}-amount`)?.value) || spec.perils[0].defaultCost);
+  const desc = (document.getElementById(`clm-${lineKey}-desc`)?.value || "").trim() || `${spec.perils[0].label} — ${ spec.defaultStatRef }`;
 
   const claimId = `${cfg.claimPrefix}2026-${Math.floor(100 + Math.random() * 899)}`;
-  const fraudScore = amount > 2000000 ? 38 : 12;
-  const triage = amount <= 250000 ? "Green" : (amount <= 1500000 ? "Yellow" : "Red");
+  const defaultPeril = spec.perils[0];
+  const fastCap = defaultPeril.fastTrackCap || 250000;
+  const triage = amount <= fastCap ? "Green" : (amount <= 2500000 ? "Yellow" : "Red");
+  const fraudScore = triage === "Green" ? 8 : (triage === "Yellow" ? 21 : 58);
+
+  const branchCoordsMap = {
+    "HQ": [-1.286389, 36.817223],
+    "Mombasa": [-4.043477, 39.668206],
+    "Kisumu": [-0.091702, 34.767956],
+    "Nakuru": [-0.303099, 36.080025]
+  };
+  const coords = (pol && branchCoordsMap[pol.branch]) ? branchCoordsMap[pol.branch] : [-1.286389, 36.817223];
+  const county = pol && pol.branch === "Mombasa"
+    ? "Mombasa County"
+    : pol && pol.branch === "Kisumu"
+      ? "Kisumu County"
+      : pol && pol.branch === "Nakuru"
+        ? "Nakuru County"
+        : "Nairobi County";
 
   const newClaim = {
     id: claimId,
-    plate: `${polNo} • ${pol ? pol.plate.slice(0, 22) : cfg.lineName}`,
+    plate: `${polNo} • ${pol ? String(pol.plate || "").slice(0, 22) : cfg.lineName}`,
     owner: claimant,
     phone: "+254 712 400 800",
     date: new Date().toISOString().slice(0, 10),
@@ -13056,7 +14988,24 @@ function submitInsuranceLineClaim(lineKey) {
     submittedAt: Date.now(),
     insuranceLine: cfg.lineName,
     policyNo: polNo,
+    perilCode: defaultPeril.code,
+    perilType: defaultPeril.label,
+    statutoryRef: desc,
     description: desc,
+    dossierDocs: [...spec.docs],
+    journeyStage: 3,
+    payoutChannel: spec.defaultChannel,
+    bankDetails: spec.defaultBank,
+    coords,
+    county,
+    police: spec.respondersByCounty.defaultPrimary,
+    tow: spec.respondersByCounty.defaultSecondary,
+    annotations: [],
+    flags: [
+      `${cfg.lineName} policy ${polNo} verified active prior to loss date.`,
+      `Statutory reference logged: ${desc}`,
+      `Queued under 60-Minute Executive SLA Watchdog (${triage} Path).`
+    ],
     aiConfidence: 96,
     severity: amount > 1000000 ? "Major" : "Moderate"
   };
@@ -13070,29 +15019,35 @@ function submitInsuranceLineClaim(lineKey) {
   renderClaimsDirectory();
   renderDashboard();
   renderInsuranceLineModule(lineKey);
+  if (typeof renderMpesaGateway === "function") renderMpesaGateway();
+  if (typeof renderLossAssessors === "function") renderLossAssessors();
+  if (typeof renderSubrogationRecovery === "function") renderSubrogationRecovery();
   if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
 
   showToast(
     `${cfg.lineName} Claim Registered`,
-    `Claim ${claimId} (KSh ${amount.toLocaleString()}) synced to Master Claims Directory & 60-Min SLA Watchdog.`,
+    `Claim ${claimId} (KSh ${amount.toLocaleString()}) synced to Line Pipeline, Master Directory & 60-Min SLA Watchdog.`,
     "success"
   );
   return newClaim;
 }
 window.submitInsuranceLineClaim = submitInsuranceLineClaim;
 
-// Render Dedicated Insurance Module (KPIs, Policy Ledger, Quote Engine & Specialized Ops Desk)
+// Render Dedicated Insurance Module (KPIs, Policy Ledger, Quote Engine, Ops Desk & End-to-End Line Claims Pipeline)
 function renderInsuranceLineModule(lineKey) {
   seedCompositeInsurancePortfolio();
+  seedMultiLineClaimsAndEcosystem();
   const cfg = MULTI_LINE_CONFIG[lineKey];
   if (!cfg) return;
 
+  const spec = getClaimJourneySpec(cfg.lineName);
   const linePolicies = policies.filter(p => p.line === cfg.lineName);
   const inForce = linePolicies.filter(p => p.status !== "Cancelled");
   const activeCount = linePolicies.filter(p => p.status === "Active" || p.status === "Pending").length;
   const totalExposure = inForce.reduce((s, p) => s + (Number(p.sumInsured) || 0), 0);
   const totalGwp = inForce.reduce((s, p) => s + (Number(p.premium) || 0), 0);
   const opsList = multiLineOpsQueues[lineKey] || [];
+  const lineClaims = claims.filter(c => resolveClaimJourneyLine(c.insuranceLine, c.plate) === cfg.lineName);
 
   const setKpi = (suffix, text) => {
     const el = document.getElementById(`ins-${lineKey}-kpi-${suffix}`);
@@ -13101,7 +15056,7 @@ function renderInsuranceLineModule(lineKey) {
   setKpi("active", activeCount.toLocaleString());
   setKpi("exposure", `KSh ${totalExposure.toLocaleString()}`);
   setKpi("gwp", `KSh ${totalGwp.toLocaleString()}`);
-  setKpi("ops", opsList.length.toLocaleString());
+  setKpi("ops", (opsList.length + lineClaims.length).toLocaleString());
 
   // Render Policy Ledger Table
   const tbody = document.getElementById(`ins-${lineKey}-ledger-tbody`);
@@ -13150,7 +15105,7 @@ function renderInsuranceLineModule(lineKey) {
               <div style="display:flex; gap:5px; justify-content:flex-end; flex-wrap:nowrap;">
                 ${approveBtn}
                 <button class="btn btn-secondary" onclick="openMultiLineCertModal('${escapeHTML(p.policyNo)}')" style="padding:4px 8px; font-size:11px;">Digital Cert</button>
-                <button class="btn btn-secondary" onclick="prefillLineClaimFromPolicy('${lineKey}', '${escapeHTML(p.policyNo)}')" style="padding:4px 8px; font-size:11px;">File Claim</button>
+                <button class="btn btn-secondary" onclick="openGuidedFNOLForLine('${lineKey}', '${escapeHTML(p.policyNo)}')" style="padding:4px 8px; font-size:11px;">Guided FNOL</button>
                 <button class="btn btn-secondary" onclick="toggleSuspendPolicy('${escapeHTML(p.policyNo)}')" style="padding:4px 8px; font-size:11px;">${p.status === "Suspended" ? "Reinstate" : "Suspend"}</button>
               </div>
             </td>
@@ -13180,6 +15135,51 @@ function renderInsuranceLineModule(lineKey) {
     }).join("");
   }
 
+  // Render Line-Specific End-to-End Claims Journey Pipeline Table
+  const claimsTbody = document.getElementById(`ins-${lineKey}-claims-tbody`);
+  if (claimsTbody) {
+    if (lineClaims.length === 0) {
+      claimsTbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:18px; color:var(--text-muted);">No ${escapeHTML(cfg.lineName)} claims filed yet. Use Quick Notice or Guided 4-Step FNOL above.</td></tr>`;
+    } else {
+      claimsTbody.innerHTML = lineClaims.map(c => {
+        const stg = getClaimJourneyStage(c);
+        const stgLabel = spec.stages[stg - 1] || `Stage ${stg}/5`;
+        const approveBtn = c.status === "Pending"
+          ? `<button class="btn btn-primary" onclick="approvePendingItem('CLAIM', '${escapeHTML(c.id)}')" style="padding:4px 8px; font-size:11px;">Approve</button>`
+          : "";
+        const settleBtn = c.status === "Approved"
+          ? `<button class="btn btn-primary" onclick="executeChannelPayout('${escapeHTML(c.id)}')" style="padding:4px 8px; font-size:11px;">Settle</button>`
+          : "";
+        const nextBtn = stg < 5
+          ? `<button class="btn btn-secondary" onclick="advanceClaimJourneyStage('${escapeHTML(c.id)}')" style="padding:4px 8px; font-size:11px;">Stage +1</button>`
+          : "";
+
+        return `
+          <tr>
+            <td><strong><code>${escapeHTML(c.id)}</code></strong><div style="font-size:10.5px; color:var(--text-muted);">${escapeHTML(c.date)}</div></td>
+            <td><code>${escapeHTML(c.plate)}</code></td>
+            <td><div style="font-weight:600;">${escapeHTML(c.owner)}</div><div style="font-size:10.5px; color:var(--text-muted);">${escapeHTML(c.county || "")}</div></td>
+            <td>
+              <div style="font-size:12px;">${escapeHTML(c.perilType || spec.perils[0].label)}</div>
+              <div style="font-size:10.5px; color:#c89565;">${escapeHTML(c.statutoryRef || "")}</div>
+            </td>
+            <td><span class="journey-stage-pill">Stage ${stg}/5 &middot; ${escapeHTML(stgLabel.replace(/^\d+\.\s*/, ""))}</span></td>
+            <td style="white-space:nowrap; font-weight:700; color:#dfc09f;">KSh ${Number(c.cost || 0).toLocaleString()}</td>
+            <td><span class="status-badge ${getStatusClass(c.status)}">${escapeHTML(c.status)}</span></td>
+            <td>
+              <div style="display:flex; gap:5px; justify-content:flex-end; flex-wrap:nowrap;">
+                <button class="btn btn-secondary" onclick="openAuditModal('${escapeHTML(c.id)}')" style="padding:4px 8px; font-size:11px;">Audit</button>
+                ${nextBtn}
+                ${approveBtn}
+                ${settleBtn}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+  }
+
   populateLineClaimPolicySelect(lineKey);
   calculateInsuranceLineQuote(lineKey);
   updateInsuranceTabCounts();
@@ -13188,6 +15188,7 @@ window.renderInsuranceLineModule = renderInsuranceLineModule;
 
 function renderAllInsuranceLineModules() {
   seedCompositeInsurancePortfolio();
+  seedMultiLineClaimsAndEcosystem();
   Object.keys(MULTI_LINE_CONFIG).forEach(k => renderInsuranceLineModule(k));
   updateInsuranceTabCounts();
 }
@@ -13350,11 +15351,19 @@ function printMultiLineCertificate() {
 }
 window.printMultiLineCertificate = printMultiLineCertificate;
 
-// Auto-initialize Composite Multi-Line Portfolio & Tab Badges
+// Auto-initialize Composite Multi-Line Portfolio, Claims Ecosystem & Tab Badges
 function initCompositeInsuranceSystem() {
   seedCompositeInsurancePortfolio();
+  seedMultiLineClaimsAndEcosystem();
+  ensureFNOLSelectorInitialized();
   renderAllInsuranceLineModules();
   renderPolicyRegistry();
+  if (typeof renderClaimsDirectory === "function") renderClaimsDirectory();
+  if (typeof renderDashboard === "function") renderDashboard();
+  if (typeof renderGarageNetwork === "function") renderGarageNetwork();
+  if (typeof renderMpesaGateway === "function") renderMpesaGateway();
+  if (typeof renderLossAssessors === "function") renderLossAssessors();
+  if (typeof renderSubrogationRecovery === "function") renderSubrogationRecovery();
   syncInsuranceLinesTabBar(typeof activeView === "string" && activeView ? activeView : "dashboard");
 }
 
@@ -13363,4 +15372,3 @@ if (document.readyState === "loading") {
 } else {
   initCompositeInsuranceSystem();
 }
-

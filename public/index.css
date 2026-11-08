@@ -6142,4 +6142,170 @@ div[style*="display: grid"] > * {
   border: 1px solid rgba(232, 201, 155, 0.55) !important;
 }
 
+/* ==========================================================================
+   MULTI-LINE CLAIMS JOURNEY & STATUTORY DOSSIER ENGINE
+   ========================================================================== */
+.fnol-line-config-bar {
+  background: linear-gradient(135deg, rgba(21, 18, 16, 0.98) 0%, rgba(18, 15, 13, 0.96) 100%);
+  border: 1px solid rgba(200, 149, 101, 0.34);
+  border-left: 3px solid #c89565;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 22px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.fnol-line-config-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.fnol-journey-preview-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(200, 149, 101, 0.24);
+  align-items: center;
+}
+
+.fnol-stage-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(12, 10, 9, 0.85);
+  border: 1px solid rgba(200, 149, 101, 0.24);
+  color: #dfd3c3;
+}
+
+.fnol-stage-chip .stage-idx {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: rgba(139, 90, 43, 0.38);
+  color: #f3cf98;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.multiline-dossier-card {
+  background: linear-gradient(180deg, #14100d 0%, #0e0b09 100%);
+  border: 1px solid rgba(200, 149, 101, 0.3);
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.fnol-doc-checklist {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.fnol-doc-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(200, 149, 101, 0.2);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.fnol-doc-item:hover {
+  border-color: rgba(200, 149, 101, 0.48);
+  background: rgba(139, 90, 43, 0.1);
+}
+
+.fnol-doc-item input[type="checkbox"] {
+  margin-top: 2px;
+  width: 15px;
+  height: 15px;
+  accent-color: #c89565;
+  flex-shrink: 0;
+}
+
+.modal-journey-card {
+  background: linear-gradient(135deg, rgba(139, 90, 43, 0.12) 0%, rgba(15, 12, 10, 0.96) 100%);
+  border: 1px solid rgba(200, 149, 101, 0.32);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+
+.modal-journey-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.modal-journey-step {
+  padding: 8px 9px;
+  border-radius: 8px;
+  background: rgba(12, 10, 9, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--text-muted);
+}
+
+.modal-journey-step.done {
+  border-color: rgba(16, 185, 129, 0.42);
+  background: rgba(16, 185, 129, 0.09);
+  color: #d1fae5;
+}
+
+.modal-journey-step.current {
+  border-color: #c89565;
+  background: rgba(139, 90, 43, 0.24);
+  color: #fffaf2;
+  font-weight: 700;
+  box-shadow: 0 0 0 1px rgba(200, 149, 101, 0.25);
+}
+
+.modal-dossier-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  background: #110e0c;
+  border: 1px solid rgba(200, 149, 101, 0.26);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.journey-stage-pill {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(139, 90, 43, 0.18);
+  border: 1px solid rgba(200, 149, 101, 0.34);
+  color: #dfc09f;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .fnol-line-config-grid,
+  .fnol-doc-checklist,
+  .modal-dossier-grid {
+    grid-template-columns: 1fr;
+  }
+  .modal-journey-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 
