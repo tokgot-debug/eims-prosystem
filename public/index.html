@@ -22,7 +22,7 @@
   </script>
   
   <!-- Modern CSS styling -->
-  <link rel="stylesheet" href="index.css?v=20261108b">
+  <link rel="stylesheet" href="index.css?v=20261108c">
   
   <!-- Leaflet CSS for Map integration -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
@@ -1580,24 +1580,65 @@
           <div class="view-title-block">
             <div>
               <h1>Policy & Certificate Registry</h1>
-              <p>Underwrite, debit, suspend, cancel policies, and issue or declare insurance certificates</p>
+              <p>Underwrite, approve, debit, suspend, or cancel policies, and issue or verify cryptographic AKI digital certificates</p>
             </div>
-            <button class="btn btn-primary" id="policy-create-btn" onclick="openNewPolicyModal()" style="background:linear-gradient(135deg, #8b5a2b, #a46a34); font-weight:800; border:none; padding:10px 18px; border-radius:10px; box-shadow:0 4px 14px rgba(139, 90, 43,0.35); display:inline-flex; align-items:center; gap:8px;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <line x1="12" y1="18" x2="12" y2="12"></line>
-                <line x1="9" y1="15" x2="15" y2="15"></line>
-              </svg>
-              New Policy File
-            </button>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+              <button class="btn btn-secondary" onclick="openRenewalModal()" style="padding:10px 14px; font-weight:600;">
+                Renewal Batch
+              </button>
+              <button class="btn btn-primary" id="policy-create-btn" onclick="openNewPolicyModal()" style="background:linear-gradient(135deg, #8b5a2b, #6f4722); font-weight:700; border:1px solid rgba(200, 149, 101, 0.35); padding:10px 18px; border-radius:10px; box-shadow:0 4px 14px rgba(0, 0, 0, 0.35); display:inline-flex; align-items:center; gap:8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <line x1="12" y1="18" x2="12" y2="12"></line>
+                  <line x1="9" y1="15" x2="15" y2="15"></line>
+                </svg>
+                New Policy File
+              </button>
+            </div>
+          </div>
+
+          <!-- Underwriting Live KPI Strip -->
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:20px;">
+            <div class="dashboard-card" style="padding:16px 18px;">
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Active Policies</div>
+              <div id="uw-kpi-active" style="font-size:24px; font-weight:800; color:var(--text-primary); margin-top:4px;">9</div>
+              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">In-force motor, EV &amp; general cover</div>
+            </div>
+            <div class="dashboard-card" style="padding:16px 18px;">
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Pending Approval (60m SLA)</div>
+              <div id="uw-kpi-pending" style="font-size:24px; font-weight:800; color:#c89565; margin-top:4px;">0</div>
+              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">Synced with Dashboard SLA Watchdog</div>
+            </div>
+            <div class="dashboard-card" style="padding:16px 18px;">
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Gross Written Premium</div>
+              <div id="uw-kpi-gwp" style="font-size:24px; font-weight:800; color:var(--primary); margin-top:4px;">KSh 1,355,500</div>
+              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">Individual &amp; master policy ledger</div>
+            </div>
+            <div class="dashboard-card" style="padding:16px 18px;">
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Issued AKI Digital Certs</div>
+              <div id="uw-kpi-certs" style="font-size:24px; font-weight:800; color:var(--success); margin-top:4px;">9</div>
+              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">SHA-256 signed &amp; QR verifiable</div>
+            </div>
           </div>
 
           <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:20px; margin-bottom: 24px;">
             <!-- Policy list card -->
             <div class="dashboard-card" style="padding:20px; grid-column: 1 / -1;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
-                <h3 style="font-size:15px; font-weight:600;">Active Policy Ledger</h3>
-                <input type="text" class="form-control" id="policy-search-input" placeholder="Filter plate or client..." style="width:220px; padding:6px 12px; font-size:12px;">
+                <div>
+                  <h3 style="font-size:15px; font-weight:600; margin:0;">Active &amp; Pending Policy Ledger</h3>
+                  <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Approve new underwriting files inline or manage debit notes and AKI certificates</div>
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                  <select class="form-control" id="policy-status-filter" onchange="renderPolicyRegistry()" style="width:165px; padding:6px 10px; font-size:12px;">
+                    <option value="ALL">All Statuses</option>
+                    <option value="Pending">Pending Approval</option>
+                    <option value="Active">Active</option>
+                    <option value="Suspended">Suspended</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                  <input type="text" class="form-control" id="policy-search-input" placeholder="Search policy, plate, client..." style="width:230px; padding:6px 12px; font-size:12px;">
+                </div>
               </div>
               
               <div class="claims-table-wrapper" style="border:none;">
@@ -1606,7 +1647,7 @@
                     <tr>
                       <th>Policy No</th>
                       <th>Client Name</th>
-                      <th>Plate / Item</th>
+                      <th>Plate / Asset</th>
                       <th>Line</th>
                       <th>Premium</th>
                       <th>Debited</th>
@@ -1623,29 +1664,32 @@
 
             <!-- Certificate validation / declaration tool -->
             <div class="dashboard-card" style="padding:20px;">
-              <h3 style="font-size:15px; font-weight:600; margin-bottom:12px;">Declare / Check Certificate</h3>
-              <p style="font-size:12px; color:var(--text-secondary); margin-bottom:16px;">
-                Query AKI certificate reference registry to declare validity or inspect active state.
+              <h3 style="font-size:15px; font-weight:600; margin-bottom:10px;">Declare / Verify AKI Certificate or Plate</h3>
+              <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">
+                Query individual policies and County Fleet schedules by AKI Certificate ID or Vehicle Registration Plate.
               </p>
               
               <div class="form-group" style="margin-bottom:12px;">
-                <label for="lookup-cert-id">Certificate ID Reference</label>
-                <input type="text" class="form-control" id="lookup-cert-id" placeholder="e.g. CERT-9082-2026" style="text-transform:uppercase;">
+                <label for="lookup-cert-id">Certificate ID or Vehicle Plate</label>
+                <input type="text" class="form-control" id="lookup-cert-id" placeholder="e.g. CERT-8973-2026 or KDG 123A" style="text-transform:uppercase;">
               </div>
-              <button class="btn btn-secondary" id="lookup-cert-btn" style="width:100%; margin-bottom:12px;">Declare Certificate Status</button>
+              <button class="btn btn-secondary" id="lookup-cert-btn" style="width:100%; margin-bottom:12px;">Verify Coverage &amp; Certificate Status</button>
               
               <div id="cert-status-result" class="dashboard-card" style="display:none; padding:12px; background-color:var(--bg-primary); border-color:var(--border-color); font-size:12.5px;">
                 <!-- Filled via JS -->
               </div>
             </div>
 
-            <!-- Valuation Report Limitation Info Card -->
-            <div class="dashboard-card" style="padding:20px; background-color:rgba(245, 158, 11, 0.05); border-color:var(--warning);">
-              <div style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:13px; color:var(--warning); margin-bottom:6px;">
-                <span> System Operating Limitation</span>
+            <!-- Valuation & Statutory Compliance Info Card -->
+            <div class="dashboard-card" style="padding:20px; background-color:rgba(139, 90, 43, 0.08); border-color:rgba(200, 149, 101, 0.35);">
+              <div style="display:flex; align-items:center; gap:8px; font-weight:700; font-size:13px; color:#dfc09f; margin-bottom:8px;">
+                <span>Underwriting Governance &amp; Valuation Rules</span>
               </div>
-              <p style="font-size:12px; color:var(--text-secondary); line-height:1.5;">
-                Motor Valuation Reports cannot be automatically checked or pulled via direct API. Physical inspection reports are required for policy valuation verification.
+              <p style="font-size:12px; color:var(--text-secondary); line-height:1.55; margin-bottom:10px;">
+                Every newly underwritten policy or fleet schedule automatically dispatches an email alert to designated approvers and enters the <strong>60-Minute Pending Approval SLA Watchdog</strong>.
+              </p>
+              <p style="font-size:12px; color:var(--text-secondary); line-height:1.55; margin:0;">
+                Statutory levies follow Kenya Insurance Act Cap 487 (0.25% PHCF, 0.20% Training Levy, and KSh 40 Stamp Duty per certificate). Physical motor valuation inspection applies within 14 days of inception.
               </p>
             </div>
           </div>
@@ -2468,8 +2512,20 @@
             <!-- EV Underwriting Input Card -->
             <div class="dashboard-card" style="padding:24px;">
               <h3 style="font-size:15px; font-weight:700; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
-                Electric Vehicle Telemetry & Underwriting Inputs
+                Electric Vehicle Telemetry &amp; Underwriting Inputs
               </h3>
+
+              <!-- EV Insured Client & Registration Plate -->
+              <div style="display:grid; grid-template-columns:1.25fr 1fr; gap:16px; margin-bottom:16px;">
+                <div class="form-group">
+                  <label for="ev-client-name">Insured Client / Entity Name</label>
+                  <input type="text" id="ev-client-name" class="form-control" value="Green Mobility Kenya Ltd" placeholder="e.g. Green Mobility Kenya Ltd">
+                </div>
+                <div class="form-group">
+                  <label for="ev-plate-input">EV Registration Plate</label>
+                  <input type="text" id="ev-plate-input" class="form-control" value="KDG 888E" placeholder="e.g. KDG 888E" style="text-transform:uppercase; font-weight:700;">
+                </div>
+              </div>
 
               <!-- EV Make & Model Selection -->
               <div class="form-group" style="margin-bottom:16px;">
@@ -2503,7 +2559,7 @@
                   <span><strong>Annual Mileage Telemetry:</strong> <span style="color:var(--text-secondary);" id="ev-km-label">7,500 km / year</span></span>
                   <strong style="color:var(--success);" id="ev-usage-discount-label">-12.5% Low Usage Rebate</strong>
                 </div>
-                <input type="range" id="ev-km-range" min="2000" max="25000" value="7500" step="500" style="width:100%; accent-color:var(--success);" oninput="calculateEVPremium()">
+                <input type="range" id="ev-km-range" min="2000" max="25000" value="7500" step="500" style="width:100%; accent-color:#c89565;" oninput="calculateEVPremium()">
                 <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); margin-top:4px;">
                   <span>2,000 km (Ultra Low)</span>
                   <span>10,000 km (Standard)</span>
@@ -2513,19 +2569,19 @@
 
               <!-- Spare Parts Scarcity & Sourcing Channel -->
               <div class="form-group" style="margin-bottom:16px;">
-                <label for="ev-spare-sourcing">HV Spare Parts Sourcing & Battery Import Scarcity</label>
+                <label for="ev-spare-sourcing">HV Spare Parts Sourcing &amp; Battery Import Scarcity</label>
                 <select id="ev-spare-sourcing" class="form-control" style="font-size:12.5px;" onchange="calculateEVPremium()">
                   <option value="15">High Scarcity: Imported OEM Battery/Inverter Modules (+15% Loading)</option>
                   <option value="10">Moderate Scarcity: Regional Accredited Battery Hub (+10% Loading)</option>
-                  <option value="5">Standard: Local Accredited Assembly & Supply (+5% Loading)</option>
+                  <option value="5">Standard: Local Accredited Assembly &amp; Supply (+5% Loading)</option>
                 </select>
               </div>
 
               <!-- ADAS & Safety Checkboxes -->
               <div style="display:flex; flex-direction:column; gap:8px; font-size:12px; background:var(--bg-primary); border:1px solid var(--border-color); border-radius:8px; padding:12px;">
-                <div style="font-weight:700; color:var(--text-primary); margin-bottom:4px;">EV Safety & Thermal Protection Features:</div>
+                <div style="font-weight:700; color:var(--text-primary); margin-bottom:4px;">EV Safety &amp; Thermal Protection Features:</div>
                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                  <input type="checkbox" id="ev-chk-adas" checked onchange="calculateEVPremium()"> Autonomous Emergency Braking & ADAS System (-7.5% Rebate)
+                  <input type="checkbox" id="ev-chk-adas" checked onchange="calculateEVPremium()"> Autonomous Emergency Braking &amp; ADAS System (-7.5% Rebate)
                 </label>
                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                   <input type="checkbox" id="ev-chk-thermal" checked onchange="calculateEVPremium()"> Certified Battery Thermal Runaway Management (-5.0% Rebate)
@@ -2539,21 +2595,21 @@
 
             <!-- EV Premium Computation Breakdown Card -->
             <div style="display:flex; flex-direction:column; gap:20px;">
-              <div class="dashboard-card" style="padding:24px; background:linear-gradient(135deg, rgba(139, 90, 43,0.1), rgba(16,185,129,0.1)); border:1px solid #8b5a2b;">
-                <h3 style="font-size:15px; font-weight:700; color:var(--primary); margin-bottom:16px;">EV Actuarial Premium Statement</h3>
+              <div class="dashboard-card" style="padding:24px; background:linear-gradient(145deg, rgba(139, 90, 43, 0.12), rgba(21, 18, 16, 0.92)); border:1px solid rgba(200, 149, 101, 0.35);">
+                <h3 style="font-size:15px; font-weight:700; color:#dfc09f; margin-bottom:16px;">EV Actuarial Premium Statement</h3>
 
                 <div style="display:flex; flex-direction:column; gap:10px; font-size:12.5px;">
                   <div style="display:flex; justify-content:space-between;">
                     <span>Base EV Rate (3.50%):</span> <strong id="ev-calc-base">KSh 157,500</strong>
                   </div>
                   <div style="display:flex; justify-content:space-between; color:#f87171;">
-                    <span>+ HV Battery & Spare Scarcity Loading:</span> <strong id="ev-calc-spare">+KSh 23,625 (+15.0%)</strong>
+                    <span>+ HV Battery &amp; Spare Scarcity Loading:</span> <strong id="ev-calc-spare">+KSh 23,625 (+15.0%)</strong>
                   </div>
                   <div style="display:flex; justify-content:space-between; color:#34d399;">
                     <span>- Low Annual Telemetry Usage Rebate:</span> <strong id="ev-calc-usage">-KSh 19,687 (-12.5%)</strong>
                   </div>
                   <div style="display:flex; justify-content:space-between; color:#34d399;">
-                    <span>- ADAS & Safety Tech Discount:</span> <strong id="ev-calc-adas">-KSh 23,625 (-15.0%)</strong>
+                    <span>- ADAS &amp; Safety Tech Discount:</span> <strong id="ev-calc-adas">-KSh 23,625 (-15.0%)</strong>
                   </div>
                   
                   <div style="border-top:1px solid var(--border-color); padding-top:10px; display:flex; justify-content:space-between; font-weight:700; font-size:13px;">
@@ -2566,14 +2622,14 @@
 
                   <div style="background:var(--bg-surface); border:1px solid var(--border-color); border-radius:10px; padding:14px; margin-top:10px; text-align:center;">
                     <div style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">TOTAL PAYABLE EV PREMIUM</div>
-                    <div style="font-size:26px; font-weight:900; color:var(--success); margin:4px 0;" id="ev-calc-total-payable">KSh 138,473</div>
+                    <div style="font-size:26px; font-weight:900; color:#dfc09f; margin:4px 0;" id="ev-calc-total-payable">KSh 138,473</div>
                     <div style="font-size:10px; color:var(--text-muted);" id="ev-calc-net-eff-rate">Effective Rate: 3.08% of Vehicle Value</div>
                   </div>
                 </div>
 
                 <div style="margin-top:20px; display:flex; flex-direction:column; gap:10px;">
-                  <button class="btn btn-primary" onclick="issueEVPolicyCertificate()" style="width:100%; padding:11px; font-size:13px; font-weight:700; background:linear-gradient(135deg, #8b5a2b, #10b981);">
-                     Issue EV Digital Certificate & Policy
+                  <button class="btn btn-primary" onclick="issueEVPolicyCertificate()" style="width:100%; padding:11px; font-size:13px; font-weight:700; background:linear-gradient(135deg, #8b5a2b, #6f4722); border:1px solid rgba(200, 149, 101, 0.35);">
+                    Issue EV Digital Certificate &amp; Policy
                   </button>
                 </div>
               </div>
@@ -3527,35 +3583,78 @@
         <section class="app-view" id="view-fleet-underwriting">
           <div class="view-title-block">
             <div>
-              <h1>County Fleet Bulk Underwriting & Batch AKI Certificates</h1>
-              <p>Bulk CSV fleet onboarding, fleet risk scoring, and batch AKI digital certificate issuance</p>
+              <h1>County &amp; Corporate Fleet Bulk Underwriting</h1>
+              <p>End-to-end CSV fleet onboarding, 2.80% fleet tariff computation, 60-minute SLA approval routing, and batch AKI digital certificate issuance</p>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+              <button class="btn btn-secondary" onclick="downloadSampleFleetCSV()" style="padding:10px 14px; font-weight:600;">
+                Download CSV Template
+              </button>
+              <button class="btn btn-primary" onclick="openNewFleetModal()" style="background:linear-gradient(135deg, #8b5a2b, #6f4722); font-weight:700; border:1px solid rgba(200, 149, 101, 0.35); padding:10px 18px; border-radius:10px;">
+                + New Fleet Master Policy
+              </button>
             </div>
           </div>
 
-          <!-- CSV Upload Banner -->
-          <div class="dashboard-card" style="padding:24px; margin-bottom:24px; text-align:center; border:2px dashed var(--primary); background:linear-gradient(135deg, rgba(139, 90, 43,0.04), rgba(200, 149, 101,0.04));">
-            <div style="font-size:32px; margin-bottom:8px;"></div>
-            <h3 style="font-size:16px; font-weight:700; color:var(--primary); margin-bottom:4px;">Bulk Upload County Fleet Manifest (CSV)</h3>
-            <p style="font-size:12px; color:var(--text-secondary); margin-bottom:16px;">
-              Upload registration schedule for County Emergency, Ambulance, or Heavy Plant Fleets (Up to 500 vehicles)
-            </p>
-            <button class="btn btn-primary" onclick="simulateFleetCSVUpload()">Upload Fleet Schedule (.CSV)</button>
+          <!-- Fleet Live KPI Strip -->
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:20px;">
+            <div class="dashboard-card" style="padding:16px 18px;">
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Master Fleet Policies</div>
+              <div id="fleet-kpi-policies" style="font-size:24px; font-weight:800; color:var(--text-primary); margin-top:4px;">6</div>
+              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">County &amp; corporate schedules</div>
+            </div>
+            <div class="dashboard-card" style="padding:16px 18px;">
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Total Insured Vehicles</div>
+              <div id="fleet-kpi-vehicles" style="font-size:24px; font-weight:800; color:#dfc09f; margin-top:4px;">183</div>
+              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">Synced with NTSA &amp; FNOL Claims</div>
+            </div>
+            <div class="dashboard-card" style="padding:16px 18px;">
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Annual Fleet Gross Premium</div>
+              <div id="fleet-kpi-premium" style="font-size:24px; font-weight:800; color:var(--primary); margin-top:4px;">KSh 37,100,000</div>
+              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">Includes IRA PHCF, ITL &amp; Stamp Duty</div>
+            </div>
+            <div class="dashboard-card" style="padding:16px 18px;">
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Batch AKI Cert Coverage</div>
+              <div id="fleet-kpi-certs" style="font-size:24px; font-weight:800; color:var(--success); margin-top:4px;">183 / 183 (100%)</div>
+              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">Individual vehicle QR stickers</div>
+            </div>
+          </div>
+
+          <!-- Real CSV Upload & Instant Sample Manifest Banner -->
+          <div class="dashboard-card" style="padding:22px 24px; margin-bottom:24px; border:1px dashed rgba(200, 149, 101, 0.48); background:linear-gradient(145deg, rgba(139, 90, 43, 0.08), rgba(21, 18, 16, 0.85)); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:18px;">
+            <div style="max-width:640px;">
+              <h3 style="font-size:15.5px; font-weight:700; color:#dfc09f; margin:0 0 6px 0;">Bulk Upload County / Corporate Fleet Manifest (.CSV)</h3>
+              <p style="font-size:12.5px; color:var(--text-secondary); margin:0; line-height:1.5;">
+                Upload a CSV vehicle schedule (<code>plate,makeModel,category,sumInsured,county</code>) up to 500 vehicles. Automatically computes 2.80% fleet tariff + statutory levies, registers plates for FNOL Claims lookup, notifies designated email approvers, and enters the 60-Minute SLA Watchdog.
+              </p>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+              <input type="file" id="fleet-csv-file-input" accept=".csv,.txt" style="display:none;" onchange="handleFleetCSVFileSelect(event)">
+              <button class="btn btn-primary" onclick="triggerFleetCSVInput()">Upload Fleet Schedule (.CSV)</button>
+              <button class="btn btn-secondary" onclick="simulateFleetCSVUpload()">Import Sample Manifest</button>
+            </div>
           </div>
 
           <!-- Active County Fleets Table -->
           <div class="dashboard-card" style="padding:20px; margin-bottom:24px;">
-            <h3 style="font-size:15px; font-weight:600; margin-bottom:16px;">Registered County Fleet Master Policies</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+              <div>
+                <h3 style="font-size:15px; font-weight:600; margin:0;">Registered County &amp; Corporate Fleet Master Policies</h3>
+                <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Inspect individual vehicle schedules, approve pending manifests, or batch-issue AKI digital certificates</div>
+              </div>
+              <input type="text" class="form-control" id="fleet-search-input" oninput="renderFleetUnderwriting()" placeholder="Filter fleet ID, county, plate..." style="width:240px; padding:6px 12px; font-size:12px;">
+            </div>
             <div class="claims-table-wrapper" style="border:none;">
               <table class="claims-table" id="fleet-table">
                 <thead>
                   <tr>
                     <th>Fleet Policy ID</th>
-                    <th>County / Department</th>
-                    <th>Vehicle Count</th>
+                    <th>County / Entity</th>
+                    <th>Vehicles</th>
                     <th>Fleet Line</th>
                     <th>Annual Gross Premium</th>
-                    <th>AKI Certificates</th>
-                    <th>Action</th>
+                    <th>SLA &amp; AKI Certificates</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -5121,8 +5220,8 @@
 
   <!-- ================= UNDERWRITE NEW POLICY FILE MODAL ================= -->
   <div class="modal-overlay" id="new-policy-modal">
-    <div class="modal-window" style="max-width:620px; background:#151210; border:1px solid #8b5a2b; box-shadow:0 20px 50px rgba(0,0,0,0.6);">
-      <div class="modal-header" style="border-bottom:1px solid rgba(139, 90, 43,0.25); padding-bottom:14px;">
+    <div class="modal-window" style="max-width:640px; background:#151210; border:1px solid #8b5a2b; box-shadow:0 20px 50px rgba(0,0,0,0.6);">
+      <div class="modal-header" style="border-bottom:1px solid rgba(139, 90, 43, 0.25); padding-bottom:14px;">
         <h3 style="font-size:17px; font-weight:800; color:#ffffff; display:flex; align-items:center; gap:10px;">
           <span style="background:#8b5a2b; padding:6px 10px; border-radius:8px; color:#ffffff; font-size:16px;">+</span> Underwrite New Policy File
         </h3>
@@ -5130,7 +5229,7 @@
       </div>
       <div class="modal-body" style="padding:22px;">
         <p style="font-size:12.5px; color:var(--text-secondary); margin-bottom:18px; line-height:1.5;">
-          Enter client details, vehicle plate, cover scope, and compute AKI digital certificate & KRA 16% VAT debit.
+          Enter insured client details, vehicle registration plate, make/model, and cover scope to compute IRA statutory levies (PHCF 0.25% + ITL 0.20% + Stamp Duty KSh 40) and issue an AKI Digital QR Certificate.
         </p>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:14px;">
@@ -5145,15 +5244,20 @@
           </div>
         </div>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:14px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:14px;">
           <div class="form-group">
             <label for="modal-policy-class">Underwriting Line / Scope</label>
             <select class="form-control" id="modal-policy-class" onchange="calculateModalPolicyPremium()">
-              <option value="Motor">Motor Comprehensive (Private & Commercial)</option>
+              <option value="Motor">Motor Comprehensive (Private &amp; Commercial)</option>
               <option value="Electric Vehicle">Electric Vehicle EV (AKI Standard)</option>
               <option value="County Fleet">County Government Fleet (47 Counties)</option>
-              <option value="Non-Motor">Non-Motor Fire & Engineering</option>
+              <option value="Non-Motor">Non-Motor Fire &amp; Engineering</option>
             </select>
+          </div>
+
+          <div class="form-group">
+            <label for="modal-policy-make">Make &amp; Model / Asset Desc</label>
+            <input type="text" class="form-control" id="modal-policy-make" value="Toyota Prado TX (2022)" placeholder="e.g. Toyota Hilux Double Cab">
           </div>
 
           <div class="form-group">
@@ -5195,20 +5299,20 @@
         </div>
 
         <!-- Premium Calculation Summary Card -->
-        <div style="background:rgba(139, 90, 43,0.08); border:1px solid rgba(139, 90, 43,0.3); border-radius:12px; padding:16px; margin-bottom:18px;">
-          <div style="font-size:12px; font-weight:800; color:#c89565; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:8px;">AUTOMATED PREMIUM & TAX DEBIT SUMMARY</div>
+        <div style="background:rgba(139, 90, 43, 0.08); border:1px solid rgba(139, 90, 43, 0.3); border-radius:12px; padding:16px; margin-bottom:18px;">
+          <div style="font-size:12px; font-weight:800; color:#c89565; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:8px;">AUTOMATED PREMIUM &amp; IRA STATUTORY LEVY SUMMARY</div>
           <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; font-size:12px;">
             <div>
-              <div style="color:var(--text-muted); font-size:11px;">Basic Rate (3.5%)</div>
+              <div style="color:var(--text-muted); font-size:11px;" id="calc-basic-rate-label">Basic Rate (3.50%)</div>
               <div style="font-weight:700; color:var(--text-primary);" id="calc-basic-premium">KSh 122,500</div>
             </div>
             <div>
-              <div style="color:var(--text-muted); font-size:11px;">KRA 16% VAT + Stamp Duty</div>
-              <div style="font-weight:700; color:#c89565;" id="calc-tax-duty">KSh 19,640</div>
+              <div style="color:var(--text-muted); font-size:11px;">PHCF (0.25%) + ITL (0.20%) + Stamp</div>
+              <div style="font-weight:700; color:#c89565;" id="calc-tax-duty">KSh 591</div>
             </div>
             <div>
               <div style="color:var(--text-muted); font-size:11px;">Total Annual Debit</div>
-              <div style="font-weight:900; color:#34d399; font-size:14px;" id="calc-total-debit">KSh 142,140</div>
+              <div style="font-weight:900; color:#dfc09f; font-size:14px;" id="calc-total-debit">KSh 123,091</div>
             </div>
           </div>
         </div>
@@ -5216,15 +5320,160 @@
         <div class="form-group" style="margin-bottom:20px;">
           <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:12.5px; color:var(--text-primary);">
             <input type="checkbox" id="modal-policy-issue-cert" checked style="width:16px; height:16px; accent-color:#c89565;">
-            Generate & Issue Official AKI Digital QR Certificate (CERT-2026)
+            Generate &amp; Issue Official AKI Digital QR Certificate (CERT-2026)
           </label>
         </div>
 
         <div style="display:flex; gap:12px; justify-content:flex-end;">
           <button class="btn btn-secondary" onclick="closeNewPolicyModal()">Cancel</button>
-          <button class="btn btn-primary" onclick="confirmCreateNewPolicy()" style="background:linear-gradient(135deg, #8b5a2b, #a46a34); font-weight:800; padding:10px 20px;">
-             Underwrite & Issue Policy File
+          <button class="btn btn-primary" onclick="confirmCreateNewPolicy()" style="background:linear-gradient(135deg, #8b5a2b, #6f4722); font-weight:700; padding:10px 20px;">
+            Underwrite &amp; Issue Policy File
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= ONBOARD NEW FLEET MASTER POLICY MODAL ================= -->
+  <div class="modal-overlay" id="new-fleet-modal">
+    <div class="modal-window" style="max-width:650px; background:#151210; border:1px solid #8b5a2b; box-shadow:0 20px 50px rgba(0,0,0,0.6);">
+      <div class="modal-header" style="border-bottom:1px solid rgba(139, 90, 43, 0.25); padding-bottom:14px;">
+        <h3 style="font-size:17px; font-weight:800; color:#ffffff; display:flex; align-items:center; gap:10px;">
+          <span style="background:#8b5a2b; padding:6px 10px; border-radius:8px; color:#ffffff; font-size:16px;">+</span> Onboard County / Corporate Fleet Master Policy
+        </h3>
+        <button class="modal-close-btn" onclick="closeNewFleetModal()">×</button>
+      </div>
+      <div class="modal-body" style="padding:22px;">
+        <p style="font-size:12.5px; color:var(--text-secondary); margin-bottom:16px; line-height:1.5;">
+          Create a multi-vehicle Fleet Master Policy with automated 2.80% fleet tariff, statutory IRA levies, NTSA plate registration, designated email alerts, and 60-minute SLA approval tracking.
+        </p>
+
+        <div style="display:grid; grid-template-columns:1.25fr 1fr; gap:16px; margin-bottom:14px;">
+          <div class="form-group">
+            <label for="modal-fleet-county">County Government / Corporate Entity</label>
+            <input type="text" class="form-control" id="modal-fleet-county" value="Machakos County Emergency &amp; Health Fleet" placeholder="e.g. Machakos County Government">
+          </div>
+          <div class="form-group">
+            <label for="modal-fleet-line">Fleet Category / Operational Line</label>
+            <select class="form-control" id="modal-fleet-line" onchange="calculateNewFleetModalSummary()">
+              <option value="Emergency &amp; Ambulances">Emergency &amp; Ambulances</option>
+              <option value="Health &amp; Utility">Health &amp; Utility Vehicles</option>
+              <option value="Administrative Patrol">Administrative &amp; Revenue Patrol</option>
+              <option value="Heavy Machinery">Heavy Plant &amp; Agricultural Machinery</option>
+              <option value="Electric Transit Fleet">Electric Transit &amp; Green Mobility</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:14px;">
+          <div class="form-group">
+            <label for="modal-fleet-count">Vehicle Count</label>
+            <input type="number" class="form-control" id="modal-fleet-count" min="1" max="500" value="12" oninput="calculateNewFleetModalSummary()">
+          </div>
+          <div class="form-group">
+            <label for="modal-fleet-avg-value">Avg Sum Insured / Vehicle (KSh)</label>
+            <input type="number" class="form-control" id="modal-fleet-avg-value" value="4800000" oninput="calculateNewFleetModalSummary()">
+          </div>
+          <div class="form-group">
+            <label for="modal-fleet-prefix">Registration Series Prefix</label>
+            <input type="text" class="form-control" id="modal-fleet-prefix" value="KCG" style="text-transform:uppercase; font-weight:700;" placeholder="e.g. KCG or KDG">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:16px;">
+          <label for="modal-fleet-custom-plates">Optional Explicit Vehicle Plates (Comma or Newline Separated)</label>
+          <textarea class="form-control" id="modal-fleet-custom-plates" rows="2" placeholder="Leave blank to auto-generate sequential fleet plates (e.g. KCG 401A, KCG 402A...), or paste specific plates here."></textarea>
+        </div>
+
+        <div style="background:rgba(139, 90, 43, 0.08); border:1px solid rgba(139, 90, 43, 0.3); border-radius:12px; padding:16px; margin-bottom:18px;">
+          <div style="font-size:12px; font-weight:800; color:#c89565; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:8px;">FLEET TARIFF (2.80%) &amp; STATUTORY LEVY SUMMARY</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; font-size:12px;">
+            <div>
+              <div style="color:var(--text-muted); font-size:11px;">Total Fleet Sum Insured</div>
+              <div style="font-weight:700; color:var(--text-primary);" id="fleet-modal-sum-insured">KSh 57,600,000</div>
+            </div>
+            <div>
+              <div style="color:var(--text-muted); font-size:11px;">PHCF + ITL + Stamp Duty</div>
+              <div style="font-weight:700; color:#c89565;" id="fleet-modal-levies">KSh 7,738</div>
+            </div>
+            <div>
+              <div style="color:var(--text-muted); font-size:11px;">Annual Gross Fleet Premium</div>
+              <div style="font-weight:900; color:#dfc09f; font-size:14px;" id="fleet-modal-total-premium">KSh 1,620,538</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:18px;">
+          <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:12.5px; color:var(--text-primary);">
+            <input type="checkbox" id="modal-fleet-issue-certs" checked style="width:16px; height:16px; accent-color:#c89565;">
+            Pre-assign Batch AKI Digital Certificate Numbers for all vehicles in schedule
+          </label>
+        </div>
+
+        <div style="display:flex; gap:12px; justify-content:flex-end;">
+          <button class="btn btn-secondary" onclick="closeNewFleetModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="confirmCreateNewFleet()" style="background:linear-gradient(135deg, #8b5a2b, #6f4722); font-weight:700; padding:10px 20px;">
+            Underwrite Fleet Master Policy
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= FLEET VEHICLE SCHEDULE & BATCH AKI CERTS MODAL ================= -->
+  <div class="modal-overlay" id="fleet-schedule-modal">
+    <div class="modal-window" style="max-width:860px; background:#151210; border:1px solid #8b5a2b; box-shadow:0 20px 50px rgba(0,0,0,0.65);">
+      <div class="modal-header" style="border-bottom:1px solid rgba(139, 90, 43, 0.25); padding-bottom:14px;">
+        <div>
+          <h3 id="fleet-schedule-modal-title" style="font-size:17px; font-weight:800; color:#ffffff; margin:0;">Fleet Vehicle Schedule</h3>
+          <div id="fleet-schedule-modal-subtitle" style="font-size:12px; color:var(--text-secondary); margin-top:3px;">Master Policy Vehicle Manifest &amp; Individual AKI Digital Certificates</div>
+        </div>
+        <button class="modal-close-btn" onclick="closeFleetScheduleModal()">×</button>
+      </div>
+      <div class="modal-body" style="padding:20px;">
+        <!-- Quick Add Vehicle to Active Fleet -->
+        <div style="background:var(--bg-primary); border:1px solid var(--border-color); border-radius:10px; padding:12px 14px; margin-bottom:16px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+          <div style="flex:1; min-width:130px;">
+            <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">Add Vehicle Plate</label>
+            <input type="text" class="form-control" id="fleet-add-veh-plate" placeholder="e.g. KCG 915B" style="padding:6px 10px; font-size:12px; text-transform:uppercase; font-weight:700;">
+          </div>
+          <div style="flex:1.4; min-width:160px;">
+            <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">Make &amp; Model</label>
+            <input type="text" class="form-control" id="fleet-add-veh-make" placeholder="e.g. Toyota Landcruiser Ambulance" style="padding:6px 10px; font-size:12px;">
+          </div>
+          <div style="flex:1; min-width:130px;">
+            <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">Sum Insured (KSh)</label>
+            <input type="number" class="form-control" id="fleet-add-veh-value" value="4500000" style="padding:6px 10px; font-size:12px;">
+          </div>
+          <button class="btn btn-primary" onclick="addVehicleToOpenFleet()" style="padding:7px 14px; font-size:12px;">+ Endorse Vehicle</button>
+          <button class="btn btn-secondary" onclick="exportOpenFleetCertsCSV()" style="padding:7px 14px; font-size:12px;">Export Schedule (.CSV)</button>
+        </div>
+
+        <div class="claims-table-wrapper" style="max-height:360px; overflow-y:auto;">
+          <table class="claims-table" id="fleet-schedule-vehicles-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Plate No</th>
+                <th>Make &amp; Model</th>
+                <th>Sum Insured</th>
+                <th>Annual Premium</th>
+                <th>AKI Cert ID</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="fleet-schedule-vehicles-tbody">
+              <!-- Populated via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:18px;">
+          <div id="fleet-schedule-footer-summary" style="font-size:12px; color:var(--text-secondary);"></div>
+          <div style="display:flex; gap:10px;">
+            <button class="btn btn-secondary" onclick="closeFleetScheduleModal()">Close</button>
+            <button class="btn btn-primary" id="fleet-schedule-batch-btn" onclick="batchIssueOpenFleetCerts()">Batch Issue All AKI Certs</button>
+          </div>
         </div>
       </div>
     </div>
@@ -5242,7 +5491,7 @@
   <script src="qrcode.min.js?v=20260817b"></script>
 
   <!-- EIMS application logic -->
-  <script src="app.js?v=20260817b"></script>
+  <script src="app.js?v=20261108c"></script>
 </body>
 </html>
 

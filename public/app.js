@@ -1142,26 +1142,29 @@ function runANPRScanSimulation() {
     laser.style.display = "none";
     overlay.style.display = "none";
     
-    // Find in mock db
-    const ntsaResult = ntsaDatabase[plateText] || {
-      make: "Unknown Sedan",
-      year: 2019,
-      chassis: "UNK" + Math.floor(Math.random()*1000000),
-      valuation: 1200000,
-      policy: "POL-MOT-GEN-" + Math.floor(Math.random()*10000),
-      owner: document.getElementById("claim-owner").value || "Unknown Claimant"
+    // Check live underwritten policies, fleet schedules, and NTSA registry
+    const liveCoverage = typeof lookupVehicleCoverageByPlate === "function"
+      ? lookupVehicleCoverageByPlate(plateText)
+      : null;
+    const ntsaResult = liveCoverage || ntsaDatabase[plateText] || {
+      make: "Toyota Corolla Sedan",
+      year: 2020,
+      chassis: "NZE-" + Math.floor(1000000 + Math.random() * 8999999),
+      valuation: 1850000,
+      policy: "POL-MOT-GEN-" + Math.floor(1000 + Math.random() * 8999),
+      owner: document.getElementById("claim-owner").value || "Registered Policyholder"
     };
     
-    document.getElementById("ntsa-model").innerText = `${ntsaResult.make} (${ntsaResult.year})`;
+    document.getElementById("ntsa-model").innerText = ntsaResult.year ? `${ntsaResult.make} (${ntsaResult.year})` : `${ntsaResult.make}`;
     document.getElementById("ntsa-chassis").innerText = ntsaResult.chassis;
     document.getElementById("ntsa-policy").innerText = ntsaResult.policy;
-    document.getElementById("ntsa-valuation").innerText = "KSh " + ntsaResult.valuation.toLocaleString();
+    document.getElementById("ntsa-valuation").innerText = "KSh " + Number(ntsaResult.valuation || 1850000).toLocaleString();
     
     document.getElementById("anpr-placeholder-content").style.display = "none";
     document.getElementById("anpr-preview-img").style.display = "block";
     document.getElementById("anpr-preview-img").src = "assets/car_plate.jpg";
     document.getElementById("ntsa-verification-box").style.display = "block";
-    showToast("NTSA Verified", "Vehicle registration records matched against Kenya NTSA database.", "success");
+    showToast("NTSA & Policy Verified", `Matched ${plateText} under policy ${ntsaResult.policy}.`, "success");
     
     // Fill owner name if empty
     if (!document.getElementById("claim-owner").value) {
@@ -2161,52 +2164,229 @@ const branchProductionData = [
 let selectedPolicyForDebit = null;
 let selectedPolicyForCert = null;
 
+function computeIRALeviesForPremium(basicPremium, vehicleCount = 1) {
+  const rates = typeof iraTaxRates !== "undefined" && iraTaxRates
+    ? iraTaxRates
+    : { phcf: 0.25, training: 0.20, stampDuty: 40 };
+  const phcf = Math.round(basicPremium * ((Number(rates.phcf) || 0.25) / 100));
+  const training = Math.round(basicPremium * ((Number(rates.training) || 0.20) / 100));
+  const stamp = (Number(rates.stampDuty) || 40) * Math.max(1, vehicleCount);
+  return { phcf, training, stamp, totalLevies: phcf + training + stamp };
+}
+
+function registerVehicleInNTSA(plate, details) {
+  if (!plate) return;
+  const cleanPlate = String(plate).trim().toUpperCase();
+  ntsaDatabase[cleanPlate] = {
+    make: details.make || "Toyota Hilux Double Cab",
+    year: details.year || 2023,
+    chassis: details.chassis || ("KEN-" + Math.floor(1000000 + Math.random() * 8999999)),
+    valuation: Number(details.valuation) || 3500000,
+    policy: details.policy || "POL-MOT-2026",
+    owner: details.owner || "Registered Policyholder"
+  };
+}
+
+function normalizePlateCompact(val) {
+  return String(val || "").replace(/[\s-]+/g, "").toUpperCase();
+}
+
+function lookupVehicleCoverageByPlate(plateInput) {
+  if (!plateInput) return null;
+  const cleanPlate = String(plateInput).trim().toUpperCase();
+  const compactQuery = normalizePlateCompact(cleanPlate);
+  if (!compactQuery) return null;
+
+  // 1. Search individual & master policies
+  if (typeof policies !== "undefined" && Array.isArray(policies)) {
+    const pol = policies.find(p => normalizePlateCompact(p.plate) === compactQuery);
+    if (pol) {
+      const existingNtsa = ntsaDatabase[pol.plate] || ntsaDatabase[cleanPlate] || {};
+      const resolvedMake = pol.makeModel || existingNtsa.make || (pol.line === "Electric Vehicle" ? "BYD Atto 3 EV" : "Motor Comprehensive Asset");
+      return {
+        source: "POLICY",
+        isFleetVehicle: Boolean(pol.fleetId),
+        hasActivePolicy: (pol.status || "Active") === "Active",
+        make: resolvedMake,
+        makeModel: resolvedMake,
+        year: existingNtsa.year || 2024,
+        chassis: pol.chassis || existingNtsa.chassis || ("AKI-" + compactQuery + "-2026"),
+        valuation: Number(pol.sumInsured || existingNtsa.valuation || Math.round((pol.premium || 100000) / 0.035)),
+        policy: pol.policyNo,
+        policyNo: pol.policyNo,
+        owner: pol.clientName,
+        certId: pol.certId,
+        status: pol.status || "Active"
+      };
+    }
+  }
+
+  // 2. Search County & Corporate Fleet vehicle schedules
+  if (typeof countyFleets !== "undefined" && Array.isArray(countyFleets)) {
+    for (const fleet of countyFleets) {
+      if (Array.isArray(fleet.vehicles)) {
+        const veh = fleet.vehicles.find(v => normalizePlateCompact(v.plate) === compactQuery);
+        if (veh) {
+          const resolvedMake = veh.makeModel || fleet.line || "County Fleet Vehicle";
+          return {
+            source: "FLEET",
+            isFleetVehicle: true,
+            hasActivePolicy: (fleet.status || "Active") === "Active",
+            make: resolvedMake,
+            makeModel: resolvedMake,
+            year: veh.year || 2024,
+            chassis: veh.chassis || ("FLT-" + compactQuery + "-2026"),
+            valuation: Number(veh.sumInsured || 4500000),
+            policy: fleet.policyNo || fleet.id,
+            policyNo: fleet.policyNo || fleet.id,
+            owner: fleet.county,
+            certId: veh.certId || null,
+            status: fleet.status || "Active",
+            fleetId: fleet.id
+          };
+        }
+      }
+    }
+  }
+
+  // 3. Fallback to NTSA registry (exact or compact plate match)
+  if (ntsaDatabase[cleanPlate]) return ntsaDatabase[cleanPlate];
+  const ntsaKey = Object.keys(ntsaDatabase).find(k => normalizePlateCompact(k) === compactQuery);
+  return ntsaKey ? ntsaDatabase[ntsaKey] : null;
+}
+
+function findCertificateOrPlateRecord(rawQuery) {
+  const q = String(rawQuery || "").trim().toUpperCase();
+  const compactQ = normalizePlateCompact(q);
+  if (!q) return null;
+
+  // 1. Direct match on policies by certId, plate (whitespace-tolerant), or policyNo
+  const directPol = policies.find(p =>
+    (p.certId && p.certId.toUpperCase() === q) ||
+    (p.plate && normalizePlateCompact(p.plate) === compactQ) ||
+    (p.policyNo && p.policyNo.toUpperCase() === q)
+  );
+  if (directPol) {
+    return {
+      source: "POLICY",
+      isFleetVehicle: Boolean(directPol.fleetId),
+      policyNo: directPol.policyNo,
+      clientName: directPol.clientName,
+      plate: directPol.plate,
+      line: directPol.line,
+      certId: directPol.certId,
+      status: directPol.status || "Active",
+      sumInsured: directPol.sumInsured || Math.round((directPol.premium || 85000) / 0.035),
+      policyObj: directPol
+    };
+  }
+
+  // 2. Match across County & Corporate Fleet vehicles (by certId, plate, or fleet ID)
+  if (typeof countyFleets !== "undefined" && Array.isArray(countyFleets)) {
+    for (const fleet of countyFleets) {
+      if (fleet.id.toUpperCase() === q || (fleet.policyNo && fleet.policyNo.toUpperCase() === q)) {
+        const firstVeh = Array.isArray(fleet.vehicles) && fleet.vehicles[0] ? fleet.vehicles[0] : null;
+        return {
+          source: "FLEET",
+          isFleetVehicle: true,
+          fleetId: fleet.id,
+          policyNo: fleet.policyNo || fleet.id,
+          clientName: fleet.county,
+          plate: firstVeh ? `${firstVeh.plate} (+${Math.max(0, (fleet.vehicleCount || 1) - 1)} Fleet)` : `${fleet.vehicleCount || 0} Vehicles`,
+          singlePlate: firstVeh ? firstVeh.plate : "KCG 001A",
+          line: `County Fleet (${fleet.line})`,
+          certId: firstVeh && firstVeh.certId ? firstVeh.certId : `CERT-${fleet.id}`,
+          status: fleet.status || "Active",
+          sumInsured: firstVeh ? firstVeh.sumInsured : 4800000
+        };
+      }
+      if (Array.isArray(fleet.vehicles)) {
+        const veh = fleet.vehicles.find(v =>
+          (v.certId && v.certId.toUpperCase() === q) ||
+          (v.plate && normalizePlateCompact(v.plate) === compactQ)
+        );
+        if (veh) {
+          return {
+            source: "FLEET_VEHICLE",
+            isFleetVehicle: true,
+            fleetId: fleet.id,
+            policyNo: fleet.policyNo || fleet.id,
+            clientName: fleet.county,
+            plate: veh.plate,
+            singlePlate: veh.plate,
+            line: `County Fleet — ${veh.makeModel || fleet.line}`,
+            certId: veh.certId || "Pending Batch Issue",
+            status: veh.certId && (fleet.status || "Active") === "Active" ? "Active" : (fleet.status || "Pending"),
+            sumInsured: veh.sumInsured || 4500000
+          };
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
 function setupPolicyRegistry() {
   const searchInput = document.getElementById("policy-search-input");
   if (searchInput) searchInput.addEventListener("input", renderPolicyRegistry);
+
+  const statusFilter = document.getElementById("policy-status-filter");
+  if (statusFilter) statusFilter.addEventListener("change", renderPolicyRegistry);
   
-  // Certificate declaration lookup
+  // Certificate & Plate declaration lookup across individual policies + fleet schedules
   const lookupBtn = document.getElementById("lookup-cert-btn");
   if (lookupBtn) {
     lookupBtn.addEventListener("click", () => {
-      const certId = document.getElementById("lookup-cert-id").value.trim().toUpperCase();
+      const queryVal = document.getElementById("lookup-cert-id").value.trim().toUpperCase();
       const resBox = document.getElementById("cert-status-result");
       
-      if (!certId) {
-        showToast("Input Required", "Please enter a certificate reference ID.", "warning");
+      if (!queryVal) {
+        showToast("Input Required", "Enter an AKI Certificate ID or Vehicle Registration Plate.", "warning");
         return;
       }
       
-      const found = policies.find(p => p.certId === certId);
+      const found = findCertificateOrPlateRecord(queryVal);
       resBox.style.display = "block";
       
       if (found) {
+        const isActive = found.status === "Active" && found.certId && found.certId !== "Pending Batch Issue";
+        const isPending = found.status === "Pending" || found.certId === "Pending Batch Issue";
+        const badgeColor = isActive ? "var(--success)" : (isPending ? "#c89565" : "var(--danger)");
+        const statusHeadline = isActive
+          ? "Certificate Valid and Declared Active"
+          : (isPending ? `Coverage Pending Approval / Batch Issue (${found.status})` : `Certificate Restricted (${found.status})`);
+
+        const previewAction = found.source === "POLICY"
+          ? `triggerCertPolicy('${found.policyNo}')`
+          : `previewFleetVehicleAKICert('${found.fleetId}', '${found.singlePlate}')`;
+
         resBox.innerHTML = `
-          <div style="font-weight:600; color:${found.status === 'Active' ? 'var(--success)' : 'var(--danger)'}; margin-bottom:4px;">
-            ${found.status === 'Active' ? 'Certificate Valid and Declared Active' : 'Certificate Restricted (' + found.status + ')'}
+          <div style="font-weight:700; color:${badgeColor}; margin-bottom:6px;">
+            ${statusHeadline}
           </div>
-          <div><strong>Policy:</strong> ${found.policyNo}</div>
-          <div><strong>Holder:</strong> ${found.clientName} (${found.plate})</div>
-          <div><strong>Line:</strong> ${found.line}</div>
+          <div><strong>Policy Ref:</strong> ${escapeHTML(found.policyNo)}</div>
+          <div><strong>AKI Cert ID:</strong> <code>${escapeHTML(found.certId || "Unissued")}</code></div>
+          <div><strong>Insured Holder:</strong> ${escapeHTML(found.clientName)} (<code>${escapeHTML(found.plate)}</code>)</div>
+          <div><strong>Class / Line:</strong> ${escapeHTML(found.line)} &middot; <strong>Sum Insured:</strong> KSh ${Number(found.sumInsured || 0).toLocaleString()}</div>
+          <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-secondary" style="font-size:11.5px; padding:5px 10px;" onclick="${previewAction}">
+              Open AKI Digital Sticker
+            </button>
+          </div>
         `;
       } else {
         resBox.innerHTML = `
-          <div style="font-weight:600; color:var(--danger); margin-bottom:4px;">
-            Certificate Unmatched and Unregistered
+          <div style="font-weight:700; color:var(--danger); margin-bottom:4px;">
+            Certificate / Plate Unmatched in AKI Registry
           </div>
-          <div style="color:var(--text-secondary); margin-bottom:12px;">No active AKI certificate record found for ${certId}.</div>
-          <button class="btn btn-primary" id="activate-cert-btn" style="width:100%; font-size:12px; padding:6px 12px;" onclick="window.activateCertInline('${certId}')">
-            Register and Declare Active
+          <div style="color:var(--text-secondary); margin-bottom:12px;">No active policy or fleet schedule matched <code>${escapeHTML(queryVal)}</code>.</div>
+          <button class="btn btn-primary" id="activate-cert-btn" style="width:100%; font-size:12px; padding:6px 12px;" onclick="window.activateCertInline('${escapeHTML(queryVal)}')">
+            Register &amp; Underwrite New Cover
           </button>
         `;
       }
     });
-  }
-  
-  // Create New Policy Modal Trigger
-  const createBtn = document.getElementById("policy-create-btn");
-  if (createBtn) {
-    createBtn.addEventListener("click", openNewPolicyModal);
   }
 
   // Setup Debit Modal buttons
@@ -2231,6 +2411,7 @@ function setupPolicyRegistry() {
         showToast("Policy Debited", `Charged KSh ${amount.toLocaleString()} to ${selectedPolicyForDebit.policyNo}`, "success");
         debitModal?.classList.remove("active");
         renderPolicyRegistry();
+        if (typeof renderIRACompliance === "function") renderIRACompliance();
       }
     });
   }
@@ -2247,7 +2428,8 @@ function setupPolicyRegistry() {
   if (certPrintBtn) {
     certPrintBtn.addEventListener("click", () => {
       if (selectedPolicyForCert) {
-        openAKICertModal(selectedPolicyForCert.policyNo);
+        certModal?.classList.remove("active");
+        openAKICertModal(selectedPolicyForCert);
       }
     });
   }
@@ -2266,56 +2448,63 @@ function closeNewPolicyModal() {
   if (modal) modal.classList.remove("active");
 }
 
+function getUnderwritingLineTariffRate(line) {
+  if (line === "Electric Vehicle") return 0.025; // 2.50% EV green tariff
+  if (line === "County Fleet") return 0.028;     // 2.80% county fleet tariff
+  if (line === "Non-Motor") return 0.015;        // 1.50% fire & engineering
+  return 0.035;                                  // 3.50% motor comprehensive
+}
+
 function calculateModalPolicyPremium() {
   const line = document.getElementById("modal-policy-class")?.value || "Motor";
-  const sumInsured = parseFloat(document.getElementById("modal-policy-suminsured")?.value) || 3500000;
+  const sumInsured = Math.max(50000, parseFloat(document.getElementById("modal-policy-suminsured")?.value) || 3500000);
 
-  let rate = 0.035; // default 3.5%
-  if (line === "Electric Vehicle") rate = 0.025; // 2.5% EV incentive rate
-  else if (line === "County Fleet") rate = 0.028; // 2.8% fleet discount
-  else if (line === "Non-Motor") rate = 0.015; // 1.5% property rate
-
+  const rate = getUnderwritingLineTariffRate(line);
   const basic = Math.round(sumInsured * rate);
-  const vat = Math.round(basic * 0.16);
-  const stampDuty = 40;
-  const totalTax = vat + stampDuty;
-  const totalDebit = basic + totalTax;
+  const { totalLevies } = computeIRALeviesForPremium(basic, 1);
+  const totalDebit = basic + totalLevies;
 
+  const rateLbl = document.getElementById("calc-basic-rate-label");
   const basicElem = document.getElementById("calc-basic-premium");
   const taxElem = document.getElementById("calc-tax-duty");
   const totalElem = document.getElementById("calc-total-debit");
 
+  if (rateLbl) rateLbl.innerText = `Basic Rate (${(rate * 100).toFixed(2)}%)`;
   if (basicElem) basicElem.innerText = `KSh ${basic.toLocaleString()}`;
-  if (taxElem) taxElem.innerText = `KSh ${totalTax.toLocaleString()}`;
+  if (taxElem) taxElem.innerText = `KSh ${totalLevies.toLocaleString()}`;
   if (totalElem) totalElem.innerText = `KSh ${totalDebit.toLocaleString()}`;
+  return { rate, basic, totalLevies, totalDebit, sumInsured };
 }
 
 function confirmCreateNewPolicy() {
   const clientName = document.getElementById("modal-policy-client")?.value.trim() || "Jane Njeri";
   const plate = document.getElementById("modal-policy-plate")?.value.trim().toUpperCase() || "KDD 908Z";
   const line = document.getElementById("modal-policy-class")?.value || "Motor";
+  const makeModel = document.getElementById("modal-policy-make")?.value.trim() || "Toyota Prado TX (2022)";
   const broker = document.getElementById("modal-policy-broker")?.value || "EIMS Insurance";
   const branch = document.getElementById("modal-policy-branch")?.value || "HQ";
-  const sumInsured = parseFloat(document.getElementById("modal-policy-suminsured")?.value) || 3500000;
+  const paymentTerm = document.getElementById("modal-policy-payment-term")?.value || "Full Debit";
+  const sumInsured = Math.max(50000, parseFloat(document.getElementById("modal-policy-suminsured")?.value) || 3500000);
   const issueCert = document.getElementById("modal-policy-issue-cert")?.checked;
 
-  let rate = 0.035;
-  if (line === "Electric Vehicle") rate = 0.025;
-  else if (line === "County Fleet") rate = 0.028;
-  else if (line === "Non-Motor") rate = 0.015;
-
+  const rate = getUnderwritingLineTariffRate(line);
   const basic = Math.round(sumInsured * rate);
-  const totalDebit = Math.round(basic * 1.16) + 40;
+  const { totalLevies } = computeIRALeviesForPremium(basic, 1);
+  const totalDebit = basic + totalLevies;
 
-  const newPolNo = "POL-MOT-" + Math.floor(1000 + Math.random() * 9000) + "-2026";
+  const prefix = line === "Electric Vehicle" ? "POL-EV-" : (line === "County Fleet" ? "POL-FLT-" : (line === "Non-Motor" ? "POL-GEN-" : "POL-MOT-"));
+  const newPolNo = prefix + Math.floor(1000 + Math.random() * 9000) + "-2026";
   const newCert = issueCert ? "CERT-" + Math.floor(1000 + Math.random() * 9000) + "-2026" : null;
 
   const newPol = {
     policyNo: newPolNo,
     clientName: clientName,
     plate: plate,
+    makeModel: makeModel,
+    sumInsured: sumInsured,
     line: line,
     broker: broker,
+    paymentTerm: paymentTerm,
     premium: totalDebit,
     debited: totalDebit,
     status: "Pending",
@@ -2327,6 +2516,44 @@ function confirmCreateNewPolicy() {
   };
 
   policies.unshift(newPol);
+  registerVehicleInNTSA(plate, {
+    make: makeModel,
+    year: 2024,
+    valuation: sumInsured,
+    policy: newPolNo,
+    owner: clientName
+  });
+
+  // If underwritten under County Fleet scope, also mirror in countyFleets ledger
+  if (line === "County Fleet" && typeof countyFleets !== "undefined" && Array.isArray(countyFleets)) {
+    const fleetId = "FLT-UWR-" + Math.floor(100 + Math.random() * 899);
+    newPol.fleetId = fleetId;
+    countyFleets.unshift({
+      id: fleetId,
+      policyNo: newPolNo,
+      county: clientName,
+      vehicleCount: 1,
+      count: "1 Vehicle",
+      line: makeModel || "County Fleet Unit",
+      premiumAmount: totalDebit,
+      premium: `KSh ${totalDebit.toLocaleString()}`,
+      issuedCertCount: newCert ? 1 : 0,
+      certs: newCert ? "Batch Issued (1/1)" : "Pending Batch (0/1)",
+      status: "Pending",
+      vehicles: [
+        {
+          plate: plate,
+          makeModel: makeModel,
+          category: "County Fleet",
+          sumInsured: sumInsured,
+          premium: totalDebit,
+          certId: newCert
+        }
+      ]
+    });
+    if (typeof renderFleetUnderwriting === "function") renderFleetUnderwriting();
+  }
+
   closeNewPolicyModal();
   if (typeof dispatchDesignatedEmailAlert === "function") {
     dispatchDesignatedEmailAlert("NEW_UNDERWRITING", newPol);
@@ -2337,10 +2564,10 @@ function confirmCreateNewPolicy() {
   if (typeof renderOverdueApprovalsDashboard === "function") {
     renderOverdueApprovalsDashboard();
   }
-}
-
-function triggerCertPolicy(policyNo) {
-  openAKICertModal(policyNo);
+  if (typeof renderIRACompliance === "function") {
+    renderIRACompliance();
+  }
+  return newPol;
 }
 
 let currentActiveCertPolicy = null;
@@ -2353,46 +2580,77 @@ function generateCertSHA256Hash(policy) {
     hash = (hash << 5) - hash + char;
     hash |= 0;
   }
-  const hex = Math.abs(hash).toString(16).padStart(8, '0');
+  const hex = Math.abs(hash).toString(16).padStart(8, "0");
   return `SHA256-${hex.toUpperCase()}-AKI-VERIFIED-2026`;
 }
 
-function openAKICertModal(policyNo) {
-  const policy = policies.find(p => p.policyNo === policyNo) || policies[0];
+function openAKICertModal(policyOrNo) {
+  const policy = typeof policyOrNo === "object" && policyOrNo !== null
+    ? policyOrNo
+    : (policies.find(p => p.policyNo === policyOrNo) || policies[0]);
+  if (!policy) return;
+
+  if (!policy.certId) {
+    policy.certId = "CERT-" + Math.floor(1000 + Math.random() * 9000) + "-2026";
+    if (typeof renderPolicyRegistry === "function") renderPolicyRegistry();
+  }
+
   currentActiveCertPolicy = policy;
+  selectedPolicyForCert = policy;
+
+  // Keep secondary #cert-modal fields synced as well
+  const dispId = document.getElementById("cert-display-id");
+  const dispOwner = document.getElementById("cert-display-owner");
+  const dispPlate = document.getElementById("cert-display-plate");
+  const dispPol = document.getElementById("cert-display-policy");
+  if (dispId) dispId.innerText = policy.certId;
+  if (dispOwner) dispOwner.innerText = policy.clientName;
+  if (dispPlate) dispPlate.innerText = policy.plate;
+  if (dispPol) dispPol.innerText = policy.policyNo;
+
   const modal = document.getElementById("aki-digital-cert-modal");
-  
   if (!modal) return;
   
   const plateVal = policy.plate || "KDG 123A";
   const ownerVal = policy.clientName || "Boniface Mwangi";
-  const modelVal = plateVal.startsWith("KDG") ? "Fielder (2018)" : (plateVal.startsWith("KBA") ? "NPR Truck (2020)" : "X-Trail (2019)");
-  const makeVal = plateVal.startsWith("KDG") ? "Toyota" : (plateVal.startsWith("KBA") ? "Isuzu" : "Nissan");
-  const chassisVal = "NZE161G-" + Math.floor(1000000 + Math.random() * 8999999);
+  const customMakeModel = policy.makeModel || (ntsaDatabase[plateVal] && ntsaDatabase[plateVal].make) || "";
+  const makeVal = customMakeModel
+    ? customMakeModel.split(" ")[0]
+    : (plateVal.startsWith("KDG") ? "Toyota" : (plateVal.startsWith("KBA") ? "Subaru" : "Isuzu"));
+  const modelVal = customMakeModel || (plateVal.startsWith("KDG") ? "Fielder (2018)" : (plateVal.startsWith("KBA") ? "Forester (2019)" : "D-Max Double Cab (2022)"));
+  const chassisVal = policy.chassis || (ntsaDatabase[plateVal] && ntsaDatabase[plateVal].chassis) || ("AKI-" + plateVal.replace(/\s+/g, "") + "-2026");
   const refVal = policy.certId || "CERT-AKI-2026-9842";
   const startVal = "2026-01-01";
   const expiryVal = "2026-12-31";
-  const sumInsuredVal = "KSh " + (policy.premium * 25).toLocaleString();
-  const statusVal = policy.status === "Active" ? "VALID & ACTIVE" : policy.status.toUpperCase();
+  const numericSumInsured = Number(policy.sumInsured || (ntsaDatabase[plateVal] && ntsaDatabase[plateVal].valuation) || Math.round((policy.premium || 75000) / 0.035));
+  const sumInsuredVal = "KSh " + numericSumInsured.toLocaleString();
+  const statusVal = policy.status === "Active"
+    ? "VALID & ACTIVE"
+    : (policy.status === "Pending" ? "PENDING SLA APPROVAL" : String(policy.status || "ACTIVE").toUpperCase());
 
   // Populate Sticker 3 (Original Certificate)
-  document.getElementById("cert-plate").innerText = plateVal;
-  document.getElementById("cert-owner").innerText = ownerVal;
-  document.getElementById("cert-pol-no").innerText = policy.policyNo;
-  document.getElementById("cert-start-date").innerText = startVal;
-  document.getElementById("cert-expiry-date").innerText = expiryVal;
-  document.getElementById("cert-chassis").innerText = chassisVal;
-  document.getElementById("cert-ref-no").innerText = refVal;
+  const setTxt = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  };
+  setTxt("cert-plate", plateVal);
+  setTxt("cert-owner", ownerVal);
+  setTxt("cert-pol-no", policy.policyNo);
+  setTxt("cert-start-date", startVal);
+  setTxt("cert-expiry-date", expiryVal);
+  setTxt("cert-chassis", chassisVal);
+  setTxt("cert-ref-no", refVal);
   
   const statusEl = document.getElementById("cert-display-status");
   if (statusEl) {
     statusEl.innerText = statusVal;
-    statusEl.style.backgroundColor = policy.status === "Active" ? "#16a34a" : "#dc2626";
+    statusEl.style.backgroundColor = policy.status === "Active"
+      ? "#16a34a"
+      : (policy.status === "Pending" ? "#b45309" : "#dc2626");
   }
 
   // Populate Middle Metadata Table
-  const makeValEl = document.getElementById("cert-make-val");
-  if (makeValEl) makeValEl.innerText = makeVal;
+  setTxt("cert-make-val", makeVal);
   
   const modelEls = document.querySelectorAll("#cert-model");
   modelEls.forEach(el => { el.innerText = modelVal; });
@@ -2401,10 +2659,8 @@ function openAKICertModal(policyNo) {
   sumInsuredEls.forEach(el => { el.innerText = sumInsuredVal; });
 
   // Populate Sticker 1 & 2 (File Copy & Duplicate)
-  const fileRef = document.getElementById("cert-ref-no-file");
-  if (fileRef) fileRef.innerText = refVal;
-  const dupRef = document.getElementById("cert-ref-no-dup");
-  if (dupRef) dupRef.innerText = refVal;
+  setTxt("cert-ref-no-file", refVal);
+  setTxt("cert-ref-no-dup", refVal);
 
   const mapping = {
     "v-owner-lbl": ownerVal, "v-owner-lbl2": ownerVal,
@@ -2416,19 +2672,20 @@ function openAKICertModal(policyNo) {
   };
 
   for (const [id, val] of Object.entries(mapping)) {
-    const el = document.getElementById(id);
-    if (el) el.innerText = val;
+    setTxt(id, val);
   }
   
   // Set Cryptographic SHA-256 Hash Signature Seal
   const hashSeal = generateCertSHA256Hash(policy);
-  const hashEl = document.getElementById("cert-sha256-hash");
-  if (hashEl) hashEl.innerText = hashSeal;
+  setTxt("cert-sha256-hash", hashSeal);
 
-  // Render a real, dynamic, scannable QR code pointing to the dynamic verification link (65px size for sticker)
+  // Render scannable QR code pointing to verification endpoint
   const qrContainer = document.getElementById("aki-cert-qr-container");
-  if (qrContainer) {
-    const certURL = `${window.location.origin}/?verifyCert=true&certId=${refVal}&policy=${policy.policyNo}&plate=${plateVal}&owner=${encodeURIComponent(ownerVal)}&hash=${hashSeal}`;
+  if (qrContainer && typeof renderStandardQRCodeContainer === "function") {
+    const originUrl = (typeof window !== "undefined" && window.location && window.location.origin && window.location.origin !== "null")
+      ? window.location.origin
+      : "https://eims-prosystem.web.app";
+    const certURL = `${originUrl}/?verifyCert=true&certId=${encodeURIComponent(refVal)}&policy=${encodeURIComponent(policy.policyNo)}&plate=${encodeURIComponent(plateVal)}&owner=${encodeURIComponent(ownerVal)}&hash=${encodeURIComponent(hashSeal)}`;
     renderStandardQRCodeContainer(qrContainer, certURL, {
       fgColor: "#1c1613",
       bgColor: "#ffffff",
@@ -2439,19 +2696,29 @@ function openAKICertModal(policyNo) {
   }
 
   modal.classList.add("active");
-  showToast("Digital QR Certificate Loaded", "Digital QR insurance certificate active for " + policy.plate + ". Cryptographically signed.", "success");
+  showToast("Digital QR Certificate Loaded", `AKI QR certificate ${refVal} active for ${plateVal}. Cryptographically signed.`, "success");
+}
+
+function triggerCertPolicy(policyNo) {
+  const p = policies.find(pol => pol.policyNo === policyNo);
+  if (!p) return;
+  if (!p.certId) {
+    p.certId = "CERT-" + Math.floor(1000 + Math.random() * 9000) + "-2026";
+    renderPolicyRegistry();
+  }
+  openAKICertModal(p);
 }
 
 function verifyCertIntegrityAudit() {
   if (!currentActiveCertPolicy) return;
   const officialHash = generateCertSHA256Hash(currentActiveCertPolicy);
-  showToast(" SHA-256 Hash Audit Passed", `Integrity 100% Verified! Hash matches official AKI ledger (${officialHash.substring(0, 16)}...). Zero tampering detected.`, "success");
+  showToast("SHA-256 Hash Audit Passed", `Integrity 100% Verified! Hash matches official AKI ledger (${officialHash.substring(0, 16)}...). Zero tampering detected.`, "success");
 }
 
 function simulateTamperAttempt() {
-  showToast(" FRAUD ATTEMPT DETECTED!", "Tampering Detected! Expiry Date modification attempt blocked by SHA-256 Signature Guard. Reverting to official AKI ledger record.", "warning");
+  showToast("FRAUD ATTEMPT DETECTED!", "Tampering Detected! Expiry Date modification attempt blocked by SHA-256 Signature Guard. Reverting to official AKI ledger record.", "warning");
   setTimeout(() => {
-    if (currentActiveCertPolicy) openAKICertModal(currentActiveCertPolicy.policyNo);
+    if (currentActiveCertPolicy) openAKICertModal(currentActiveCertPolicy);
   }, 1200);
 }
 
@@ -2844,17 +3111,49 @@ function cancelScheduledPayout(schId) {
   showToast("Schedule Cancelled", `Payment schedule ${schId} was cancelled by Finance Officer.`, "info");
 }
 
+function updateUnderwritingKPIs() {
+  const activeCount = policies.filter(p => p.status === "Active").length;
+  const pendingCount = policies.filter(p => p.status === "Pending" || p.approvalStatus === "Pending Approval").length;
+  const totalGwp = policies
+    .filter(p => p.status !== "Cancelled")
+    .reduce((sum, p) => sum + (Number(p.premium) || 0), 0);
+  const certCount = policies.filter(p => Boolean(p.certId) && p.status !== "Cancelled").length;
+
+  const elActive = document.getElementById("uw-kpi-active");
+  const elPending = document.getElementById("uw-kpi-pending");
+  const elGwp = document.getElementById("uw-kpi-gwp");
+  const elCerts = document.getElementById("uw-kpi-certs");
+
+  if (elActive) elActive.innerText = activeCount.toLocaleString();
+  if (elPending) {
+    elPending.innerText = pendingCount.toLocaleString();
+    elPending.style.color = pendingCount > 0 ? "#dfc09f" : "var(--text-secondary)";
+  }
+  if (elGwp) elGwp.innerText = `KSh ${totalGwp.toLocaleString()}`;
+  if (elCerts) elCerts.innerText = certCount.toLocaleString();
+}
+
 function renderPolicyRegistry() {
+  updateUnderwritingKPIs();
   const tbody = document.querySelector("#policy-ledger-table tbody");
   if (!tbody) return;
   
   tbody.innerHTML = "";
   const query = (document.getElementById("policy-search-input")?.value || "").toLowerCase();
+  const statusFilter = document.getElementById("policy-status-filter")?.value || "ALL";
   
-  const filtered = policies.filter(p => p.clientName.toLowerCase().includes(query) || p.plate.toLowerCase().includes(query) || p.policyNo.toLowerCase().includes(query));
+  const filtered = policies.filter(p => {
+    const matchesText =
+      (p.clientName || "").toLowerCase().includes(query) ||
+      (p.plate || "").toLowerCase().includes(query) ||
+      (p.policyNo || "").toLowerCase().includes(query) ||
+      (p.certId || "").toLowerCase().includes(query);
+    const matchesStatus = statusFilter === "ALL" ? true : p.status === statusFilter;
+    return matchesText && matchesStatus;
+  });
   
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-muted);">No policy records matched.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-muted);">No policy records matched your filter.</td></tr>`;
     return;
   }
   
@@ -2862,22 +3161,33 @@ function renderPolicyRegistry() {
     const tr = document.createElement("tr");
     
     let statusBadge = `<span class="status-badge approved">Active</span>`;
-    if (p.status === "Suspended") statusBadge = `<span class="status-badge pending">Suspended</span>`;
-    if (p.status === "Cancelled") statusBadge = `<span class="status-badge investigation">Cancelled</span>`;
+    if (p.status === "Pending") {
+      statusBadge = `<span class="status-badge pending">Pending Approval</span>`;
+    } else if (p.status === "Suspended") {
+      statusBadge = `<span class="status-badge pending">Suspended</span>`;
+    } else if (p.status === "Cancelled") {
+      statusBadge = `<span class="status-badge investigation">Cancelled</span>`;
+    }
+
+    const approveBtn = p.status === "Pending"
+      ? `<button class="btn btn-primary" onclick="approvePendingItem('POLICY', '${p.policyNo}')" style="padding:4px 9px; font-size:11px;">Approve</button>`
+      : "";
+    const certBtnLabel = p.certId ? "AKI Cert" : "Issue Cert";
     
     tr.innerHTML = `
-      <td><strong>${p.policyNo}</strong></td>
-      <td>${p.clientName}</td>
-      <td><code>${p.plate}</code></td>
-      <td>${p.line}</td>
-      <td>KSh ${p.premium.toLocaleString()}</td>
-      <td><strong style="color:var(--primary)">KSh ${p.debited.toLocaleString()}</strong></td>
+      <td><strong>${escapeHTML(p.policyNo)}</strong></td>
+      <td>${escapeHTML(p.clientName)}</td>
+      <td><code>${escapeHTML(p.plate)}</code></td>
+      <td>${escapeHTML(p.line)}</td>
+      <td style="white-space:nowrap;">KSh ${Number(p.premium || 0).toLocaleString()}</td>
+      <td style="white-space:nowrap;"><strong style="color:var(--primary)">KSh ${Number(p.debited || 0).toLocaleString()}</strong></td>
       <td>${statusBadge}</td>
       <td>
-        <div style="display:flex; gap:6px; flex-wrap:wrap;">
-          <button class="btn btn-secondary" onclick="openEditPolicy('${p.policyNo}')" style="padding:4px 8px; font-size:11px;"> Edit</button>
+        <div style="display:flex; gap:5px; justify-content:flex-end; align-items:center; flex-wrap:nowrap;">
+          ${approveBtn}
+          <button class="btn btn-secondary" onclick="openEditPolicy('${p.policyNo}')" style="padding:4px 8px; font-size:11px;">Edit</button>
           <button class="btn btn-secondary" onclick="triggerDebitPolicy('${p.policyNo}')" style="padding:4px 8px; font-size:11px;">Debit</button>
-          <button class="btn btn-secondary" onclick="triggerCertPolicy('${p.policyNo}')" style="padding:4px 8px; font-size:11px;">Issue Cert</button>
+          <button class="btn btn-secondary" onclick="triggerCertPolicy('${p.policyNo}')" style="padding:4px 8px; font-size:11px;">${certBtnLabel}</button>
           <button class="btn btn-secondary" onclick="toggleSuspendPolicy('${p.policyNo}')" style="padding:4px 8px; font-size:11px;">${p.status === 'Suspended' ? 'Unsuspend' : 'Suspend'}</button>
           <button class="btn btn-danger" onclick="cancelPolicy('${p.policyNo}')" style="padding:4px 8px; font-size:11px;">Cancel</button>
         </div>
@@ -2899,37 +3209,20 @@ function triggerDebitPolicy(policyNo) {
   document.getElementById("debit-modal").classList.add("active");
 }
 
-function triggerCertPolicy(policyNo) {
-  const p = policies.find(pol => pol.policyNo === policyNo);
-  if (!p) return;
-  
-  selectedPolicyForCert = p;
-  document.getElementById("cert-display-id").innerText = p.certId;
-  document.getElementById("cert-display-owner").innerText = p.clientName;
-  document.getElementById("cert-display-plate").innerText = p.plate;
-  document.getElementById("cert-display-policy").innerText = p.policyNo;
-  
-  const certQRBox = document.getElementById("cert-qr-container");
-  if (certQRBox) {
-    const certURL = `https://eims.go.ke/verify-cert?certId=${p.certId}&policy=${p.policyNo}&plate=${p.plate}&hash=SHA256-D7F8A92B-AKI-VERIFIED-2026`;
-    renderStandardQRCodeContainer(certQRBox, certURL, {
-      fgColor: "#1c1613",
-      bgColor: "#ffffff",
-      size: 70,
-      logoType: "none"
-    });
-  }
-
-  document.getElementById("cert-modal").classList.add("active");
-}
-
 function toggleSuspendPolicy(policyNo) {
   const p = policies.find(pol => pol.policyNo === policyNo);
   if (!p) return;
   
   p.status = p.status === "Suspended" ? "Active" : "Suspended";
+  if (p.status === "Active") p.approvalStatus = "Approved";
+  if (p.fleetId && typeof countyFleets !== "undefined") {
+    const linkedFleet = countyFleets.find(f => f.id === p.fleetId);
+    if (linkedFleet) linkedFleet.status = p.status;
+  }
   showToast("Policy Status", `Policy ${p.policyNo} is now ${p.status}.`, "info");
   renderPolicyRegistry();
+  if (typeof renderFleetUnderwriting === "function") renderFleetUnderwriting();
+  if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
 }
 
 function cancelPolicy(policyNo) {
@@ -2937,8 +3230,15 @@ function cancelPolicy(policyNo) {
   if (!p) return;
   
   p.status = "Cancelled";
+  p.approvalStatus = "Cancelled";
+  if (p.fleetId && typeof countyFleets !== "undefined") {
+    const linkedFleet = countyFleets.find(f => f.id === p.fleetId);
+    if (linkedFleet) linkedFleet.status = "Cancelled";
+  }
   showToast("Policy Cancelled", `Policy ${p.policyNo} cancelled.`, "danger");
   renderPolicyRegistry();
+  if (typeof renderFleetUnderwriting === "function") renderFleetUnderwriting();
+  if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
 }
 
 // ================= PRODUCTION REPORTS & SYSTEM CONSTRAINTS =================
@@ -4031,33 +4331,253 @@ function issueSubrogationNotice(claimId, insurer) {
   showToast("Subrogation Demand Notice", `Notice of Subrogation Demand issued to ${insurer} for file ${claimId}.`, "success");
 }
 
-// 8. COUNTY FLEET UNDERWRITING
+// 8. COUNTY & CORPORATE FLEET UNDERWRITING (END-TO-END ENGINE)
+function buildSeedFleetVehicles(fleetId, countyName, seriesPrefix, startNum, vehicleCount, lineLabel, totalGrossPremium, issueCerts = true) {
+  const vehicles = [];
+  const cleanTag = fleetId.replace(/[^A-Z0-9]/gi, "").toUpperCase();
+  const avgPrem = Math.max(12000, Math.round(totalGrossPremium / Math.max(1, vehicleCount)));
+  const avgVal = Math.max(1500000, Math.round(avgPrem / 0.028));
+  const modelCatalog = lineLabel.includes("Ambulance") || lineLabel.includes("Emergency")
+    ? ["Toyota Landcruiser HZJ78 Ambulance", "Ford Ranger ICU Responder", "Isuzu FVR Fire Tender"]
+    : lineLabel.includes("Machinery")
+      ? ["Caterpillar 140K Motor Grader", "JCB 3CX Backhoe Loader", "New Holland 4WD Tractor"]
+      : ["Toyota Hilux Double Cab 2.8GD", "Isuzu D-Max Utility Patrol", "Nissan Navara County 4x4"];
+
+  for (let i = 0; i < vehicleCount; i++) {
+    const num = String(startNum + i).padStart(3, "0");
+    const suffix = String.fromCharCode(65 + (i % 6));
+    const plate = `${seriesPrefix} ${num}${suffix}`;
+    const makeModel = modelCatalog[i % modelCatalog.length];
+    const certId = issueCerts ? `CERT-${cleanTag}-${String(i + 1).padStart(3, "0")}` : null;
+    vehicles.push({
+      plate: plate,
+      makeModel: makeModel,
+      category: lineLabel,
+      sumInsured: avgVal,
+      premium: avgPrem,
+      certId: certId
+    });
+    if (typeof registerVehicleInNTSA === "function") {
+      registerVehicleInNTSA(plate, {
+        make: makeModel,
+        year: 2024,
+        valuation: avgVal,
+        policy: `POL-${fleetId}-2026`,
+        owner: countyName
+      });
+    }
+  }
+  return vehicles;
+}
+
 let countyFleets = [
-  { id: "FLT-NRB-01", county: "Nairobi City County Fleet", count: "45 Vehicles", line: "Emergency & Ambulances", premium: "KSh 8,500,000", certs: "Batch Issued (45/45)" },
-  { id: "FLT-MSA-02", county: "Mombasa County Health Fleet", count: "28 Vehicles", line: "Health & Utility", premium: "KSh 5,200,000", certs: "Batch Issued (28/28)" },
-  { id: "FLT-NKR-03", county: "Nakuru County Revenue Fleet", count: "32 Vehicles", line: "Administrative Patrol", premium: "KSh 6,100,000", certs: "Batch Issued (32/32)" },
-  { id: "FLT-KSM-04", county: "Kisumu Fire & Rescue Fleet", count: "18 Vehicles", line: "Emergency Response", premium: "KSh 4,400,000", certs: "Batch Issued (18/18)" },
-  { id: "FLT-ELD-05", county: "Uasin Gishu Agricultural Fleet", count: "24 Vehicles", line: "Heavy Machinery", premium: "KSh 5,800,000", certs: "Batch Issued (24/24)" },
-  { id: "FLT-KMB-06", county: "Kiambu Works & Transport", count: "36 Vehicles", line: "Public Works Patrol", premium: "KSh 7,100,000", certs: "Batch Issued (36/36)" }
+  {
+    id: "FLT-NRB-01",
+    policyNo: "POL-FLT-NRB-01-2026",
+    county: "Nairobi City County Fleet",
+    vehicleCount: 45,
+    count: "45 Vehicles",
+    line: "Emergency & Ambulances",
+    premiumAmount: 8500000,
+    premium: "KSh 8,500,000",
+    issuedCertCount: 45,
+    certs: "Batch Issued (45/45)",
+    status: "Active",
+    vehicles: []
+  },
+  {
+    id: "FLT-MSA-02",
+    policyNo: "POL-FLT-MSA-02-2026",
+    county: "Mombasa County Health Fleet",
+    vehicleCount: 28,
+    count: "28 Vehicles",
+    line: "Health & Utility",
+    premiumAmount: 5200000,
+    premium: "KSh 5,200,000",
+    issuedCertCount: 28,
+    certs: "Batch Issued (28/28)",
+    status: "Active",
+    vehicles: []
+  },
+  {
+    id: "FLT-NKR-03",
+    policyNo: "POL-FLT-NKR-03-2026",
+    county: "Nakuru County Revenue Fleet",
+    vehicleCount: 32,
+    count: "32 Vehicles",
+    line: "Administrative Patrol",
+    premiumAmount: 6100000,
+    premium: "KSh 6,100,000",
+    issuedCertCount: 32,
+    certs: "Batch Issued (32/32)",
+    status: "Active",
+    vehicles: []
+  },
+  {
+    id: "FLT-KSM-04",
+    policyNo: "POL-FLT-KSM-04-2026",
+    county: "Kisumu Fire & Rescue Fleet",
+    vehicleCount: 18,
+    count: "18 Vehicles",
+    line: "Emergency Response",
+    premiumAmount: 4400000,
+    premium: "KSh 4,400,000",
+    issuedCertCount: 18,
+    certs: "Batch Issued (18/18)",
+    status: "Active",
+    vehicles: []
+  },
+  {
+    id: "FLT-ELD-05",
+    policyNo: "POL-FLT-ELD-05-2026",
+    county: "Uasin Gishu Agricultural Fleet",
+    vehicleCount: 24,
+    count: "24 Vehicles",
+    line: "Heavy Machinery",
+    premiumAmount: 5800000,
+    premium: "KSh 5,800,000",
+    issuedCertCount: 24,
+    certs: "Batch Issued (24/24)",
+    status: "Active",
+    vehicles: []
+  },
+  {
+    id: "FLT-KMB-06",
+    policyNo: "POL-FLT-KMB-06-2026",
+    county: "Kiambu Works & Transport",
+    vehicleCount: 36,
+    count: "36 Vehicles",
+    line: "Public Works Patrol",
+    premiumAmount: 7100000,
+    premium: "KSh 7,100,000",
+    issuedCertCount: 36,
+    certs: "Batch Issued (36/36)",
+    status: "Active",
+    vehicles: []
+  }
 ];
 
+(function hydrateBaselineCountyFleets() {
+  const prefixes = ["KCG 47", "KCG 01", "KCG 32", "KCG 42", "KCG 27", "KCG 22"];
+  countyFleets.forEach((f, idx) => {
+    const pfx = prefixes[idx] || "KCG";
+    f.vehicles = buildSeedFleetVehicles(f.id, f.county, pfx.replace(/\s+/g, ""), 100 + idx * 50, f.vehicleCount, f.line, f.premiumAmount, true);
+  });
+})();
+
+let activeOpenFleetScheduleId = null;
+let sampleFleetManifestSeq = 1;
+
+function parseNumericCurrency(val) {
+  if (typeof val === "number") return val;
+  const cleaned = String(val || "").replace(/[^0-9.]/g, "");
+  return parseFloat(cleaned) || 0;
+}
+
+function syncFleetDerivedFields(fleet) {
+  if (!fleet) return;
+  if (!Array.isArray(fleet.vehicles)) fleet.vehicles = [];
+  const vehLen = fleet.vehicles.length || fleet.vehicleCount || 0;
+  fleet.vehicleCount = vehLen;
+  fleet.count = `${vehLen} Vehicle${vehLen === 1 ? "" : "s"}`;
+  if (!fleet.premiumAmount) {
+    fleet.premiumAmount = parseNumericCurrency(fleet.premium);
+  }
+  fleet.premium = `KSh ${Math.round(fleet.premiumAmount).toLocaleString()}`;
+  const issued = fleet.vehicles.length > 0
+    ? fleet.vehicles.filter(v => Boolean(v.certId)).length
+    : (fleet.issuedCertCount || 0);
+  fleet.issuedCertCount = issued;
+  fleet.certs = issued >= vehLen && vehLen > 0
+    ? `Batch Issued (${issued}/${vehLen})`
+    : `Pending Batch (${issued}/${vehLen})`;
+}
+
+function updateFleetKPIs() {
+  const activeFleets = countyFleets.filter(f => f.status !== "Cancelled");
+  let totalVehicles = 0;
+  let totalPremium = 0;
+  let totalCerts = 0;
+
+  activeFleets.forEach(f => {
+    syncFleetDerivedFields(f);
+    totalVehicles += Number(f.vehicleCount || 0);
+    totalPremium += Number(f.premiumAmount || 0);
+    totalCerts += Number(f.issuedCertCount || 0);
+  });
+
+  const coveragePct = totalVehicles > 0 ? Math.round((totalCerts / totalVehicles) * 100) : 100;
+
+  const elPol = document.getElementById("fleet-kpi-policies");
+  const elVeh = document.getElementById("fleet-kpi-vehicles");
+  const elPrem = document.getElementById("fleet-kpi-premium");
+  const elCerts = document.getElementById("fleet-kpi-certs");
+
+  if (elPol) elPol.innerText = activeFleets.length.toLocaleString();
+  if (elVeh) elVeh.innerText = totalVehicles.toLocaleString();
+  if (elPrem) elPrem.innerText = `KSh ${Math.round(totalPremium).toLocaleString()}`;
+  if (elCerts) elCerts.innerText = `${totalCerts.toLocaleString()} / ${totalVehicles.toLocaleString()} (${coveragePct}%)`;
+}
+
 function renderFleetUnderwriting() {
+  updateFleetKPIs();
   const tbody = document.querySelector("#fleet-table tbody");
   if (!tbody) return;
   tbody.innerHTML = "";
-  countyFleets.forEach(f => {
+
+  const query = (document.getElementById("fleet-search-input")?.value || "").trim().toLowerCase();
+  const filtered = countyFleets.filter(f => {
+    if (!query) return true;
+    const matchBasic =
+      (f.id || "").toLowerCase().includes(query) ||
+      (f.policyNo || "").toLowerCase().includes(query) ||
+      (f.county || "").toLowerCase().includes(query) ||
+      (f.line || "").toLowerCase().includes(query);
+    if (matchBasic) return true;
+    return Array.isArray(f.vehicles) && f.vehicles.some(v => (v.plate || "").toLowerCase().includes(query));
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-muted);">No fleet master policies matched your search.</td></tr>`;
+    return;
+  }
+
+  filtered.forEach(f => {
+    syncFleetDerivedFields(f);
     const tr = document.createElement("tr");
+
+    const statusChip = f.status === "Pending"
+      ? `<span class="status-badge pending" style="margin-right:6px;">Pending Approval</span>`
+      : f.status === "Suspended"
+        ? `<span class="status-badge pending" style="margin-right:6px;">Suspended</span>`
+        : `<span class="status-badge approved" style="margin-right:6px;">Active</span>`;
+
+    const certDone = f.issuedCertCount >= f.vehicleCount && f.vehicleCount > 0;
+    const certColor = certDone ? "var(--success)" : "#dfc09f";
+
+    const approveBtn = f.status === "Pending"
+      ? `<button class="btn btn-primary" onclick="approveFleetPolicy('${f.id}')" style="padding:4px 9px; font-size:11px;">Approve</button>`
+      : "";
+
     tr.innerHTML = `
-      <td><strong>${f.id}</strong></td>
-      <td>${f.county}</td>
-      <td><span class="status-badge pending">${f.count}</span></td>
-      <td>${f.line}</td>
-      <td><strong style="color:var(--primary);">${f.premium}</strong></td>
-      <td><span style="color:var(--success); font-weight:600;">${f.certs}</span></td>
       <td>
-        <div style="display:flex; gap:6px;">
-          <button class="btn btn-secondary" onclick="batchIssueFleetCerts('${f.county}')" style="padding:4px 8px; font-size:11px;">Batch AKI Certs</button>
-          <button class="btn btn-secondary" onclick="openEditFleetVehicle('${f.id}')" style="padding:4px 8px; font-size:11px;"> Edit</button>
+        <strong>${escapeHTML(f.id)}</strong>
+        <div style="font-size:10.5px; color:var(--text-muted);">${escapeHTML(f.policyNo || "")}</div>
+      </td>
+      <td>${escapeHTML(f.county)}</td>
+      <td><span class="status-badge pending">${escapeHTML(f.count)}</span></td>
+      <td>${escapeHTML(f.line)}</td>
+      <td style="white-space:nowrap;"><strong style="color:var(--primary);">${escapeHTML(f.premium)}</strong></td>
+      <td style="white-space:nowrap;">
+        ${statusChip}
+        <span style="color:${certColor}; font-weight:600; font-size:12px;">${escapeHTML(f.certs)}</span>
+      </td>
+      <td>
+        <div style="display:flex; gap:5px; justify-content:flex-end; align-items:center; flex-wrap:nowrap;">
+          ${approveBtn}
+          <button class="btn btn-secondary" onclick="openFleetScheduleModal('${f.id}')" style="padding:4px 8px; font-size:11px;">Schedule</button>
+          <button class="btn btn-secondary" onclick="batchIssueFleetCerts('${f.id}')" style="padding:4px 8px; font-size:11px;">Batch AKI Certs</button>
+          <button class="btn btn-secondary" onclick="openEditFleetVehicle('${f.id}')" style="padding:4px 8px; font-size:11px;">Edit</button>
         </div>
       </td>
     `;
@@ -4065,12 +4585,555 @@ function renderFleetUnderwriting() {
   });
 }
 
-function batchIssueFleetCerts(countyName) {
-  showToast("Batch Certificates", `Batch AKI Digital Motor Certificates generated for ${countyName}.`, "success");
+function approveFleetPolicy(fleetId) {
+  const fleet = countyFleets.find(f => f.id === fleetId);
+  if (!fleet) return;
+  fleet.status = "Active";
+  if (fleet.policyNo) {
+    const linkedPol = policies.find(p => p.policyNo === fleet.policyNo || p.fleetId === fleet.id);
+    if (linkedPol) {
+      linkedPol.status = "Active";
+      linkedPol.approvalStatus = "Approved";
+    }
+  }
+  renderFleetUnderwriting();
+  renderPolicyRegistry();
+  renderDashboard();
+  if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
+  showToast("Fleet Policy Approved", `${fleet.id} (${fleet.county}) approved and activated across ${fleet.vehicleCount} vehicles.`, "success");
+}
+
+function batchIssueFleetCerts(fleetIdOrCounty) {
+  const fleet = countyFleets.find(f => f.id === fleetIdOrCounty || f.county === fleetIdOrCounty);
+  if (!fleet) {
+    showToast("Batch Certificates", `Batch AKI Digital Motor Certificates generated for ${fleetIdOrCounty}.`, "success");
+    return;
+  }
+  if (!Array.isArray(fleet.vehicles) || fleet.vehicles.length === 0) {
+    fleet.vehicles = buildSeedFleetVehicles(fleet.id, fleet.county, "KCG", 300, fleet.vehicleCount || 10, fleet.line, fleet.premiumAmount || 3500000, true);
+  }
+  const cleanTag = fleet.id.replace(/[^A-Z0-9]/gi, "").toUpperCase();
+  let newlyMinted = 0;
+  fleet.vehicles.forEach((v, idx) => {
+    if (!v.certId) {
+      v.certId = `CERT-${cleanTag}-${String(idx + 1).padStart(3, "0")}`;
+      newlyMinted++;
+    }
+  });
+  syncFleetDerivedFields(fleet);
+
+  // Sync master policy certId if missing
+  const linkedPol = policies.find(p => p.policyNo === fleet.policyNo || p.fleetId === fleet.id);
+  if (linkedPol && !linkedPol.certId && fleet.vehicles[0]) {
+    linkedPol.certId = fleet.vehicles[0].certId;
+  }
+
+  renderFleetUnderwriting();
+  renderPolicyRegistry();
+  if (activeOpenFleetScheduleId === fleet.id) {
+    renderOpenFleetSchedule();
+  }
+  const msg = newlyMinted > 0
+    ? `Minted ${newlyMinted} new AKI QR certificates (${fleet.vehicleCount}/${fleet.vehicleCount} active) for ${fleet.county}.`
+    : `Verified all ${fleet.vehicleCount}/${fleet.vehicleCount} AKI Digital Motor Certificates for ${fleet.county}.`;
+  showToast("Batch AKI Certificates Issued", msg, "success");
+}
+
+function triggerFleetCSVInput() {
+  const fileInput = document.getElementById("fleet-csv-file-input");
+  if (fileInput) {
+    fileInput.value = "";
+    fileInput.click();
+  } else {
+    simulateFleetCSVUpload();
+  }
+}
+
+function handleFleetCSVFileSelect(event) {
+  const file = event?.target?.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const csvText = String(e.target?.result || "");
+    parseAndOnboardFleetCSV(csvText, file.name);
+  };
+  reader.readAsText(file);
+}
+
+function registerOnboardedFleetMaster(countyName, fleetLine, vehiclesList, preIssueCerts = false) {
+  const seqNum = String(countyFleets.length + 1).padStart(2, "0");
+  const code = countyName.replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase() || "FLT";
+  const fleetId = `FLT-${code}-${seqNum}`;
+  const masterPolNo = `POL-${fleetId}-2026`;
+  const cleanTag = fleetId.replace(/[^A-Z0-9]/gi, "").toUpperCase();
+
+  let totalSumInsured = 0;
+  let totalBasic = 0;
+
+  const normalizedVehicles = vehiclesList.map((v, idx) => {
+    const sumVal = Math.max(250000, Number(v.sumInsured) || 4500000);
+    const vehBasic = Math.round(sumVal * 0.028); // 2.80% fleet tariff
+    const { totalLevies } = computeIRALeviesForPremium(vehBasic, 1);
+    const vehGross = vehBasic + totalLevies;
+    totalSumInsured += sumVal;
+    totalBasic += vehBasic;
+
+    const cleanPlate = String(v.plate || `KCG ${500 + idx}A`).trim().toUpperCase();
+    const makeModel = String(v.makeModel || "Toyota Hilux County 4x4").trim();
+    const certId = preIssueCerts ? `CERT-${cleanTag}-${String(idx + 1).padStart(3, "0")}` : null;
+
+    registerVehicleInNTSA(cleanPlate, {
+      make: makeModel,
+      year: 2025,
+      valuation: sumVal,
+      policy: masterPolNo,
+      owner: countyName
+    });
+
+    return {
+      plate: cleanPlate,
+      makeModel: makeModel,
+      category: v.category || fleetLine,
+      sumInsured: sumVal,
+      premium: vehGross,
+      certId: certId
+    };
+  });
+
+  const { totalLevies: fleetLevies } = computeIRALeviesForPremium(totalBasic, normalizedVehicles.length);
+  const totalGrossPremium = totalBasic + fleetLevies;
+
+  const newFleet = {
+    id: fleetId,
+    policyNo: masterPolNo,
+    county: countyName,
+    vehicleCount: normalizedVehicles.length,
+    count: `${normalizedVehicles.length} Vehicles`,
+    line: fleetLine,
+    premiumAmount: totalGrossPremium,
+    premium: `KSh ${totalGrossPremium.toLocaleString()}`,
+    issuedCertCount: preIssueCerts ? normalizedVehicles.length : 0,
+    certs: preIssueCerts
+      ? `Batch Issued (${normalizedVehicles.length}/${normalizedVehicles.length})`
+      : `Pending Batch (0/${normalizedVehicles.length})`,
+    status: "Pending",
+    vehicles: normalizedVehicles
+  };
+
+  countyFleets.unshift(newFleet);
+
+  const firstPlate = normalizedVehicles[0] ? normalizedVehicles[0].plate : "KCG 001A";
+  const plateDisplay = normalizedVehicles.length > 1
+    ? `${firstPlate} (+${normalizedVehicles.length - 1} Fleet)`
+    : firstPlate;
+
+  const masterPolicyObj = {
+    policyNo: masterPolNo,
+    fleetId: fleetId,
+    clientName: countyName,
+    plate: plateDisplay,
+    makeModel: `${normalizedVehicles.length} Fleet Vehicles (${fleetLine})`,
+    sumInsured: totalSumInsured,
+    line: "County Fleet",
+    broker: "EIMS Public Sector Desk",
+    premium: totalGrossPremium,
+    debited: totalGrossPremium,
+    status: "Pending",
+    approvalStatus: "Pending Approval",
+    submittedAt: Date.now(),
+    certId: preIssueCerts && normalizedVehicles[0] ? normalizedVehicles[0].certId : null,
+    isNew: true,
+    branch: "HQ"
+  };
+
+  policies.unshift(masterPolicyObj);
+
+  if (typeof dispatchDesignatedEmailAlert === "function") {
+    dispatchDesignatedEmailAlert("NEW_UNDERWRITING", masterPolicyObj);
+  }
+
+  renderFleetUnderwriting();
+  renderPolicyRegistry();
+  if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
+  if (typeof renderIRACompliance === "function") renderIRACompliance();
+
+  return { fleet: newFleet, policy: masterPolicyObj };
+}
+
+function parseAndOnboardFleetCSV(csvText, sourceLabel = "manifest.csv") {
+  const rawLines = String(csvText || "")
+    .split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(l => l && !l.startsWith("#"));
+
+  if (rawLines.length === 0) {
+    showToast("Empty CSV File", "No vehicle rows were found in the uploaded CSV schedule.", "warning");
+    return null;
+  }
+
+  const parsedVehicles = [];
+  let detectedCounty = "";
+  let detectedLine = "";
+  let colMap = { plate: 0, make: 1, category: 2, sumInsured: 3, county: 4 };
+
+  rawLines.forEach((line, idx) => {
+    const cols = line.split(",").map(c => c.trim().replace(/^"|"$/g, ""));
+    const firstLower = (cols[0] || "").toLowerCase();
+    if (idx === 0 && (firstLower.includes("plate") || firstLower.includes("reg") || cols.some(h => /sum\s*insured|valuation|make/i.test(h)))) {
+      const lowerHeaders = cols.map(h => h.toLowerCase());
+      const pIdx = lowerHeaders.findIndex(h => h.includes("plate") || h.includes("reg"));
+      const mIdx = lowerHeaders.findIndex(h => h.includes("make") || h.includes("model") || h.includes("vehicle"));
+      const cIdx = lowerHeaders.findIndex(h => h.includes("cat") || h.includes("class") || h.includes("line") || h.includes("type"));
+      const sIdx = lowerHeaders.findIndex(h => h.includes("sum") || h.includes("val") || h.includes("value") || h.includes("amount"));
+      const oIdx = lowerHeaders.findIndex(h => h.includes("county") || h.includes("entity") || h.includes("client") || h.includes("owner"));
+      colMap = {
+        plate: pIdx >= 0 ? pIdx : 0,
+        make: mIdx >= 0 ? mIdx : 1,
+        category: cIdx >= 0 ? cIdx : 2,
+        sumInsured: sIdx >= 0 ? sIdx : 3,
+        county: oIdx >= 0 ? oIdx : -1
+      };
+      return; // header row
+    }
+    const plate = (cols[colMap.plate] || "").toUpperCase();
+    if (!plate) return;
+    const makeModel = cols[colMap.make] || "Toyota Landcruiser Utility";
+    const category = cols[colMap.category] || "Emergency & Utility";
+    const sumInsured = parseNumericCurrency(cols[colMap.sumInsured]) || 4600000;
+    const countyCol = colMap.county >= 0 ? (cols[colMap.county] || "") : "";
+
+    if (!detectedCounty && countyCol) detectedCounty = countyCol;
+    if (!detectedLine && category) detectedLine = category;
+
+    parsedVehicles.push({ plate, makeModel, category, sumInsured });
+  });
+
+  if (parsedVehicles.length === 0) {
+    showToast("Invalid CSV Format", "Expected columns: plate,makeModel,category,sumInsured,county", "warning");
+    return null;
+  }
+
+  const finalCounty = detectedCounty || `County Fleet Schedule (${sourceLabel.replace(/\.csv$/i, "")})`;
+  const finalLine = detectedLine || "Emergency & Utility";
+  const result = registerOnboardedFleetMaster(finalCounty, finalLine, parsedVehicles, false);
+
+  showToast(
+    "Fleet CSV Onboarded & Routed for Approval",
+    `Imported ${parsedVehicles.length} vehicles for ${finalCounty} (${result.fleet.id}, ${result.fleet.premium}). Email alert sent & added to 60-Min SLA Queue.`,
+    "success"
+  );
+  return result;
 }
 
 function simulateFleetCSVUpload() {
-  showToast("Fleet CSV Uploaded", "Successfully imported manifest of 45 vehicles for Nairobi City County.", "success");
+  const batchIdx = sampleFleetManifestSeq++;
+  const baseNum = 600 + batchIdx * 10;
+  const countyNames = [
+    "Machakos County Emergency & Health Fleet",
+    "Nyeri County Public Works & Ambulance Fleet",
+    "Kakamega County Revenue & Utility Fleet",
+    "Kilifi County Coastal Rescue & Health Fleet"
+  ];
+  const chosenCounty = countyNames[(batchIdx - 1) % countyNames.length];
+  const sampleCSV = [
+    "plate,makeModel,category,sumInsured,county",
+    `KCG ${baseNum + 1}M,Toyota Landcruiser HZJ78 Ambulance,Emergency & Ambulances,6800000,${chosenCounty}`,
+    `KCG ${baseNum + 2}M,Toyota Landcruiser HZJ78 Ambulance,Emergency & Ambulances,6800000,${chosenCounty}`,
+    `KCG ${baseNum + 3}M,Isuzu D-Max Double Cab 4x4,Emergency & Ambulances,4900000,${chosenCounty}`,
+    `KCG ${baseNum + 4}M,Ford Ranger Rapid Responder,Emergency & Ambulances,5200000,${chosenCounty}`,
+    `KCG ${baseNum + 5}M,Isuzu FVR Water Bowser & Rescue,Emergency & Ambulances,9500000,${chosenCounty}`,
+    `KCG ${baseNum + 6}M,Toyota Hilux Utility Patrol,Emergency & Ambulances,4600000,${chosenCounty}`,
+    `KCG ${baseNum + 7}M,Nissan Urvan Mobile Clinic,Emergency & Ambulances,4400000,${chosenCounty}`,
+    `KCG ${baseNum + 8}M,Roam Electric County Shuttle,Emergency & Ambulances,7200000,${chosenCounty}`
+  ].join("\n");
+
+  return parseAndOnboardFleetCSV(sampleCSV, `${chosenCounty}.csv`);
+}
+
+function downloadSampleFleetCSV() {
+  const csvContent = [
+    "plate,makeModel,category,sumInsured,county",
+    "KCG 701A,Toyota Landcruiser Ambulance,Emergency & Ambulances,6800000,Makueni County Health Fleet",
+    "KCG 702A,Isuzu D-Max Double Cab,Health & Utility,4800000,Makueni County Health Fleet",
+    "KCG 703A,Ford Ranger 4x4 Responder,Emergency & Ambulances,5100000,Makueni County Health Fleet",
+    "KCG 704A,Toyota Hilux Patrol 2.8GD,Administrative Patrol,4600000,Makueni County Health Fleet"
+  ].join("\n");
+
+  if (typeof Blob !== "undefined" && typeof URL !== "undefined" && URL.createObjectURL) {
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "EIMS_County_Fleet_Schedule_Template.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+  showToast("Template Downloaded", "Downloaded EIMS_County_Fleet_Schedule_Template.csv for bulk upload.", "info");
+  return csvContent;
+}
+
+function openNewFleetModal() {
+  const modal = document.getElementById("new-fleet-modal");
+  if (modal) {
+    modal.classList.add("active");
+    calculateNewFleetModalSummary();
+  }
+}
+
+function closeNewFleetModal() {
+  const modal = document.getElementById("new-fleet-modal");
+  if (modal) modal.classList.remove("active");
+}
+
+function calculateNewFleetModalSummary() {
+  const count = Math.max(1, Math.min(500, parseInt(document.getElementById("modal-fleet-count")?.value || "12", 10)));
+  const avgVal = Math.max(250000, parseFloat(document.getElementById("modal-fleet-avg-value")?.value || "4800000"));
+  const totalSumInsured = count * avgVal;
+  const basic = Math.round(totalSumInsured * 0.028);
+  const { totalLevies } = computeIRALeviesForPremium(basic, count);
+  const totalPrem = basic + totalLevies;
+
+  const elSum = document.getElementById("fleet-modal-sum-insured");
+  const elLev = document.getElementById("fleet-modal-levies");
+  const elTot = document.getElementById("fleet-modal-total-premium");
+
+  if (elSum) elSum.innerText = `KSh ${totalSumInsured.toLocaleString()}`;
+  if (elLev) elLev.innerText = `KSh ${totalLevies.toLocaleString()}`;
+  if (elTot) elTot.innerText = `KSh ${totalPrem.toLocaleString()}`;
+  return { count, avgVal, totalSumInsured, totalLevies, totalPrem };
+}
+
+function confirmCreateNewFleet() {
+  const county = document.getElementById("modal-fleet-county")?.value.trim() || "Machakos County Emergency Fleet";
+  const line = document.getElementById("modal-fleet-line")?.value || "Emergency & Ambulances";
+  const count = Math.max(1, Math.min(500, parseInt(document.getElementById("modal-fleet-count")?.value || "12", 10)));
+  const avgVal = Math.max(250000, parseFloat(document.getElementById("modal-fleet-avg-value")?.value || "4800000"));
+  const prefix = (document.getElementById("modal-fleet-prefix")?.value.trim().toUpperCase() || "KCG").replace(/[^A-Z0-9]/g, "");
+  const customRaw = document.getElementById("modal-fleet-custom-plates")?.value.trim() || "";
+  const preIssueCerts = Boolean(document.getElementById("modal-fleet-issue-certs")?.checked);
+
+  const explicitPlates = customRaw
+    ? customRaw.split(/[\n,;]+/).map(s => s.trim().toUpperCase()).filter(Boolean)
+    : [];
+
+  const finalCount = explicitPlates.length > 0 ? explicitPlates.length : count;
+  const startSeed = 400 + Math.floor(Math.random() * 400);
+  const vehicles = [];
+  for (let i = 0; i < finalCount; i++) {
+    const plate = explicitPlates[i] || `${prefix} ${startSeed + i}A`;
+    const makeModel = line.includes("Ambulance")
+      ? "Toyota Landcruiser Ambulance"
+      : line.includes("Electric")
+        ? "Roam Electric Transit Bus"
+        : "Toyota Hilux Double Cab 4x4";
+    vehicles.push({
+      plate,
+      makeModel,
+      category: line,
+      sumInsured: avgVal
+    });
+  }
+
+  const created = registerOnboardedFleetMaster(county, line, vehicles, preIssueCerts);
+  closeNewFleetModal();
+  showToast(
+    "Fleet Master Policy Underwritten",
+    `Created ${created.fleet.id} (${created.policy.policyNo}) covering ${finalCount} vehicles at ${created.fleet.premium}.`,
+    "success"
+  );
+  return created;
+}
+
+function openFleetScheduleModal(fleetId) {
+  const fleet = countyFleets.find(f => f.id === fleetId);
+  if (!fleet) return;
+  activeOpenFleetScheduleId = fleet.id;
+  const modal = document.getElementById("fleet-schedule-modal");
+  if (!modal) return;
+  renderOpenFleetSchedule();
+  modal.classList.add("active");
+}
+
+function closeFleetScheduleModal() {
+  const modal = document.getElementById("fleet-schedule-modal");
+  if (modal) modal.classList.remove("active");
+}
+
+function renderOpenFleetSchedule() {
+  const fleet = countyFleets.find(f => f.id === activeOpenFleetScheduleId);
+  if (!fleet) return;
+  syncFleetDerivedFields(fleet);
+
+  const titleEl = document.getElementById("fleet-schedule-modal-title");
+  const subEl = document.getElementById("fleet-schedule-modal-subtitle");
+  const tbody = document.getElementById("fleet-schedule-vehicles-tbody");
+  const footerEl = document.getElementById("fleet-schedule-footer-summary");
+
+  if (titleEl) titleEl.innerText = `${fleet.id} — ${fleet.county}`;
+  if (subEl) {
+    subEl.innerText = `Master Policy: ${fleet.policyNo || fleet.id} | Status: ${fleet.status || "Active"} | ${fleet.count} | Gross Premium: ${fleet.premium}`;
+  }
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  fleet.vehicles.forEach((v, idx) => {
+    const tr = document.createElement("tr");
+    const certBadge = v.certId
+      ? `<span class="status-badge approved">${escapeHTML(v.certId)}</span>`
+      : `<span class="status-badge pending">Pending Batch</span>`;
+    tr.innerHTML = `
+      <td>${idx + 1}</td>
+      <td><code>${escapeHTML(v.plate)}</code></td>
+      <td>${escapeHTML(v.makeModel || fleet.line)}</td>
+      <td style="white-space:nowrap;">KSh ${Number(v.sumInsured || 0).toLocaleString()}</td>
+      <td style="white-space:nowrap;">KSh ${Number(v.premium || 0).toLocaleString()}</td>
+      <td>${certBadge}</td>
+      <td>
+        <div style="display:flex; justify-content:flex-end;">
+          <button class="btn btn-secondary" onclick="previewFleetVehicleAKICert('${fleet.id}', '${escapeHTML(v.plate)}')" style="padding:4px 8px; font-size:11px;">AKI Sticker</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  if (footerEl) {
+    footerEl.innerText = `Issued AKI Certificates: ${fleet.issuedCertCount} of ${fleet.vehicleCount} vehicles. Every plate is active in NTSA / FNOL verification.`;
+  }
+}
+
+function previewFleetVehicleAKICert(fleetId, plateOrIdx) {
+  const fleet = countyFleets.find(f => f.id === fleetId);
+  if (!fleet || !Array.isArray(fleet.vehicles)) return;
+  const veh = typeof plateOrIdx === "number"
+    ? (fleet.vehicles[plateOrIdx] || fleet.vehicles[0])
+    : (fleet.vehicles.find(v => normalizePlateCompact(v.plate) === normalizePlateCompact(plateOrIdx)) || fleet.vehicles[0]);
+  if (!veh) return;
+
+  if (!veh.certId) {
+    const idx = fleet.vehicles.indexOf(veh);
+    const cleanTag = fleet.id.replace(/[^A-Z0-9]/gi, "").toUpperCase();
+    veh.certId = `CERT-${cleanTag}-${String(idx + 1).padStart(3, "0")}`;
+    syncFleetDerivedFields(fleet);
+    renderFleetUnderwriting();
+    renderOpenFleetSchedule();
+  }
+
+  openAKICertModal({
+    policyNo: fleet.policyNo || fleet.id,
+    clientName: fleet.county,
+    plate: veh.plate,
+    makeModel: veh.makeModel || fleet.line,
+    sumInsured: veh.sumInsured || 4500000,
+    premium: veh.premium || 126000,
+    certId: veh.certId,
+    status: fleet.status || "Active"
+  });
+}
+
+function addVehicleToOpenFleet() {
+  const fleet = countyFleets.find(f => f.id === activeOpenFleetScheduleId);
+  if (!fleet) return;
+
+  const plateInput = document.getElementById("fleet-add-veh-plate");
+  const makeInput = document.getElementById("fleet-add-veh-make");
+  const valInput = document.getElementById("fleet-add-veh-value");
+
+  const plate = (plateInput?.value || "").trim().toUpperCase() || `KCG ${Math.floor(100 + Math.random() * 899)}Z`;
+  const makeModel = (makeInput?.value || "").trim() || "Toyota Landcruiser Utility 4x4";
+  const sumInsured = Math.max(250000, parseFloat(valInput?.value || "4500000"));
+
+  const vehBasic = Math.round(sumInsured * 0.028);
+  const { totalLevies } = computeIRALeviesForPremium(vehBasic, 1);
+  const vehGross = vehBasic + totalLevies;
+
+  const cleanTag = fleet.id.replace(/[^A-Z0-9]/gi, "").toUpperCase();
+  const certId = `CERT-${cleanTag}-${String(fleet.vehicles.length + 1).padStart(3, "0")}`;
+
+  fleet.vehicles.unshift({
+    plate,
+    makeModel,
+    category: fleet.line,
+    sumInsured,
+    premium: vehGross,
+    certId
+  });
+  fleet.premiumAmount = (Number(fleet.premiumAmount) || 0) + vehGross;
+  syncFleetDerivedFields(fleet);
+
+  registerVehicleInNTSA(plate, {
+    make: makeModel,
+    year: 2025,
+    valuation: sumInsured,
+    policy: fleet.policyNo || fleet.id,
+    owner: fleet.county
+  });
+
+  // Sync linked master policy premium, sumInsured, plate summary & makeModel
+  const linkedPol = policies.find(p => p.policyNo === fleet.policyNo || p.fleetId === fleet.id);
+  if (linkedPol) {
+    linkedPol.premium = fleet.premiumAmount;
+    linkedPol.debited = fleet.premiumAmount;
+    linkedPol.sumInsured = (Number(linkedPol.sumInsured) || 0) + sumInsured;
+    const firstPlate = fleet.vehicles[0] ? fleet.vehicles[0].plate : plate;
+    linkedPol.plate = fleet.vehicles.length > 1
+      ? `${firstPlate} (+${fleet.vehicles.length - 1} Fleet)`
+      : firstPlate;
+    linkedPol.makeModel = `${fleet.vehicles.length} Fleet Vehicles (${fleet.line})`;
+  }
+
+  if (plateInput) plateInput.value = "";
+  if (makeInput) makeInput.value = "";
+
+  renderOpenFleetSchedule();
+  renderFleetUnderwriting();
+  renderPolicyRegistry();
+  showToast("Vehicle Endorsed to Fleet", `Added ${plate} (${makeModel}) to ${fleet.id} with AKI Cert ${certId}.`, "success");
+}
+
+function batchIssueOpenFleetCerts() {
+  if (activeOpenFleetScheduleId) {
+    batchIssueFleetCerts(activeOpenFleetScheduleId);
+  }
+}
+
+function exportOpenFleetCertsCSV() {
+  const fleet = countyFleets.find(f => f.id === activeOpenFleetScheduleId);
+  if (!fleet || !Array.isArray(fleet.vehicles)) return;
+
+  const rows = [
+    "fleetId,masterPolicyNo,countyEntity,plate,makeModel,sumInsured,annualPremium,akiCertId,status"
+  ];
+  fleet.vehicles.forEach(v => {
+    rows.push([
+      fleet.id,
+      fleet.policyNo || fleet.id,
+      `"${String(fleet.county).replace(/"/g, '""')}"`,
+      v.plate,
+      `"${String(v.makeModel || fleet.line).replace(/"/g, '""')}"`,
+      v.sumInsured || 0,
+      v.premium || 0,
+      v.certId || "PENDING",
+      fleet.status || "Active"
+    ].join(","));
+  });
+
+  const csvStr = rows.join("\n");
+  if (typeof Blob !== "undefined" && typeof URL !== "undefined" && URL.createObjectURL) {
+    const blob = new Blob([csvStr], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${fleet.id}_AKI_Certificate_Schedule.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+  showToast("Fleet Schedule Exported", `Exported ${fleet.vehicles.length} vehicle records for ${fleet.id}.`, "success");
+  return csvStr;
 }
 
 // 9. NATIONAL GIS GEOMAP COMMAND CENTER
@@ -4243,7 +5306,7 @@ function openEditPolicy(policyNo) {
   
   activeEditRecord = { type: "policy", data: policy };
   
-  document.getElementById("edit-modal-title").innerText = ` Edit Policy Record: ${policy.policyNo}`;
+  document.getElementById("edit-modal-title").innerText = `Edit Policy Record: ${policy.policyNo}`;
   document.getElementById("edit-record-id").value = policy.policyNo;
   document.getElementById("edit-record-type").value = "policy";
   
@@ -4267,6 +5330,7 @@ function openEditPolicy(policyNo) {
       <div>
         <label class="form-label">Policy Status</label>
         <select class="form-control" id="edit-policy-status">
+          <option value="Pending" ${policy.status === 'Pending' ? 'selected' : ''}>Pending Approval</option>
           <option value="Active" ${policy.status === 'Active' ? 'selected' : ''}>Active</option>
           <option value="Suspended" ${policy.status === 'Suspended' ? 'selected' : ''}>Suspended</option>
           <option value="Cancelled" ${policy.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
@@ -4279,7 +5343,7 @@ function openEditPolicy(policyNo) {
     </div>
     <div>
       <label class="form-label">AKI Digital Certificate ID</label>
-      <input type="text" class="form-control" id="edit-policy-cert" value="${escapeHTML(policy.certId)}">
+      <input type="text" class="form-control" id="edit-policy-cert" value="${escapeHTML(policy.certId || '')}">
     </div>
   `;
   
@@ -4292,7 +5356,7 @@ function openEditGarage(garageIndex) {
   
   activeEditRecord = { type: "garage", data: garage, index: garageIndex };
   
-  document.getElementById("edit-modal-title").innerText = ` Edit Garage & Repair Milestone: ${garage.name}`;
+  document.getElementById("edit-modal-title").innerText = `Edit Garage & Repair Milestone: ${garage.name}`;
   document.getElementById("edit-record-id").value = garageIndex;
   document.getElementById("edit-record-type").value = "garage";
   
@@ -4325,7 +5389,7 @@ function openEditAssessor(assessorName) {
   const assessor = assessors.find(a => a.name === assessorName) || assessors[0];
   activeEditRecord = { type: "assessor", data: assessor };
   
-  document.getElementById("edit-modal-title").innerText = ` Edit Loss Assessor Firm: ${assessor.name}`;
+  document.getElementById("edit-modal-title").innerText = `Edit Loss Assessor Firm: ${assessor.name}`;
   document.getElementById("edit-record-id").value = assessor.name;
   document.getElementById("edit-record-type").value = "assessor";
   
@@ -4353,7 +5417,7 @@ function openEditAssessor(assessorName) {
 function openEditReinsurance() {
   activeEditRecord = { type: "reinsurance" };
   
-  document.getElementById("edit-modal-title").innerText = ` Edit Reinsurance Cession Shares & Limits`;
+  document.getElementById("edit-modal-title").innerText = `Edit Reinsurance Cession Shares & Limits`;
   document.getElementById("edit-record-id").value = "reinsurance";
   document.getElementById("edit-record-type").value = "reinsurance";
   
@@ -4386,7 +5450,7 @@ function openEditSubrogation(claimId) {
   const sub = subrogationCases.find(s => s.claimId === claimId) || subrogationCases[0];
   activeEditRecord = { type: "subrogation", data: sub };
   
-  document.getElementById("edit-modal-title").innerText = ` Edit Subrogation Demand Notice: ${sub.claimId}`;
+  document.getElementById("edit-modal-title").innerText = `Edit Subrogation Demand Notice: ${sub.claimId}`;
   document.getElementById("edit-record-id").value = sub.claimId;
   document.getElementById("edit-record-type").value = "subrogation";
   
@@ -4421,16 +5485,18 @@ function openEditSubrogation(claimId) {
 
 function openEditFleetVehicle(fleetId) {
   const fleet = countyFleets.find(f => f.id === fleetId) || countyFleets[0];
+  if (!fleet) return;
+  syncFleetDerivedFields(fleet);
   activeEditRecord = { type: "fleet", data: fleet };
   
-  document.getElementById("edit-modal-title").innerText = ` Edit Fleet Underwriting Policy: ${fleet.id}`;
+  document.getElementById("edit-modal-title").innerText = `Edit Fleet Master Policy: ${fleet.id}`;
   document.getElementById("edit-record-id").value = fleet.id;
   document.getElementById("edit-record-type").value = "fleet";
   
   const fieldsContainer = document.getElementById("edit-modal-fields");
   fieldsContainer.innerHTML = `
     <div>
-      <label class="form-label">Fleet Policy Name / County</label>
+      <label class="form-label">Fleet Policy Name / County Entity</label>
       <input type="text" class="form-control" id="edit-fleet-county" value="${escapeHTML(fleet.county)}">
     </div>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
@@ -4439,8 +5505,22 @@ function openEditFleetVehicle(fleetId) {
         <input type="text" class="form-control" id="edit-fleet-line" value="${escapeHTML(fleet.line)}">
       </div>
       <div>
-        <label class="form-label">Gross Premium</label>
-        <input type="text" class="form-control" id="edit-fleet-premium" value="${escapeHTML(fleet.premium)}">
+        <label class="form-label">Annual Gross Premium (KSh)</label>
+        <input type="number" class="form-control" id="edit-fleet-premium" value="${Math.round(fleet.premiumAmount || parseNumericCurrency(fleet.premium))}">
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div>
+        <label class="form-label">Insured Vehicle Count</label>
+        <input type="number" min="1" max="500" class="form-control" id="edit-fleet-count" value="${fleet.vehicleCount || 1}">
+      </div>
+      <div>
+        <label class="form-label">Master Policy Status</label>
+        <select class="form-control" id="edit-fleet-status">
+          <option value="Pending" ${fleet.status === 'Pending' ? 'selected' : ''}>Pending Approval</option>
+          <option value="Active" ${(fleet.status || 'Active') === 'Active' ? 'selected' : ''}>Active</option>
+          <option value="Suspended" ${fleet.status === 'Suspended' ? 'selected' : ''}>Suspended</option>
+        </select>
       </div>
     </div>
   `;
@@ -4451,7 +5531,7 @@ function openEditFleetVehicle(fleetId) {
 function openEditIRATaxRates() {
   activeEditRecord = { type: "ira" };
   
-  document.getElementById("edit-modal-title").innerText = ` Edit IRA & KRA Statutory Tax Rates`;
+  document.getElementById("edit-modal-title").innerText = `Edit IRA & KRA Statutory Tax Rates`;
   document.getElementById("edit-record-id").value = "ira";
   document.getElementById("edit-record-type").value = "ira";
   
@@ -4487,26 +5567,51 @@ function saveEditedRecord() {
       claim.plate = document.getElementById("edit-claim-plate").value;
       claim.cost = parseFloat(document.getElementById("edit-claim-cost").value) || claim.cost;
       claim.status = document.getElementById("edit-claim-status").value;
+      claim.approvalStatus = claim.status === "Pending" ? "Awaiting Approval" : "Approved";
       claim.triage = document.getElementById("edit-claim-triage").value;
       claim.fraudScore = parseInt(document.getElementById("edit-claim-fraud").value) || claim.fraudScore;
       
       showToast("Claim Saved", `Claim ${claim.id} updated successfully.`, "success");
       renderClaimsDirectory();
       renderDashboard();
+      if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
     }
   } else if (type === "policy") {
     const id = document.getElementById("edit-record-id").value;
     const policy = policies.find(p => p.policyNo === id);
     if (policy) {
-      policy.clientName = document.getElementById("edit-policy-name").value;
-      policy.plate = document.getElementById("edit-policy-plate").value;
+      policy.clientName = document.getElementById("edit-policy-name").value.trim() || policy.clientName;
+      policy.plate = document.getElementById("edit-policy-plate").value.trim().toUpperCase() || policy.plate;
       policy.premium = parseFloat(document.getElementById("edit-policy-premium").value) || policy.premium;
       policy.status = document.getElementById("edit-policy-status").value;
+      policy.approvalStatus = policy.status === "Pending" ? "Pending Approval" : (policy.status === "Active" ? "Approved" : policy.status);
+      if (policy.status === "Pending" && !policy.submittedAt) policy.submittedAt = Date.now();
       policy.branch = document.getElementById("edit-policy-branch").value;
-      policy.certId = document.getElementById("edit-policy-cert").value;
+      policy.certId = document.getElementById("edit-policy-cert").value.trim() || null;
+
+      registerVehicleInNTSA(policy.plate, {
+        make: policy.makeModel || "Motor Comprehensive Vehicle",
+        year: 2024,
+        valuation: policy.sumInsured || Math.round(policy.premium / 0.035),
+        policy: policy.policyNo,
+        owner: policy.clientName
+      });
+
+      if (policy.fleetId && typeof countyFleets !== "undefined") {
+        const linkedFleet = countyFleets.find(f => f.id === policy.fleetId);
+        if (linkedFleet) {
+          linkedFleet.county = policy.clientName;
+          linkedFleet.status = policy.status;
+          linkedFleet.premiumAmount = policy.premium;
+          syncFleetDerivedFields(linkedFleet);
+          renderFleetUnderwriting();
+        }
+      }
       
       showToast("Policy Saved", `Policy ${policy.policyNo} updated successfully.`, "success");
       renderPolicyRegistry();
+      if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
+      if (typeof renderIRACompliance === "function") renderIRACompliance();
     }
   } else if (type === "garage") {
     const idx = parseInt(document.getElementById("edit-record-id").value) || 0;
@@ -4558,12 +5663,46 @@ function saveEditedRecord() {
     const id = document.getElementById("edit-record-id").value;
     const fleet = countyFleets.find(f => f.id === id);
     if (fleet) {
-      fleet.county = document.getElementById("edit-fleet-county").value;
-      fleet.line = document.getElementById("edit-fleet-line").value;
-      fleet.premium = document.getElementById("edit-fleet-premium").value;
+      fleet.county = document.getElementById("edit-fleet-county").value.trim() || fleet.county;
+      fleet.line = document.getElementById("edit-fleet-line").value.trim() || fleet.line;
+      const newPrem = parseNumericCurrency(document.getElementById("edit-fleet-premium").value);
+      if (newPrem > 0) fleet.premiumAmount = newPrem;
+
+      const desiredCount = Math.max(1, parseInt(document.getElementById("edit-fleet-count")?.value || String(fleet.vehicleCount || 1), 10));
+      const newStatus = document.getElementById("edit-fleet-status")?.value || fleet.status || "Active";
+      fleet.status = newStatus;
+
+      if (!Array.isArray(fleet.vehicles)) fleet.vehicles = [];
+      if (desiredCount > fleet.vehicles.length) {
+        const extra = buildSeedFleetVehicles(
+          fleet.id,
+          fleet.county,
+          "KCG",
+          800 + fleet.vehicles.length,
+          desiredCount - fleet.vehicles.length,
+          fleet.line,
+          fleet.premiumAmount / desiredCount,
+          newStatus === "Active"
+        );
+        fleet.vehicles.push(...extra);
+      } else if (desiredCount < fleet.vehicles.length) {
+        fleet.vehicles = fleet.vehicles.slice(0, desiredCount);
+      }
+      syncFleetDerivedFields(fleet);
+
+      const linkedPol = policies.find(p => p.policyNo === fleet.policyNo || p.fleetId === fleet.id);
+      if (linkedPol) {
+        linkedPol.clientName = fleet.county;
+        linkedPol.premium = fleet.premiumAmount;
+        linkedPol.debited = fleet.premiumAmount;
+        linkedPol.status = newStatus;
+        linkedPol.approvalStatus = newStatus === "Pending" ? "Pending Approval" : "Approved";
+      }
       
-      showToast("Fleet Policy Saved", `Fleet policy ${fleet.id} updated.`, "success");
+      showToast("Fleet Policy Saved", `Fleet policy ${fleet.id} updated (${fleet.count}, ${fleet.premium}).`, "success");
       renderFleetUnderwriting();
+      renderPolicyRegistry();
+      if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
     }
   } else if (type === "ira") {
     iraTaxRates.phcf = parseFloat(document.getElementById("edit-ira-phcf").value) || 0.25;
@@ -5105,9 +6244,19 @@ function calculateEVPremium() {
   if (elLevies) elLevies.innerText = "KSh " + Math.round(levies).toLocaleString();
   if (elTotalPayable) elTotalPayable.innerText = "KSh " + Math.round(totalPayable).toLocaleString();
   if (elNetEffRate) elNetEffRate.innerText = `Effective Rate: ${effectiveRate.toFixed(2)}% of Vehicle Value`;
+  return {
+    sumInsured: Math.round(sumInsured),
+    netPremium: Math.round(netPremium),
+    levies: Math.round(levies),
+    totalPayable: Math.round(totalPayable)
+  };
 }
 
 function resetEVForm() {
+  const clientEl = document.getElementById("ev-client-name");
+  if (clientEl) clientEl.value = "Green Mobility Kenya Ltd";
+  const plateEl = document.getElementById("ev-plate-input");
+  if (plateEl) plateEl.value = "KDG 888E";
   const range = document.getElementById("ev-km-range");
   if (range) range.value = 7500;
   const select = document.getElementById("ev-spare-sourcing");
@@ -5123,30 +6272,54 @@ function resetEVForm() {
 }
 
 function issueEVPolicyCertificate() {
+  const calc = calculateEVPremium();
   const model = document.getElementById("ev-model-select")?.value || "BYD Atto 3 EV";
-  const total = document.getElementById("ev-calc-total-payable")?.innerText || "KSh 138,473";
+  const clientRaw = document.getElementById("ev-client-name")?.value.trim() || "Green Mobility Kenya Ltd";
+  const plate = (document.getElementById("ev-plate-input")?.value.trim() || "KDG 888E").toUpperCase();
+  const numericPayable = calc && calc.totalPayable ? calc.totalPayable : 138473;
+  const numericSumInsured = calc && calc.sumInsured ? calc.sumInsured : 4500000;
+  const displayClient = clientRaw.includes(model) ? clientRaw : `${clientRaw} (${model})`;
   
   const newEVPolicy = {
     policyNo: "POL-EV-2026-" + Math.floor(1000 + Math.random() * 8999),
-    clientName: "Green Mobility Kenya Ltd (" + model + ")",
-    plate: "KDG 888E",
+    clientName: displayClient,
+    plate: plate,
+    makeModel: model,
+    sumInsured: numericSumInsured,
     line: "Electric Vehicle",
     broker: "EIMS Direct EV Desk",
     certId: "CERT-EV-2026-" + Math.floor(1000 + Math.random() * 8999),
     status: "Pending",
     approvalStatus: "Pending Approval",
     submittedAt: Date.now(),
-    premium: 138473,
-    debited: 138473,
+    premium: numericPayable,
+    debited: numericPayable,
+    isNew: true,
     branch: "HQ"
   };
 
   policies.unshift(newEVPolicy);
+  registerVehicleInNTSA(plate, {
+    make: model,
+    year: 2025,
+    valuation: numericSumInsured,
+    policy: newEVPolicy.policyNo,
+    owner: clientRaw
+  });
+
+  renderPolicyRegistry();
+  if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
+  if (typeof renderIRACompliance === "function") renderIRACompliance();
   if (typeof dispatchDesignatedEmailAlert === "function") {
     dispatchDesignatedEmailAlert("NEW_UNDERWRITING", newEVPolicy);
   }
-  openAKICertModal(newEVPolicy.policyNo);
-  showToast("EV Underwriting & Email Dispatched", `Issued EV Policy ${newEVPolicy.policyNo} (${total}/yr) and notified designated email recipients.`, "success");
+  openAKICertModal(newEVPolicy);
+  showToast(
+    "EV Underwriting & Email Dispatched",
+    `Issued EV Policy ${newEVPolicy.policyNo} for ${plate} (KSh ${numericPayable.toLocaleString()}/yr) and notified designated email recipients.`,
+    "success"
+  );
+  return newEVPolicy;
 }
 
 // ================= REMOTE WORK (WFH) & STAFF SURVEILLANCE ENGINE =================
@@ -7927,45 +9100,72 @@ window.exportQueriedReport = exportQueriedReport;
 window.setReportChartType = setReportChartType;
 window.openAIAssistantModal = openAIAssistantModal;
 
-window.activateCertInline = function(certId) {
+window.activateCertInline = function(certOrPlate) {
+  const cleanVal = String(certOrPlate || "").trim().toUpperCase();
+  const isCertFmt = cleanVal.startsWith("CERT-");
   const randomNum = Math.floor(1000 + Math.random() * 9000);
+  const assignedCert = isCertFmt ? cleanVal : `CERT-${randomNum}-2026`;
+  const assignedPlate = isCertFmt ? `KDD ${Math.floor(100 + Math.random() * 899)}Z` : (cleanVal || "KDG 123A");
+  const sumInsured = 3200000;
+  const basic = Math.round(sumInsured * 0.035);
+  const { totalLevies } = computeIRALeviesForPremium(basic, 1);
+  const totalPrem = basic + totalLevies;
+
   const newPolicy = {
     policyNo: `POL-MOT-${randomNum}-2026`,
-    clientName: "Enterprise Fleet Client",
-    plate: "KDG 123A",
+    clientName: "Enterprise Direct Policyholder",
+    plate: assignedPlate,
+    makeModel: "Toyota Hilux Double Cab (2023)",
+    sumInsured: sumInsured,
     line: "Motor",
     broker: "EIMS Direct",
-    premium: 72000,
-    debited: 72000,
+    premium: totalPrem,
+    debited: totalPrem,
     status: "Pending",
     approvalStatus: "Pending Approval",
     submittedAt: Date.now(),
-    certId: certId,
+    certId: assignedCert,
     isNew: true,
     branch: "HQ"
   };
   policies.unshift(newPolicy);
+  registerVehicleInNTSA(assignedPlate, {
+    make: newPolicy.makeModel,
+    year: 2023,
+    valuation: sumInsured,
+    policy: newPolicy.policyNo,
+    owner: newPolicy.clientName
+  });
   
-  if (typeof renderPolicyRegistry === "function") {
-    renderPolicyRegistry();
-  }
+  if (typeof renderPolicyRegistry === "function") renderPolicyRegistry();
+  if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
+  if (typeof renderIRACompliance === "function") renderIRACompliance();
   
   const resBox = document.getElementById("cert-status-result");
   if (resBox) {
     resBox.innerHTML = `
-      <div style="font-weight:600; color:var(--success); margin-bottom:4px;">
-        Certificate Valid and Declared Active
+      <div style="font-weight:700; color:#c89565; margin-bottom:6px;">
+        Registered &amp; Queued for Underwriting Approval (60-Min SLA)
       </div>
-      <div><strong>Policy:</strong> ${newPolicy.policyNo}</div>
-      <div><strong>Holder:</strong> ${newPolicy.clientName} (${newPolicy.plate})</div>
-      <div><strong>Line:</strong> ${newPolicy.line}</div>
+      <div><strong>Policy Ref:</strong> ${newPolicy.policyNo}</div>
+      <div><strong>AKI Cert ID:</strong> <code>${newPolicy.certId}</code></div>
+      <div><strong>Holder:</strong> ${newPolicy.clientName} (<code>${newPolicy.plate}</code>)</div>
+      <div><strong>Line:</strong> ${newPolicy.line} &middot; <strong>Premium:</strong> KSh ${totalPrem.toLocaleString()}</div>
+      <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-primary" style="font-size:11.5px; padding:5px 10px;" onclick="approvePendingItem('POLICY', '${newPolicy.policyNo}'); document.getElementById('lookup-cert-btn').click();">
+          Approve Cover Now
+        </button>
+        <button class="btn btn-secondary" style="font-size:11.5px; padding:5px 10px;" onclick="triggerCertPolicy('${newPolicy.policyNo}')">
+          Open AKI Digital Sticker
+        </button>
+      </div>
     `;
   }
   
   if (typeof dispatchDesignatedEmailAlert === "function") {
     dispatchDesignatedEmailAlert("NEW_UNDERWRITING", newPolicy);
   } else if (typeof showToast === "function") {
-    showToast("Certificate Active", `Certificate ${certId} successfully registered and declared active.`, "success");
+    showToast("Certificate Registered", `Certificate ${assignedCert} registered under ${newPolicy.policyNo}.`, "success");
   }
 };
 
@@ -8604,12 +9804,21 @@ function approvePendingItem(type, id) {
     if (pol) {
       pol.status = "Active";
       pol.approvalStatus = "Approved";
+      if (typeof countyFleets !== "undefined" && Array.isArray(countyFleets)) {
+        const linkedFleet = countyFleets.find(f => f.id === pol.fleetId || f.policyNo === pol.policyNo);
+        if (linkedFleet) {
+          linkedFleet.status = "Active";
+          linkedFleet.approvalStatus = "Approved";
+        }
+      }
       showToast("Underwriting Approved", `Policy ${id} (${pol.plate}) approved and activated.`, "success");
     }
   }
   renderDashboard();
   if (typeof renderClaimsDirectory === "function") renderClaimsDirectory();
   if (typeof renderPolicyRegistry === "function") renderPolicyRegistry();
+  if (typeof renderFleetUnderwriting === "function") renderFleetUnderwriting();
+  if (typeof renderIRACompliance === "function") renderIRACompliance();
 }
 
 function approveAllOverdueItems() {
@@ -8625,11 +9834,20 @@ function approveAllOverdueItems() {
     } else if (item.type === "POLICY" && item.raw) {
       item.raw.status = "Active";
       item.raw.approvalStatus = "Approved";
+      if (typeof countyFleets !== "undefined" && Array.isArray(countyFleets)) {
+        const linkedFleet = countyFleets.find(f => f.id === item.raw.fleetId || f.policyNo === item.raw.policyNo);
+        if (linkedFleet) {
+          linkedFleet.status = "Active";
+          linkedFleet.approvalStatus = "Approved";
+        }
+      }
     }
   });
   renderDashboard();
   if (typeof renderClaimsDirectory === "function") renderClaimsDirectory();
   if (typeof renderPolicyRegistry === "function") renderPolicyRegistry();
+  if (typeof renderFleetUnderwriting === "function") renderFleetUnderwriting();
+  if (typeof renderIRACompliance === "function") renderIRACompliance();
   showToast("All Pending Approvals Cleared", `Approved ${pending.length} pending claim & underwriting files.`, "success");
 }
 
@@ -9008,10 +10226,51 @@ window.toggleGodModeLoop = toggleGodModeLoop;
 window.runReportsAIAnalytics = runReportsAIAnalytics;
 window.exportReportsAIBrief = exportReportsAIBrief;
 
-// Initialize Designated Emails, 60-Min SLA Watchdog, God Mode Loop, and Reports AI Analytics on startup
+// Underwriting, EV & County/Corporate Fleet exports
+window.computeIRALeviesForPremium = computeIRALeviesForPremium;
+window.registerVehicleInNTSA = registerVehicleInNTSA;
+window.lookupVehicleCoverageByPlate = lookupVehicleCoverageByPlate;
+window.findCertificateOrPlateRecord = findCertificateOrPlateRecord;
+window.updateUnderwritingKPIs = updateUnderwritingKPIs;
+window.renderPolicyRegistry = renderPolicyRegistry;
+window.openNewPolicyModal = openNewPolicyModal;
+window.closeNewPolicyModal = closeNewPolicyModal;
+window.calculateModalPolicyPremium = calculateModalPolicyPremium;
+window.confirmCreateNewPolicy = confirmCreateNewPolicy;
+window.openAKICertModal = openAKICertModal;
+window.triggerCertPolicy = triggerCertPolicy;
+window.updateFleetKPIs = updateFleetKPIs;
+window.renderFleetUnderwriting = renderFleetUnderwriting;
+window.approveFleetPolicy = approveFleetPolicy;
+window.batchIssueFleetCerts = batchIssueFleetCerts;
+window.triggerFleetCSVInput = triggerFleetCSVInput;
+window.handleFleetCSVFileSelect = handleFleetCSVFileSelect;
+window.parseAndOnboardFleetCSV = parseAndOnboardFleetCSV;
+window.simulateFleetCSVUpload = simulateFleetCSVUpload;
+window.downloadSampleFleetCSV = downloadSampleFleetCSV;
+window.openNewFleetModal = openNewFleetModal;
+window.closeNewFleetModal = closeNewFleetModal;
+window.calculateNewFleetModalSummary = calculateNewFleetModalSummary;
+window.confirmCreateNewFleet = confirmCreateNewFleet;
+window.openFleetScheduleModal = openFleetScheduleModal;
+window.closeFleetScheduleModal = closeFleetScheduleModal;
+window.renderOpenFleetSchedule = renderOpenFleetSchedule;
+window.previewFleetVehicleAKICert = previewFleetVehicleAKICert;
+window.addVehicleToOpenFleet = addVehicleToOpenFleet;
+window.batchIssueOpenFleetCerts = batchIssueOpenFleetCerts;
+window.exportOpenFleetCertsCSV = exportOpenFleetCertsCSV;
+window.onEVModelSelectChange = onEVModelSelectChange;
+window.calculateEVPremium = calculateEVPremium;
+window.resetEVForm = resetEVForm;
+window.issueEVPolicyCertificate = issueEVPolicyCertificate;
+
+// Initialize Designated Emails, 60-Min SLA Watchdog, Underwriting/Fleet KPIs, God Mode Loop, and Reports AI Analytics on startup
 document.addEventListener("DOMContentLoaded", () => {
   initDesignatedAlertEmails();
   seedPendingApprovalTimestamps();
+  if (typeof renderPolicyRegistry === "function") renderPolicyRegistry();
+  if (typeof renderFleetUnderwriting === "function") renderFleetUnderwriting();
+  if (typeof calculateEVPremium === "function") calculateEVPremium();
   renderOverdueApprovalsDashboard();
   renderGodModeView();
 
