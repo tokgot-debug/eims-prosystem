@@ -3941,3 +3941,62 @@ html, body {
   border-color: #8b5a2b;
   color: #ffffff;
 }
+
+/* ===================== TABLE ALIGNMENT & VIEWPORT FIT SYSTEM ===================== */
+.dashboard-card,
+.dashboard-grid > *,
+div[style*="display:grid"] > *,
+div[style*="display: grid"] > * {
+  min-width: 0;
+}
+
+.claims-table-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.status-badge,
+.fraud-pill,
+.claims-table td code,
+.claims-table td .btn {
+  white-space: nowrap;
+}
+
+.claims-table .form-select,
+.form-select {
+  background-color: #100d0b;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-family: var(--font-sans);
+  outline: none;
+}
+
+.claims-table .form-select:focus,
+.form-select:focus {
+  border-color: var(--accent-color);
+}
+
+@media screen and (min-width: 769px) {
+  .claims-table th {
+    padding: 11px 12px;
+    font-size: 11px;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  .claims-table td {
+    padding: 11px 12px;
+    font-size: 13px;
+    vertical-align: middle;
+  }
+
+  .claims-table th:last-child,
+  .claims-table td:last-child {
+    text-align: right;
+    white-space: nowrap;
+  }
+}

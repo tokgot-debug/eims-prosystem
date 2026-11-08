@@ -3648,9 +3648,9 @@ function renderMpesaGateway() {
       : `<span class="status-badge pending">Ready for Payout</span>`;
       
     let channelSelect = c.status === "Disbursed" 
-      ? `<strong>${c.payoutChannel === "mpesa" ? "M-PESA B2C" : c.payoutChannel === "airtel" ? "Airtel Money" : "EFT Bank Transfer"}</strong>`
+      ? `<strong style="white-space:nowrap;">${c.payoutChannel === "mpesa" ? "M-PESA B2C" : c.payoutChannel === "airtel" ? "Airtel Money" : "EFT Bank Transfer"}</strong>`
       : `
-        <select class="form-select" onchange="updateClaimPayoutChannel('${c.id}', this.value)" style="padding:3px 6px; font-size:11.5px; width:130px;">
+        <select class="form-select" onchange="updateClaimPayoutChannel('${c.id}', this.value)" style="min-width:140px;">
           <option value="mpesa" ${c.payoutChannel === "mpesa" ? "selected" : ""}>M-PESA B2C</option>
           <option value="airtel" ${c.payoutChannel === "airtel" ? "selected" : ""}>Airtel Money</option>
           <option value="bank" ${c.payoutChannel === "bank" ? "selected" : ""}>Bank (EFT/PesaLink)</option>
@@ -3658,21 +3658,21 @@ function renderMpesaGateway() {
       `;
       
     let accountInfo = c.payoutChannel === "bank" 
-      ? `<span style="font-size:11px;">${c.bankDetails}</span>` 
-      : `<code>${c.phone}</code>`;
+      ? `<span style="font-size:12px; white-space:nowrap;">${c.bankDetails}</span>` 
+      : `<code style="white-space:nowrap;">${c.phone}</code>`;
       
     let actionBtn = c.status === "Disbursed" 
-      ? `<button class="btn btn-secondary" disabled style="opacity:0.6; padding:4px 8px; font-size:11px;">Settled</button>` 
-      : `<button class="btn btn-primary" onclick="executeChannelPayout('${c.id}')" style="padding:4px 8px; font-size:11px;">Execute Settlement</button>`;
+      ? `<button class="btn btn-secondary" disabled style="opacity:0.65; padding:6px 12px; font-size:12px; white-space:nowrap;">Settled</button>` 
+      : `<button class="btn btn-primary" onclick="executeChannelPayout('${c.id}')" style="padding:6px 14px; font-size:12px; white-space:nowrap;">Execute Settlement</button>`;
       
     tr.innerHTML = `
-      <td><strong>${c.id}</strong></td>
-      <td>${c.owner}</td>
-      <td>${accountInfo}</td>
+      <td style="white-space:nowrap;"><strong>${c.id}</strong></td>
+      <td style="white-space:nowrap; font-weight:500;">${c.owner}</td>
+      <td style="white-space:nowrap;">${accountInfo}</td>
       <td>${channelSelect}</td>
-      <td><strong style="color:var(--primary);">KSh ${c.cost.toLocaleString()}</strong></td>
-      <td>${statusBadge}</td>
-      <td>${actionBtn}</td>
+      <td style="white-space:nowrap; font-variant-numeric:tabular-nums;"><strong style="color:var(--accent-color);">KSh ${c.cost.toLocaleString()}</strong></td>
+      <td style="white-space:nowrap;">${statusBadge}</td>
+      <td style="text-align:right; white-space:nowrap;">${actionBtn}</td>
     `;
     tbody.appendChild(tr);
   });
