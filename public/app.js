@@ -9700,9 +9700,200 @@ function getPendingApprovalItems() {
   return items;
 }
 
+let slaDisplayMode = "volumes";
+let selectedSLATomeKey = null;
+
+function toRomanNumeral(num) {
+  const numerals = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+  return numerals[(Math.max(1, num) - 1) % numerals.length] || String(num);
+}
+
+function getTomeCrownFriezeSVG(flipped = false) {
+  const transform = flipped ? `transform="scale(1,-1) translate(0,-14)"` : "";
+  return `
+    <svg viewBox="0 0 140 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g ${transform} stroke="#ecd08b" stroke-width="1">
+        <line x1="2" y1="2" x2="138" y2="2" stroke-opacity="0.85"/>
+        <path d="M4 12 C11 4, 19 4, 26 12 C33 4, 41 4, 48 12 C55 4, 63 4, 70 12 C77 4, 85 4, 92 12 C99 4, 107 4, 114 12 C121 4, 129 4, 136 12" stroke-opacity="0.9"/>
+        <circle cx="15" cy="8.5" r="1.3" fill="#f5df9e" stroke="none"/>
+        <circle cx="37" cy="8.5" r="1.3" fill="#f5df9e" stroke="none"/>
+        <circle cx="59" cy="8.5" r="1.3" fill="#f5df9e" stroke="none"/>
+        <circle cx="81" cy="8.5" r="1.3" fill="#f5df9e" stroke="none"/>
+        <circle cx="103" cy="8.5" r="1.3" fill="#f5df9e" stroke="none"/>
+        <circle cx="125" cy="8.5" r="1.3" fill="#f5df9e" stroke="none"/>
+        <line x1="2" y1="13" x2="138" y2="13" stroke-opacity="0.55" stroke-dasharray="2 2"/>
+      </g>
+    </svg>
+  `;
+}
+
+function getTomeCompartmentOrnamentSVG(styleVariant) {
+  if (styleVariant === "acanthus") {
+    // Rich botanical acanthus & lyre scroll inspired by Volumes 1-3 in Image 1
+    return `
+      <svg viewBox="0 0 120 34" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M60 4 C48 4, 42 13, 30 13 C21 13, 16 7, 11 11 C7 15, 14 23, 25 22 C37 21, 46 29, 60 30 C74 29, 83 21, 95 22 C106 23, 113 15, 109 11 C104 7, 99 13, 90 13 C78 13, 72 4, 60 4 Z" stroke="#efd28d" stroke-width="1.35" fill="rgba(242,208,132,0.1)"/>
+        <path d="M60 8 C52 12, 47 19, 36 19 M60 8 C68 12, 73 19, 84 19" stroke="#f6e2ab" stroke-width="1.1"/>
+        <polygon points="60,11 64,17 60,23 56,17" fill="#f5df9e"/>
+        <circle cx="24" cy="17" r="2" fill="#ebd08b"/>
+        <circle cx="96" cy="17" r="2" fill="#ebd08b"/>
+      </svg>
+    `;
+  }
+  if (styleVariant === "tolstoy") {
+    // Diamond-lozenge Imperial medallion inspired by Volumes 7-8 in Image 1
+    return `
+      <svg viewBox="0 0 120 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <polygon points="60,3 92,14 60,25 28,14" stroke="#efd28d" stroke-width="1.3" fill="rgba(242,208,132,0.12)"/>
+        <polygon points="60,7 80,14 60,21 40,14" stroke="#f7e3ae" stroke-width="1" stroke-dasharray="2 1.5"/>
+        <circle cx="60" cy="14" r="2.6" fill="#f7e3ae"/>
+        <circle cx="20" cy="14" r="1.8" fill="#ebd08b"/>
+        <circle cx="100" cy="14" r="1.8" fill="#ebd08b"/>
+        <line x1="8" y1="14" x2="26" y2="14" stroke="#ebd08b" stroke-width="1"/>
+        <line x1="94" y1="14" x2="112" y2="14" stroke="#ebd08b" stroke-width="1"/>
+      </svg>
+    `;
+  }
+  // Classical Pushkin horizontal arabesque cartouche inspired by Volumes 4-6 in Image 1
+  return `
+    <svg viewBox="0 0 120 26" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect x="20" y="5" width="80" height="16" rx="8" stroke="#efd28d" stroke-width="1.25" fill="rgba(242,208,132,0.09)"/>
+      <path d="M10 13 L20 13 M100 13 L110 13 M34 9 C44 13, 44 13, 34 17 M86 9 C76 13, 76 13, 86 17" stroke="#f6e2ab" stroke-width="1.15"/>
+      <polygon points="60,8 65,13 60,18 55,13" fill="#f5df9e"/>
+    </svg>
+  `;
+}
+
+function setSLADisplayMode(mode) {
+  slaDisplayMode = mode === "table" ? "table" : "volumes";
+  const shelfStage = document.getElementById("sla-bookshelf-container");
+  const tableWrap = document.getElementById("sla-table-container");
+  const volBtn = document.getElementById("sla-mode-volumes-btn");
+  const tblBtn = document.getElementById("sla-mode-table-btn");
+
+  if (shelfStage) shelfStage.style.display = slaDisplayMode === "volumes" ? "block" : "none";
+  if (tableWrap) tableWrap.style.display = slaDisplayMode === "table" ? "block" : "none";
+  if (volBtn) volBtn.classList.toggle("active", slaDisplayMode === "volumes");
+  if (tblBtn) tblBtn.classList.toggle("active", slaDisplayMode === "table");
+}
+
+function closeSLAFolioDrawer() {
+  selectedSLATomeKey = null;
+  const drawer = document.getElementById("sla-open-folio-drawer");
+  if (drawer) drawer.hidden = true;
+  renderOverdueApprovalsDashboard();
+}
+
+function openSLASourceRecord(type, id) {
+  if (type === "CLAIM") {
+    navigateToView("claims-directory");
+    if (typeof openAuditModal === "function") openAuditModal(id);
+  } else if (type === "POLICY") {
+    navigateToView("policy-registry");
+  }
+}
+
+function inspectSLATome(type, id) {
+  if (type === "MODULE") {
+    navigateToView(id);
+    return;
+  }
+  const key = `${type}:${id}`;
+  selectedSLATomeKey = selectedSLATomeKey === key ? null : key;
+  renderOverdueApprovalsDashboard();
+}
+
+function buildLeatherTomeHTML(volumeSpec, idx) {
+  const archetypes = ["acanthus", "pushkin", "tolstoy"];
+  const styleVariant = archetypes[idx % archetypes.length];
+  const roman = toRomanNumeral(idx + 1);
+  const nerfClass = styleVariant === "tolstoy" ? "tome-nerf twin" : "tome-nerf";
+  const selectedClass = volumeSpec.key && selectedSLATomeKey === volumeSpec.key ? " is-selected" : "";
+
+  const upperBandType = styleVariant === "acanthus" ? "emerald" : "burgundy";
+  const lowerBandType = styleVariant === "acanthus" ? "burgundy" : "emerald";
+
+  const actionButtonHTML = volumeSpec.isPendingItem
+    ? `<button type="button" class="tome-approve-btn" onclick="event.stopPropagation(); approvePendingItem('${volumeSpec.type}', '${volumeSpec.id}')">Approve &middot; Vol ${roman}</button>`
+    : `<button type="button" class="tome-approve-btn secondary-tome-btn" onclick="event.stopPropagation(); navigateToView('${volumeSpec.targetView}')">${escapeHTML(volumeSpec.ctaLabel)}</button>`;
+
+  if (styleVariant === "tolstoy") {
+    // Twin-cord stacked Burgundy + Emerald morocco labels (Volumes 7-8 style in Image 1)
+    return `
+      <article class="leather-tome tome-${styleVariant}${selectedClass}" onclick="inspectSLATome('${volumeSpec.type}', '${volumeSpec.id}')" title="${escapeHTML(volumeSpec.tooltip)}">
+        <div class="tome-crown-frieze">${getTomeCrownFriezeSVG(false)}</div>
+        <div class="tome-filigree-box">
+          ${getTomeCompartmentOrnamentSVG("tolstoy")}
+        </div>
+        <div class="${nerfClass}"></div>
+        <div class="tome-morocco-band burgundy">
+          <div class="tome-band-kicker">${escapeHTML(volumeSpec.kicker)}</div>
+          <div class="tome-band-ref">${escapeHTML(volumeSpec.refCode)}</div>
+          <div class="tome-band-client">${escapeHTML(volumeSpec.primaryName)}</div>
+          ${volumeSpec.plate ? `<span class="tome-band-plate">${escapeHTML(volumeSpec.plate)}</span>` : ""}
+        </div>
+        <div class="${nerfClass}"></div>
+        <div class="tome-morocco-band emerald">
+          <div class="tome-sla-timer">TOM ${roman} &middot; ${escapeHTML(volumeSpec.slaLabel)}</div>
+          <div class="tome-sla-sub">${escapeHTML(volumeSpec.slaSub)}</div>
+        </div>
+        <div class="${nerfClass}"></div>
+        <div class="tome-exposure-compartment">
+          <span class="tome-exposure-label">${escapeHTML(volumeSpec.metricTitle)}</span>
+          <strong class="tome-exposure-amount">${escapeHTML(volumeSpec.metricValue)}</strong>
+          <span class="tome-dispatch-note">${escapeHTML(volumeSpec.dispatchNote)}</span>
+        </div>
+        <div class="tome-filigree-box">
+          ${getTomeCompartmentOrnamentSVG("tolstoy")}
+        </div>
+        <div class="tome-action-foot">
+          ${actionButtonHTML}
+        </div>
+        <div class="tome-crown-frieze tail">${getTomeCrownFriezeSVG(true)}</div>
+      </article>
+    `;
+  }
+
+  return `
+    <article class="leather-tome tome-${styleVariant}${selectedClass}" onclick="inspectSLATome('${volumeSpec.type}', '${volumeSpec.id}')" title="${escapeHTML(volumeSpec.tooltip)}">
+      <div class="tome-crown-frieze">${getTomeCrownFriezeSVG(false)}</div>
+      <div class="${nerfClass}"></div>
+      <div class="tome-filigree-box">
+        ${getTomeCompartmentOrnamentSVG(styleVariant)}
+        <span class="tome-roman-vol">VOL. ${roman}</span>
+      </div>
+      <div class="${nerfClass}"></div>
+      <div class="tome-morocco-band ${upperBandType}">
+        <div class="tome-band-kicker">${escapeHTML(volumeSpec.kicker)}</div>
+        <div class="tome-band-ref">${escapeHTML(volumeSpec.refCode)}</div>
+        <div class="tome-band-client">${escapeHTML(volumeSpec.primaryName)}</div>
+        ${volumeSpec.plate ? `<span class="tome-band-plate">${escapeHTML(volumeSpec.plate)}</span>` : ""}
+      </div>
+      <div class="${nerfClass}"></div>
+      <div class="tome-exposure-compartment">
+        <span class="tome-exposure-label">${escapeHTML(volumeSpec.metricTitle)}</span>
+        <strong class="tome-exposure-amount">${escapeHTML(volumeSpec.metricValue)}</strong>
+        <span class="tome-dispatch-note">${escapeHTML(volumeSpec.dispatchNote)}</span>
+      </div>
+      <div class="${nerfClass}"></div>
+      <div class="tome-morocco-band ${lowerBandType}">
+        <div class="tome-sla-timer">T. ${idx + 1} &middot; ${escapeHTML(volumeSpec.slaLabel)}</div>
+        <div class="tome-sla-sub">${escapeHTML(volumeSpec.slaSub)}</div>
+      </div>
+      <div class="${nerfClass}"></div>
+      <div class="tome-action-foot">
+        ${actionButtonHTML}
+      </div>
+      <div class="tome-crown-frieze tail">${getTomeCrownFriezeSVG(true)}</div>
+    </article>
+  `;
+}
+
 function renderOverdueApprovalsDashboard() {
   const banner = document.getElementById("overdue-approvals-red-banner");
   const tbody = document.getElementById("overdue-approvals-tbody");
+  const bookshelf = document.getElementById("overdue-approvals-bookshelf");
+  const folioDrawer = document.getElementById("sla-open-folio-drawer");
   const headline = document.getElementById("overdue-approvals-headline");
   const pill = document.getElementById("overdue-approvals-pill");
   if (!banner || !tbody) return;
@@ -9744,6 +9935,196 @@ function renderOverdueApprovalsDashboard() {
     }
   }
 
+  const primaryRecipient = designatedAlertEmails[0] || "approvals@eims-prosystem.go.ke";
+
+  // 1. Populate the Gold-Tooled Leather Volumes Shelf (#overdue-approvals-bookshelf)
+  if (bookshelf) {
+    const volumeSpecs = allPending.map(item => {
+      const parenIdx = item.name.indexOf(" (");
+      const cleanClient = parenIdx > -1 ? item.name.slice(0, parenIdx) : item.name;
+      const cleanPlate = parenIdx > -1 ? item.name.slice(parenIdx + 2, -1) : "";
+      return {
+        isPendingItem: true,
+        key: `${item.type}:${item.id}`,
+        type: item.type,
+        id: item.id,
+        kicker: item.categoryLabel,
+        refCode: item.id,
+        primaryName: cleanClient,
+        plate: cleanPlate,
+        metricTitle: "Sum / Exposure",
+        metricValue: item.valueFormatted,
+        dispatchNote: item.isOverdue60m ? "Escalation Sent" : "Initial Alert Sent",
+        slaLabel: item.isOverdue60m ? `OVERDUE ${item.elapsedMins}m` : `WAIT ${item.elapsedMins}m/60m`,
+        slaSub: primaryRecipient,
+        tooltip: `${item.id} - ${item.name} (${item.valueFormatted}) - Click to inspect dossier folio`
+      };
+    });
+
+    // Companion Imperial Command Tomes so the shelf always presents a full 7-volume antique row
+    const companionCatalog = [
+      {
+        isPendingItem: false,
+        type: "MODULE",
+        id: "god-mode",
+        targetView: "god-mode",
+        kicker: "Autonomous AI Core",
+        refCode: "GOD MODE V4",
+        primaryName: "Self-Evolving Telemetry",
+        plate: "99.4% PRECISION",
+        metricTitle: "Neural Engine",
+        metricValue: "24 Modules Live",
+        dispatchNote: "Zero-Latency Guard",
+        slaLabel: "LIVE TELEMETRY",
+        slaSub: "Autonomous Loop",
+        ctaLabel: "Open God Mode",
+        tooltip: "Open God Mode Autonomous Telemetry"
+      },
+      {
+        isPendingItem: false,
+        type: "MODULE",
+        id: "fleet-underwriting",
+        targetView: "fleet-underwriting",
+        kicker: "47-County Master",
+        refCode: "FLEET LEDGER",
+        primaryName: "County & Corporate",
+        plate: `${typeof countyFleets !== "undefined" ? countyFleets.length : 6} MASTER FLEETS`,
+        metricTitle: "Batch AKI Certs",
+        metricValue: "KSh 37.1M GWP",
+        dispatchNote: "NTSA & Cap 487 Sync",
+        slaLabel: "ACTIVE COVER",
+        slaSub: "Schedule & CSV",
+        ctaLabel: "Open Fleet Desk",
+        tooltip: "Open County & Corporate Fleet Underwriting"
+      },
+      {
+        isPendingItem: false,
+        type: "MODULE",
+        id: "geomap-center",
+        targetView: "geomap-center",
+        kicker: "Spatial Command",
+        refCode: "GIS 47-COUNTY",
+        primaryName: "Kenya Incident Map",
+        plate: "LIVE GPS RADAR",
+        metricTitle: "Field Assessors",
+        metricValue: "47 Counties",
+        dispatchNote: " Tow & Responder Sync",
+        slaLabel: "GEO-FENCED",
+        slaSub: "Real-Time Pins",
+        ctaLabel: "Open GIS Map",
+        tooltip: "Open Kenya 47-County GIS Command Map"
+      },
+      {
+        isPendingItem: false,
+        type: "MODULE",
+        id: "policy-registry",
+        targetView: "policy-registry",
+        kicker: "Underwriting Vault",
+        refCode: "AKI QR REGISTRY",
+        primaryName: "Policies & Stickers",
+        plate: "SHA-256 VERIFIED",
+        metricTitle: "IRA Levies",
+        metricValue: "0.45% + KSh 40",
+        dispatchNote: "Cap 487 Compliant",
+        slaLabel: "CERTIFIED",
+        slaSub: "Instant QR Issue",
+        ctaLabel: "Open Registry",
+        tooltip: "Open Policy & AKI Certificate Registry"
+      },
+      {
+        isPendingItem: false,
+        type: "MODULE",
+        id: "production-reports",
+        targetView: "production-reports",
+        kicker: "Actuarial BI",
+        refCode: "AI ANALYTICS",
+        primaryName: "Executive Reports",
+        plate: "LOSS RATIO BI",
+        metricTitle: "Solvency Ratio",
+        metricValue: "214% CAR",
+        dispatchNote: "IRA Statutory Ready",
+        slaLabel: "VERIFIED BI",
+        slaSub: "Boardroom Brief",
+        ctaLabel: "Open Reports",
+        tooltip: "Open Executive Reports & AI Analytics"
+      },
+      {
+        isPendingItem: false,
+        type: "MODULE",
+        id: "create-claim",
+        targetView: "create-claim",
+        kicker: "Intake Desk",
+        refCode: "NEW FNOL FILE",
+        primaryName: "Notice of Loss",
+        plate: "ANPR + AI TRIAGE",
+        metricTitle: "Fast-Track SLA",
+        metricValue: "< 60 Mins",
+        dispatchNote: "Auto-Email Alert",
+        slaLabel: "READY TO FILE",
+        slaSub: "4-Step Intake",
+        ctaLabel: "Register FNOL",
+        tooltip: "Open First Notice of Loss (FNOL) Intake"
+      }
+    ];
+
+    const targetVolumeCount = 7;
+    let cIdx = 0;
+    while (volumeSpecs.length < targetVolumeCount && cIdx < companionCatalog.length) {
+      volumeSpecs.push(companionCatalog[cIdx++]);
+    }
+
+    bookshelf.innerHTML = volumeSpecs.map((spec, idx) => buildLeatherTomeHTML(spec, idx)).join("");
+  }
+
+  // 2. Render Open Folio Inspector Drawer if a pending volume is selected
+  if (folioDrawer) {
+    const selectedItem = selectedSLATomeKey
+      ? allPending.find(it => `${it.type}:${it.id}` === selectedSLATomeKey)
+      : null;
+
+    if (!selectedItem) {
+      folioDrawer.hidden = true;
+      folioDrawer.innerHTML = "";
+    } else {
+      folioDrawer.hidden = false;
+      const recipientsFull = escapeHTML(designatedAlertEmails.join(", "));
+      folioDrawer.innerHTML = `
+        <div class="folio-drawer-grid">
+          <div class="folio-drawer-meta">
+            <div class="folio-kv">
+              <span>Selected Bound Dossier</span>
+              <strong>${escapeHTML(selectedItem.id)} (${escapeHTML(selectedItem.categoryLabel)})</strong>
+            </div>
+            <div class="folio-kv">
+              <span>Client / Risk Asset</span>
+              <strong>${escapeHTML(selectedItem.name)}</strong>
+            </div>
+            <div class="folio-kv">
+              <span>Value / Exposure</span>
+              <strong>${escapeHTML(selectedItem.valueFormatted)}</strong>
+            </div>
+            <div class="folio-kv">
+              <span>SLA Elapsed &amp; Escalation Route</span>
+              <strong>${selectedItem.elapsedMins} mins pending &middot; ${recipientsFull}</strong>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn sla-btn-ghost" onclick="openSLASourceRecord('${selectedItem.type}', '${selectedItem.id}')">
+              Open Source Ledger
+            </button>
+            <button type="button" class="btn sla-btn-primary sla-btn-gilt-seal" onclick="approvePendingItem('${selectedItem.type}', '${selectedItem.id}')">
+              Stamp &amp; Approve Dossier
+            </button>
+            <button type="button" class="btn sla-btn-ghost" onclick="closeSLAFolioDrawer()">
+              Close Folio
+            </button>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  // 3. Keep Classic Table Ledger (#overdue-approvals-tbody) synced for toggle view
   tbody.innerHTML = "";
 
   if (allPending.length === 0) {
@@ -9757,10 +10138,10 @@ function renderOverdueApprovalsDashboard() {
     return;
   }
 
+  const escapedRecipient = escapeHTML(primaryRecipient);
   allPending.forEach(item => {
     const tr = document.createElement("tr");
 
-    // Split "Faith Wanjiku (KBA 456X)" into crisp name + subtle muted plate
     const parenIdx = item.name.indexOf(" (");
     const primaryName = parenIdx > -1 ? escapeHTML(item.name.slice(0, parenIdx)) : escapeHTML(item.name);
     const subPlate = parenIdx > -1 ? `<span style="color:#84776d; font-size:12px; margin-left:4px;">${escapeHTML(item.name.slice(parenIdx + 1))}</span>` : "";
@@ -9769,9 +10150,8 @@ function renderOverdueApprovalsDashboard() {
       ? `<span class="sla-time-pill overdue"><span class="sla-status-dot"></span>Overdue &middot; ${item.elapsedMins}m</span>`
       : `<span class="sla-time-pill awaiting">Awaiting &middot; ${item.elapsedMins}m / 60m</span>`;
 
-    const primaryRecipient = escapeHTML(designatedAlertEmails[0] || "approvals@eims-prosystem.go.ke");
     const emailStatus = item.isOverdue60m
-      ? `<div style="color:#d4d4d8; font-weight:500; font-size:12px;">Escalation sent</div><div style="color:#84776d; font-size:11px;">${primaryRecipient}</div>`
+      ? `<div style="color:#d4d4d8; font-weight:500; font-size:12px;">Escalation sent</div><div style="color:#84776d; font-size:11px;">${escapedRecipient}</div>`
       : `<div style="color:#b5a99f; font-weight:500; font-size:12px;">Initial alert sent</div><div style="color:#84776d; font-size:11px;">Awaiting review</div>`;
 
     tr.innerHTML = `
@@ -10216,6 +10596,10 @@ window.saveDesignatedAlertEmails = saveDesignatedAlertEmails;
 window.dispatchDesignatedEmailAlert = dispatchDesignatedEmailAlert;
 window.testDesignatedEmailDispatch = testDesignatedEmailDispatch;
 window.renderOverdueApprovalsDashboard = renderOverdueApprovalsDashboard;
+window.setSLADisplayMode = setSLADisplayMode;
+window.inspectSLATome = inspectSLATome;
+window.closeSLAFolioDrawer = closeSLAFolioDrawer;
+window.openSLASourceRecord = openSLASourceRecord;
 window.approvePendingItem = approvePendingItem;
 window.approveAllOverdueItems = approveAllOverdueItems;
 window.fastForwardPendingApprovals60m = fastForwardPendingApprovals60m;

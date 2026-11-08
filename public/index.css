@@ -4000,3 +4000,704 @@ div[style*="display: grid"] > * {
     white-space: nowrap;
   }
 }
+
+/* ==========================================================================
+   IMPERIAL GOLD-TOOLED LEATHER COMMAND & SLA BOOKCASE (DESIGN 1 -> 2)
+   ========================================================================== */
+.exec-imperial-header {
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(196, 138, 71, 0.14), transparent 60%),
+    linear-gradient(180deg, #17120e 0%, #0e0b09 100%);
+  border: 1px solid rgba(218, 176, 96, 0.3);
+  box-shadow:
+    inset 0 0 0 3px #0c0907,
+    inset 0 0 0 4px rgba(218, 176, 96, 0.14),
+    0 10px 26px rgba(0, 0, 0, 0.45);
+  border-radius: 14px;
+  padding: 18px 22px;
+  margin-bottom: 18px;
+  gap: 16px;
+}
+
+.exec-imperial-title-wrap h1 {
+  color: #f8efe2;
+  letter-spacing: -0.3px;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.65);
+}
+
+.exec-imperial-title-wrap p {
+  color: #bfa992;
+  margin-top: 3px;
+}
+
+.exec-imperial-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  color: #e2bd74;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.exec-gilt-diamond {
+  width: 6px;
+  height: 6px;
+  background: linear-gradient(135deg, #f7df9e, #b88332);
+  transform: rotate(45deg);
+  display: inline-block;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(235, 194, 112, 0.45);
+}
+
+.exec-plaque-bar {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.exec-plaque-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 15px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: #f6e3b8;
+  border: 1px solid rgba(230, 189, 108, 0.48);
+  outline: 1px dashed rgba(238, 204, 132, 0.34);
+  outline-offset: -4px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 234, 185, 0.22),
+    0 4px 12px rgba(0, 0, 0, 0.45);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.exec-plaque-btn:hover {
+  transform: translateY(-2px);
+  border-color: #f3d48c;
+  color: #fff6df;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 238, 195, 0.36),
+    0 8px 18px rgba(0, 0, 0, 0.6),
+    0 0 12px rgba(218, 176, 96, 0.22);
+}
+
+.plaque-roman {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ebd08e;
+  padding-right: 6px;
+  border-right: 1px solid rgba(235, 208, 142, 0.32);
+}
+
+.exec-plaque-btn.plaque-burgundy {
+  background: linear-gradient(180deg, #681c23 0%, #461015 100%);
+}
+
+.exec-plaque-btn.plaque-emerald {
+  background: linear-gradient(180deg, #194736 0%, #0f2c21 100%);
+}
+
+.exec-plaque-btn.plaque-cognac {
+  background: linear-gradient(180deg, #6b3e1c 0%, #47270f 100%);
+}
+
+.exec-plaque-btn.plaque-gold-seal {
+  background: linear-gradient(180deg, #a76630 0%, #734119 100%);
+  border-color: #ecc97b;
+  color: #fff8e6;
+  font-weight: 700;
+}
+
+/* Imperial SLA Bookcase Frame */
+.sla-imperial-bookcase {
+  background:
+    radial-gradient(ellipse at 50% 22%, rgba(188, 122, 56, 0.14) 0%, rgba(16, 12, 9, 0.96) 68%),
+    linear-gradient(180deg, #16110d 0%, #0c0907 100%);
+  border: 1px solid rgba(218, 176, 96, 0.34);
+  border-left: 1px solid rgba(218, 176, 96, 0.34);
+  box-shadow:
+    inset 0 0 0 3px #0b0806,
+    inset 0 0 0 4px rgba(218, 176, 96, 0.15),
+    0 16px 36px rgba(0, 0, 0, 0.55);
+  border-radius: 16px;
+  padding: 20px 22px 22px;
+}
+
+.sla-imperial-cornice {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding-bottom: 16px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid rgba(218, 176, 96, 0.22);
+}
+
+.sla-cornice-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 280px;
+}
+
+.sla-gilt-medallion {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #8f5426, #47260e);
+  border: 1.5px solid #e2bd74;
+  box-shadow:
+    inset 0 0 8px rgba(255, 224, 158, 0.28),
+    0 4px 10px rgba(0, 0, 0, 0.45);
+  color: #f6df9e;
+}
+
+.sla-cornice-headline {
+  font-size: 16px;
+  font-weight: 700;
+  color: #f9efe1;
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.sla-cornice-subtext {
+  font-size: 12px;
+  color: #baa693;
+  margin: 4px 0 0;
+  line-height: 1.45;
+}
+
+.sla-cornice-emails {
+  color: #ecd29d;
+  font-weight: 600;
+}
+
+.sla-cornice-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.sla-view-switcher {
+  display: inline-flex;
+  background: #0d0a08;
+  border: 1px solid rgba(218, 176, 96, 0.28);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.sla-switch-btn {
+  background: transparent;
+  border: none;
+  color: #b7a38e;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 5px 11px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sla-switch-btn.active {
+  background: linear-gradient(180deg, #74431e 0%, #4e2b11 100%);
+  color: #f8e5b8;
+  box-shadow: inset 0 1px 0 rgba(255, 229, 173, 0.28);
+}
+
+.sla-btn-gilt-seal {
+  background: linear-gradient(180deg, #a4642e 0%, #6f3f18 100%);
+  border: 1px solid #e4bf73;
+  color: #fff8e7;
+  box-shadow: inset 0 1px 0 rgba(255, 233, 184, 0.3);
+}
+
+.sla-btn-gilt-seal:hover {
+  background: linear-gradient(180deg, #b67138 0%, #804a1e 100%);
+}
+
+/* Standing Leather-Bound Volumes Stage */
+.sla-bookshelf-stage {
+  position: relative;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(236, 189, 108, 0.1) 0%, transparent 65%),
+    linear-gradient(180deg, #0b0806 0%, #130d09 88%, #090604 100%);
+  border: 1px solid rgba(218, 176, 96, 0.2);
+  border-radius: 12px;
+  padding: 18px 16px 14px;
+  box-shadow: inset 0 14px 28px rgba(0, 0, 0, 0.72);
+}
+
+.sla-volumes-shelf {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(156px, 1fr));
+  gap: 6px;
+  align-items: stretch;
+  padding: 6px 4px 0;
+}
+
+/* Individual 3D Cylindrical Cognac Leather Volume Spine */
+.leather-tome {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 416px;
+  border-radius: 11px 11px 3px 3px;
+  cursor: pointer;
+  user-select: none;
+  overflow: hidden;
+  /* Rich cylindrical cognac calfskin shading modeled directly on Image 1 */
+  background:
+    radial-gradient(ellipse at 30% 14%, rgba(255, 222, 166, 0.18) 0%, transparent 48%),
+    repeating-linear-gradient(
+      115deg,
+      rgba(38, 17, 5, 0.06) 0px,
+      rgba(38, 17, 5, 0.06) 2px,
+      rgba(255, 214, 150, 0.03) 2px,
+      rgba(255, 214, 150, 0.03) 4px
+    ),
+    linear-gradient(
+      90deg,
+      #2a1406 0%,
+      #5c3214 6%,
+      #8e5326 17%,
+      #b26e39 31%,
+      #a1602e 49%,
+      #874e23 71%,
+      #583013 90%,
+      #241004 100%
+    );
+  border-top: 1px solid rgba(255, 224, 163, 0.42);
+  border-left: 1px solid rgba(255, 206, 135, 0.16);
+  border-right: 1px solid rgba(20, 8, 2, 0.85);
+  border-bottom: 2px solid #1c0c03;
+  box-shadow:
+    -3px 0 7px rgba(0, 0, 0, 0.55),
+    3px 0 8px rgba(0, 0, 0, 0.65),
+    0 10px 18px rgba(0, 0, 0, 0.65);
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.24s ease, filter 0.24s ease;
+}
+
+/* French-joint vertical book-hinge grooves on left & right of each spine */
+.leather-tome::before,
+.leather-tome::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.leather-tome::before {
+  left: 7px;
+  background: linear-gradient(90deg, rgba(28, 12, 3, 0.62), rgba(255, 222, 166, 0.18));
+}
+
+.leather-tome::after {
+  right: 7px;
+  background: linear-gradient(90deg, rgba(255, 222, 166, 0.14), rgba(24, 10, 2, 0.68));
+}
+
+.leather-tome:hover,
+.leather-tome.is-selected {
+  transform: translateY(-8px) scale(1.014);
+  z-index: 6;
+  filter: brightness(1.05);
+  box-shadow:
+    -5px 8px 16px rgba(0, 0, 0, 0.72),
+    5px 8px 18px rgba(0, 0, 0, 0.78),
+    0 0 20px rgba(232, 191, 108, 0.28);
+}
+
+.leather-tome.is-selected {
+  outline: 1.5px solid #f2cf83;
+  outline-offset: -2px;
+}
+
+/* Headcap & Tailcap Gold Crown Friezes */
+.tome-crown-frieze {
+  width: 100%;
+  padding: 5px 10px 3px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+.tome-crown-frieze.tail {
+  padding: 3px 10px 5px;
+}
+
+.tome-crown-frieze svg,
+.tome-filigree-box svg {
+  display: block;
+  width: 100%;
+  max-width: 138px;
+  height: auto;
+  filter: drop-shadow(0 1px 1px rgba(26, 10, 2, 0.78));
+}
+
+/* Raised Horizontal Leather Hub Cords ("Nerfs") */
+.tome-nerf {
+  position: relative;
+  width: 100%;
+  height: 9px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 226, 168, 0.42) 0%,
+      #b9743d 25%,
+      #7c451d 65%,
+      #271104 100%
+    );
+  border-top: 1px dashed rgba(245, 211, 136, 0.55);
+  border-bottom: 1px dashed rgba(245, 211, 136, 0.42);
+  box-shadow:
+    0 3px 5px rgba(0, 0, 0, 0.62),
+    inset 0 1px 1px rgba(255, 234, 188, 0.35);
+  z-index: 4;
+  flex-shrink: 0;
+}
+
+.tome-nerf.twin {
+  height: 12px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 226, 168, 0.45) 0%,
+      #b46f38 20%,
+      #341706 48%,
+      #bd7840 68%,
+      #261003 100%
+    );
+}
+
+/* Gold Filigree Compartment */
+.tome-filigree-box {
+  padding: 6px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+.tome-roman-vol {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #f5dc9b;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px rgba(22, 9, 2, 0.9);
+}
+
+/* Inlaid Morocco Leather Spine Labels (Oxblood Burgundy & Heritage Forest Green) */
+.tome-morocco-band {
+  position: relative;
+  margin: 0 8px;
+  padding: 9px 9px;
+  border-radius: 3px;
+  text-align: center;
+  z-index: 2;
+  border-top: 1.5px solid #e6c173;
+  border-bottom: 1.5px solid #c99c48;
+  border-left: 1px solid rgba(230, 193, 115, 0.55);
+  border-right: 1px solid rgba(230, 193, 115, 0.55);
+  box-shadow:
+    inset 0 0 0 2px rgba(15, 6, 3, 0.45),
+    inset 0 0 0 3px rgba(240, 206, 132, 0.36),
+    0 2px 5px rgba(0, 0, 0, 0.48);
+}
+
+.tome-morocco-band.burgundy {
+  background:
+    linear-gradient(
+      90deg,
+      #340b10 0%,
+      #631920 18%,
+      #7c222b 38%,
+      #681b23 68%,
+      #31090e 100%
+    );
+}
+
+.tome-morocco-band.emerald {
+  background:
+    linear-gradient(
+      90deg,
+      #092118 0%,
+      #164432 18%,
+      #1f5842 38%,
+      #154030 68%,
+      #081d15 100%
+    );
+}
+
+.tome-band-kicker {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: #ebd08f;
+  opacity: 0.92;
+  margin-bottom: 3px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+
+.tome-band-ref {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: #fff0c2;
+  line-height: 1.25;
+  word-break: break-word;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.92);
+}
+
+.tome-band-client {
+  font-size: 11px;
+  font-weight: 600;
+  color: #f6dfab;
+  margin-top: 4px;
+  line-height: 1.25;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+
+.tome-band-plate {
+  display: inline-block;
+  margin-top: 2px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  color: #e8c77b;
+}
+
+/* Central Gilded Exposure Cartouche */
+.tome-exposure-compartment {
+  padding: 7px 11px;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.tome-exposure-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: #edd193;
+  opacity: 0.86;
+}
+
+.tome-exposure-amount {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #fff2c6;
+  letter-spacing: 0.3px;
+  font-variant-numeric: tabular-nums;
+  text-shadow:
+    0 1px 0 #52290c,
+    0 2px 4px rgba(0, 0, 0, 0.85);
+}
+
+.tome-dispatch-note {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #f2d99f;
+  opacity: 0.82;
+}
+
+.tome-sla-timer {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #fff1c5;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+.tome-sla-sub {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #dfca96;
+  margin-top: 2px;
+}
+
+/* 1-Click Gold-Stamped Approve Button on Spine Foot */
+.tome-action-foot {
+  padding: 6px 12px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  z-index: 4;
+}
+
+.tome-approve-btn {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #f0cf82 0%, #c8963e 52%, #9e6e21 100%);
+  border: 1px solid #fff0c2;
+  color: #241003;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 250, 230, 0.7),
+    0 2px 6px rgba(0, 0, 0, 0.65);
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.tome-approve-btn:hover {
+  filter: brightness(1.08);
+  transform: scale(1.03);
+}
+
+.tome-approve-btn.secondary-tome-btn {
+  background: linear-gradient(180deg, rgba(35, 17, 6, 0.82) 0%, rgba(20, 9, 3, 0.92) 100%);
+  border: 1px solid #e2bc6e;
+  color: #f7df9d;
+}
+
+/* Carved Dark Walnut Shelf Plinth */
+.sla-walnut-plinth {
+  position: relative;
+  height: 28px;
+  margin-top: -1px;
+  border-radius: 4px 4px 8px 8px;
+  background:
+    linear-gradient(
+      180deg,
+      #593318 0%,
+      #3a1f0d 24%,
+      #241206 72%,
+      #120802 100%
+    );
+  border-top: 1px solid rgba(235, 192, 114, 0.38);
+  border-bottom: 2px solid #080401;
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.75),
+    inset 0 2px 4px rgba(255, 214, 150, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+}
+
+.sla-plinth-brass-plate {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 14px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #2b1a09, #462b11, #2b1a09);
+  border: 1px solid rgba(230, 190, 108, 0.45);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  color: #ebd08f;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Open Leather Folio Inspector Drawer */
+.sla-open-folio-drawer {
+  margin-top: 12px;
+  background:
+    radial-gradient(ellipse at 0% 50%, rgba(168, 104, 48, 0.14), transparent 55%),
+    linear-gradient(180deg, #1a130e 0%, #110c09 100%);
+  border: 1px solid rgba(226, 185, 102, 0.4);
+  border-radius: 10px;
+  padding: 14px 18px;
+  box-shadow: inset 0 0 0 2px #0d0907, 0 8px 20px rgba(0, 0, 0, 0.5);
+}
+
+.sla-open-folio-drawer[hidden] {
+  display: none !important;
+}
+
+.folio-drawer-grid {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.folio-drawer-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: center;
+}
+
+.folio-kv span {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+  color: #c89565;
+}
+
+.folio-kv strong {
+  font-size: 13.5px;
+  color: #f9efe1;
+}
+
+@media screen and (max-width: 900px) {
+  .sla-volumes-shelf {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .leather-tome {
+    min-width: 172px;
+    flex: 0 0 172px;
+    scroll-snap-align: start;
+  }
+
+  .sla-plinth-brass-plate {
+    font-size: 8.5px;
+    letter-spacing: 0.6px;
+  }
+}
+
