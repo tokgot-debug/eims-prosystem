@@ -22,7 +22,7 @@
   </script>
   
   <!-- Modern CSS styling -->
-  <link rel="stylesheet" href="index.css?v=20261108d">
+  <link rel="stylesheet" href="index.css?v=20261108e">
   
   <!-- Leaflet CSS for Map integration -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
@@ -63,28 +63,79 @@
         </div>
       </div>
 
-      <!-- Cyber Hero Section -->
+      <!-- Executive 3D Rotating Protection Shield Hero Section -->
       <div class="landing-hero">
+        <div class="hero-ambient-backdrop" aria-hidden="true"></div>
         <div class="cyber-orb-1"></div>
         <div class="cyber-orb-2"></div>
-        
-        <div class="cyber-badge">
-          EIMS PROSYSTEM 2026 • AI-POWERED ENTERPRISE EIMS
-        </div>
-        
-        <h1 class="hero-title-text">
-          Next-Gen Autonomous Fleet Insurance & Telemetry Infrastructure
-        </h1>
-        
-        <p class="hero-sub-text">
-          Transforming Kenya fleet underwriting and claims processing with real-time NTSA ANPR verification, computer vision incident triage, AKI digital motor certificates, and instant M-PESA / Airtel / Bank settlements.
-        </p>
-        
-        <div class="hero-btn-group">
-          <button class="btn-glow-primary" onclick="openLogin()">
-             Launch Enterprise Portal
-          </button>
+
+        <div class="hero-grid-stage">
+          <div class="hero-copy-col">
+            <div class="cyber-badge">
+              EIMS PROSYSTEM 2026 &bull; AI-POWERED ENTERPRISE EIMS
+            </div>
+
+            <h1 class="hero-title-text">
+              Next-Gen Autonomous Fleet Insurance &amp; Telemetry Infrastructure
+            </h1>
+
+            <p class="hero-sub-text">
+              Transforming Kenya fleet underwriting and claims processing with real-time NTSA ANPR verification, computer vision incident triage, AKI digital motor certificates, and instant M-PESA / Airtel / Bank settlements.
+            </p>
+
+            <div class="hero-pillars-strip">
+              <span class="hero-pillar-chip">Motor &amp; Fleet</span>
+              <span class="hero-pillar-chip">Property &amp; Home</span>
+              <span class="hero-pillar-chip">Health &amp; Life</span>
+              <span class="hero-pillar-chip">Family Shield</span>
+              <span class="hero-pillar-chip">Climate &amp; ESG</span>
+            </div>
+
+            <div class="hero-btn-group">
+              <button class="btn-glow-primary" onclick="openLogin()">
+                Launch Enterprise Portal
+              </button>
+            </div>
           </div>
+
+          <div class="hero-visual-col">
+            <div class="hero-3d-stage" aria-label="Rotating 360-Degree Enterprise Insurance Protection Shield">
+              <div class="hero-ambient-halo" aria-hidden="true"></div>
+              <div class="hero-orbit-outer" aria-hidden="true">
+                <span class="orbit-node orbit-node-n"></span>
+                <span class="orbit-node orbit-node-e"></span>
+                <span class="orbit-node orbit-node-s"></span>
+                <span class="orbit-node orbit-node-w"></span>
+              </div>
+              <div class="hero-orbit-inner" aria-hidden="true"></div>
+
+              <div class="hero-3d-turntable">
+                <div class="hero-shield-rim" aria-hidden="true"></div>
+                <div class="hero-shield-face hero-shield-front">
+                  <img
+                    src="insurance_shield_hero.png"
+                    onerror="this.onerror=null;this.src='https://i.pinimg.com/736x/2a/df/b6/2adfb6c3f5fa217b85b3cd62252bab8c.jpg';"
+                    alt="Caring Hands Protecting Family, Fleet, Home, Health, and Environment Insurance Shield"
+                    loading="eager"
+                    fetchpriority="high"
+                  >
+                </div>
+                <div class="hero-shield-face hero-shield-back" aria-hidden="true">
+                  <img
+                    src="insurance_shield_hero.png"
+                    onerror="this.onerror=null;this.src='https://i.pinimg.com/736x/2a/df/b6/2adfb6c3f5fa217b85b3cd62252bab8c.jpg';"
+                    alt=""
+                    loading="eager"
+                  >
+                </div>
+              </div>
+            </div>
+            <div class="hero-stage-caption">
+              <span class="hero-caption-dot"></span>
+              360&deg; Holistic Fleet, Property, Health &amp; Sovereign Protection
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Animated Cyber Keyword Marquee Scroll Bar -->
@@ -5527,7 +5578,7 @@
   <script src="qrcode.min.js?v=20260817b"></script>
 
   <!-- EIMS application logic -->
-  <script src="app.js?v=20261108d"></script>
+  <script src="app.js?v=20261108e"></script>
 </body>
 </html>
 

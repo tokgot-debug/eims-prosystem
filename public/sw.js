@@ -2,7 +2,7 @@
 // deletes every cache whose key differs. The previous worker kept a fixed name
 // AND served cache-first without revalidating, so any browser that had loaded
 // the site was pinned to that build's index.css / app.js forever.
-const CACHE_NAME = 'eims-v3-cache';
+const CACHE_NAME = 'eims-v4-cache';
 
 const ASSETS_TO_CACHE = [
   '/',
@@ -14,7 +14,7 @@ const ASSETS_TO_CACHE = [
   '/eims_logo.png',
   '/car_damaged.jpg',
   '/car_plate.jpg',
-  '/futuristic_hero.jpg'
+  '/insurance_shield_hero.png'
 ];
 
 self.addEventListener('install', (event) => {
