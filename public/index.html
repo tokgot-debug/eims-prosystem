@@ -22,7 +22,7 @@
   </script>
   
   <!-- Modern CSS styling -->
-  <link rel="stylesheet" href="index.css?v=20261108j">
+  <link rel="stylesheet" href="index.css?v=20261108k">
   
   <!-- Leaflet CSS for Map integration -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
@@ -193,20 +193,20 @@
       <!-- Live Telemetry KPI Ticker Row -->
       <div class="kpi-ticker-row">
         <div class="kpi-ticker-card">
-          <div class="kpi-ticker-val">KSh 37.28M</div>
-          <div class="kpi-ticker-lbl"> Gross Underwritten Premium</div>
+          <div class="kpi-ticker-val" id="public-kpi-gwp">KSh 55.66M</div>
+          <div class="kpi-ticker-lbl" id="public-kpi-gwp-lbl">Consolidated Gross Written Premium</div>
         </div>
         <div class="kpi-ticker-card">
-          <div class="kpi-ticker-val">92%</div>
-          <div class="kpi-ticker-lbl"> Auto-Pass AI Triage Accuracy</div>
+          <div class="kpi-ticker-val" id="public-kpi-triage">92%</div>
+          <div class="kpi-ticker-lbl" id="public-kpi-triage-lbl">Auto-Pass AI Triage Accuracy</div>
         </div>
         <div class="kpi-ticker-card">
-          <div class="kpi-ticker-val">429</div>
-          <div class="kpi-ticker-lbl"> Active County Policies Issued</div>
+          <div class="kpi-ticker-val" id="public-kpi-policies">204</div>
+          <div class="kpi-ticker-lbl" id="public-kpi-policies-lbl">Active Policies &amp; Fleet Units</div>
         </div>
         <div class="kpi-ticker-card">
-          <div class="kpi-ticker-val">&lt; 30s</div>
-          <div class="kpi-ticker-lbl"> Instant Multi-Channel Payout SLA</div>
+          <div class="kpi-ticker-val" id="public-kpi-sla">&lt; 30s</div>
+          <div class="kpi-ticker-lbl">Instant Multi-Channel Payout SLA</div>
         </div>
       </div>
 
@@ -714,7 +714,7 @@
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <input type="text" id="global-search" placeholder="Search claims, vehicle plates...">
+          <input type="text" id="global-search" placeholder="Search claims, policies, plates, AKI certs, fleets...">
         </div>
         
         <div class="header-actions">
@@ -797,7 +797,7 @@
           </button>
           
           <!-- Notification Bell -->
-          <button class="notification-btn" id="header-alert-btn" title="System Alerts">
+          <button class="notification-btn" id="header-alert-btn" onclick="jumpToPendingApprovalsCenter()" title="System Alerts &amp; 60-Min SLA Escalations">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
@@ -1084,13 +1084,13 @@
                 <div>
                   <h2 style="font-size:15px; font-weight:600; display:flex; align-items:center; gap:8px;">
                     Claims Velocity (Last 6 Months)
-                    <span class="status-badge approved" style="font-size:10px; font-weight:600;">+15.5% </span>
+                    <span class="status-badge approved" id="dashboard-chart-mom-badge" style="font-size:10px; font-weight:600;">+14%</span>
                   </h2>
-                  <p style="font-size:11.5px; color:var(--text-secondary); margin:2px 0 0;">Monthly claim filing frequency & telemetry volume</p>
+                  <p style="font-size:11.5px; color:var(--text-secondary); margin:2px 0 0;">Monthly claim filing frequency &amp; telemetry volume</p>
                 </div>
                 <div style="display:flex; gap:16px; font-size:11.5px;">
-                  <div><span style="color:var(--text-muted);">Avg:</span> <strong>29.3/mo</strong></div>
-                  <div><span style="color:var(--text-muted);">Peak:</span> <strong style="color:var(--primary);">Aug (52)</strong></div>
+                  <div><span style="color:var(--text-muted);">Avg:</span> <strong id="dashboard-chart-avg">13.5/mo</strong></div>
+                  <div><span style="color:var(--text-muted);">Peak:</span> <strong id="dashboard-chart-peak" style="color:var(--primary);">Nov (16)</strong></div>
                 </div>
               </div>
               <div class="card-body" style="padding-top:10px;">
@@ -1116,15 +1116,18 @@
                       <div class="radial-label">Auto-Pass</div>
                     </div>
                   </div>
-                  <div style="margin-top:20px; display:flex; gap:16px; font-size:12px; color:var(--text-secondary);">
+                  <div style="margin-top:20px; display:flex; gap:16px; font-size:12px; color:var(--text-secondary); flex-wrap:wrap; justify-content:center;">
                     <div style="display:flex; align-items:center; gap:6px;">
-                      <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:var(--success);"></span> Green (75%)
+                      <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:var(--success);"></span>
+                      <span id="triage-legend-green">Green (75%)</span>
                     </div>
                     <div style="display:flex; align-items:center; gap:6px;">
-                      <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:var(--warning);"></span> Yellow (19%)
+                      <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:var(--warning);"></span>
+                      <span id="triage-legend-yellow">Yellow (19%)</span>
                     </div>
                     <div style="display:flex; align-items:center; gap:6px;">
-                      <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:var(--danger);"></span> Red (6%)
+                      <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:var(--danger);"></span>
+                      <span id="triage-legend-red">Red (6%)</span>
                     </div>
                   </div>
                 </div>
@@ -1144,7 +1147,7 @@
                   <thead>
                     <tr>
                       <th>Claim ID</th>
-                      <th>Plate</th>
+                      <th>Subject / Plate</th>
                       <th>Claimant</th>
                       <th>Incident Date</th>
                       <th>Damage Estimate</th>
@@ -1982,23 +1985,23 @@
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:20px;">
             <div class="dashboard-card" style="padding:16px 18px;">
               <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Active Policies</div>
-              <div id="uw-kpi-active" style="font-size:24px; font-weight:800; color:var(--text-primary); margin-top:4px;">9</div>
-              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">In-force motor, EV &amp; general cover</div>
+              <div id="uw-kpi-active" style="font-size:24px; font-weight:800; color:var(--text-primary); margin-top:4px;">21</div>
+              <div id="uw-kpi-active-sub" style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">In-force motor, EV &amp; composite cover</div>
             </div>
             <div class="dashboard-card" style="padding:16px 18px;">
               <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Pending Approval (60m SLA)</div>
               <div id="uw-kpi-pending" style="font-size:24px; font-weight:800; color:#c89565; margin-top:4px;">0</div>
-              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">Synced with Dashboard SLA Watchdog</div>
+              <div id="uw-kpi-pending-sub" style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">Synced with Dashboard SLA Watchdog</div>
             </div>
             <div class="dashboard-card" style="padding:16px 18px;">
               <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Gross Written Premium</div>
-              <div id="uw-kpi-gwp" style="font-size:24px; font-weight:800; color:var(--primary); margin-top:4px;">KSh 1,355,500</div>
-              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">Individual &amp; master policy ledger</div>
+              <div id="uw-kpi-gwp" style="font-size:24px; font-weight:800; color:var(--primary); margin-top:4px;">KSh 18,556,423</div>
+              <div id="uw-kpi-gwp-sub" style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">Individual &amp; master policy ledger</div>
             </div>
             <div class="dashboard-card" style="padding:16px 18px;">
-              <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Issued AKI Digital Certs</div>
-              <div id="uw-kpi-certs" style="font-size:24px; font-weight:800; color:var(--success); margin-top:4px;">9</div>
-              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">SHA-256 signed &amp; QR verifiable</div>
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Issued Policy Digital Certs</div>
+              <div id="uw-kpi-certs" style="font-size:24px; font-weight:800; color:var(--success); margin-top:4px;">21</div>
+              <div id="uw-kpi-certs-sub" style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">SHA-256 signed &amp; QR verifiable</div>
             </div>
           </div>
 
@@ -2276,10 +2279,10 @@
               <div class="form-group" style="min-width:180px; flex:1;">
                 <label for="report-period-preset" style="font-weight:700;">Period Quick-Selector</label>
                 <select class="form-control" id="report-period-preset" onchange="window.applyReportPeriodPreset()">
-                  <option value="this-month" selected> This Month (August 2026)</option>
-                  <option value="last-month"> Last Month (July 2026)</option>
-                  <option value="this-quarter"> This Quarter (Q3 2026)</option>
-                  <option value="ytd"> Year to Date (YTD 2026)</option>
+                  <option value="ytd" selected> Year to Date (YTD 2026)</option>
+                  <option value="this-month"> This Month (November 2026)</option>
+                  <option value="last-month"> Last Month (October 2026)</option>
+                  <option value="this-quarter"> This Quarter (Q4 2026)</option>
                   <option value="custom"> Custom Date Range...</option>
                 </select>
               </div>
@@ -2287,12 +2290,12 @@
               <!-- Calendar Date Pickers -->
               <div class="form-group" style="width:160px;">
                 <label for="report-start-date" style="font-weight:700;">Start Date</label>
-                <input type="date" class="form-control" id="report-start-date" value="2026-08-01">
+                <input type="date" class="form-control" id="report-start-date" value="2026-01-01">
               </div>
 
               <div class="form-group" style="width:160px;">
                 <label for="report-end-date" style="font-weight:700;">End Date</label>
-                <input type="date" class="form-control" id="report-end-date" value="2026-08-31">
+                <input type="date" class="form-control" id="report-end-date" value="2026-12-31">
               </div>
 
               <!-- Branch Filter -->
@@ -2840,7 +2843,7 @@
 
               <div style="display:flex; align-items:center; gap:12px;">
                 <label style="font-size:12.5px; font-weight:700; color:var(--text-primary);">Gross Risk Value (KSh):</label>
-                <input type="number" id="reins-gross-risk-input" value="10000000" style="width:160px; padding:6px 12px; font-size:13px; font-weight:700; color:var(--primary); background:var(--bg-primary); border:1px solid var(--border-color); border-radius:6px;" oninput="calc3ReinsurerRiskSplit()">
+                <input type="number" id="reins-gross-risk-input" value="10000000" style="width:160px; padding:6px 12px; font-size:13px; font-weight:700; color:var(--primary); background:var(--bg-primary); border:1px solid var(--border-color); border-radius:6px;" oninput="calc3ReinsurerRiskSplit(true)">
               </div>
             </div>
 
@@ -2884,7 +2887,7 @@
             <!-- Ceded Total Banner -->
             <div style="background:rgba(255,255,255,0.05); border:1px dashed var(--border-color); border-radius:8px; padding:10px 16px; display:flex; justify-content:space-between; align-items:center; font-size:12px;">
               <div>
-                <strong>Total 3-Reinsurer Quota Share Cession:</strong> <span style="color:var(--success); font-weight:700;">60.0% Ceded</span> (Kenya Re + Zep Re + Africa Re)
+                <strong>Total 3-Reinsurer Quota Share Cession:</strong> <span id="reins-total-ceded-pct" style="color:var(--success); font-weight:700;">60.0% Ceded</span> (Kenya Re + Zep Re + Africa Re)
               </div>
               <div>
                 <strong>Total Shared Risk Recoverable:</strong> <strong style="color:var(--success);" id="reins-val-total-ceded-amt">KSh 6,000,000</strong>
@@ -2923,16 +2926,16 @@
               
               <div style="display:flex; flex-direction:column; gap:12px; font-size:12.5px;">
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
-                  <span>Primary Retention Limit:</span> <strong>KSh 5,000,000</strong>
+                  <span>Primary Retention Limit:</span> <strong id="reins-kpi-retention-limit">KSh 5,000,000</strong>
                 </div>
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
-                  <span>Quota Share Cession:</span> <strong>60% Ceded (3 Reinsurers)</strong>
+                  <span>Quota Share Cession:</span> <strong id="reins-kpi-cession-summary">60% Ceded (3 Reinsurers)</strong>
                 </div>
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
                   <span>Excess of Loss Layer:</span> <strong>KSh 20M xs KSh 5M</strong>
                 </div>
                 <div style="display:flex; justify-content:space-between; padding-top:4px;">
-                  <span>Reinsurance Claims Recoverable:</span> <strong style="color:var(--success);">KSh 8,450,000</strong>
+                  <span>Reinsurance Claims Recoverable:</span> <strong id="reins-kpi-recoverable" style="color:var(--success);">KSh 8,450,000</strong>
                 </div>
               </div>
             </div>
@@ -2975,8 +2978,8 @@
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
               </div>
               <div>
-                <div style="font-size:20px; font-weight:800; color:#f87171; margin-top:8px; line-height:1; letter-spacing:-0.5px;">HiAce Matatu (88.0%)</div>
-                <div style="font-size:11px; color:#f87171; margin-top:6px;">PSV Surcharge +30% Active</div>
+                <div id="loss-ratio-highest-model" style="font-size:20px; font-weight:800; color:#f87171; margin-top:8px; line-height:1; letter-spacing:-0.5px;">HiAce Matatu (88.0%)</div>
+                <div id="loss-ratio-highest-sub" style="font-size:11px; color:#f87171; margin-top:6px;">PSV Surcharge +30% Active</div>
               </div>
             </div>
 
@@ -2987,8 +2990,8 @@
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
               </div>
               <div>
-                <div style="font-size:20px; font-weight:800; color:#34d399; margin-top:8px; line-height:1; letter-spacing:-0.5px;">BYD Atto 3 EV (24.0%)</div>
-                <div style="font-size:11px; color:#34d399; margin-top:6px;">Green Preferred Rebate -10%</div>
+                <div id="loss-ratio-lowest-model" style="font-size:20px; font-weight:800; color:#34d399; margin-top:8px; line-height:1; letter-spacing:-0.5px;">BYD Atto 3 EV (24.0%)</div>
+                <div id="loss-ratio-lowest-sub" style="font-size:11px; color:#34d399; margin-top:6px;">Green Preferred Rebate -10%</div>
               </div>
             </div>
 
@@ -2999,7 +3002,7 @@
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c89565" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
               </div>
               <div>
-                <div style="font-size:24px; font-weight:800; color:#c89565; margin-top:8px; line-height:1; letter-spacing:-0.5px;">5 Vehicle Models</div>
+                <div id="loss-ratio-flagged-count" style="font-size:24px; font-weight:800; color:#c89565; margin-top:8px; line-height:1; letter-spacing:-0.5px;">5 Vehicle Models</div>
                 <div style="font-size:11px; color:#c89565; margin-top:6px;">Rate Loading Mandatory</div>
               </div>
             </div>
@@ -3463,7 +3466,7 @@
             <div class="dashboard-card" style="padding:16px; text-align:center; border-top:3px solid #dc2626;">
               <div style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">KRA Stamp Duty (KSh 40)</div>
               <div style="font-size:24px; font-weight:900; color:#ef4444; margin:4px 0;" id="itax-stamp-total">KSh 171,600</div>
-              <div style="font-size:11px; color:#ef4444;">4,290 Certificates Issued</div>
+              <div id="itax-stamp-sub" style="font-size:11px; color:#ef4444;">4,290 Certificates Issued</div>
             </div>
 
           </div>
@@ -3816,8 +3819,8 @@
                 <div id="mobile-client-view">
                   <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:12px; margin-bottom:12px;">
                     <div style="font-size:11px; color:#b5a99f;">WELCOME BACK</div>
-                    <div style="font-size:14px; font-weight:700;">Boniface Mwangi</div>
-                    <div style="font-size:10px; color:#c89565;">Policy: EIMS-MOT-99210 (KDG 123A)</div>
+                    <div id="mobile-client-name" style="font-size:14px; font-weight:700;">Boniface Mwangi</div>
+                    <div id="mobile-client-policy" style="font-size:10px; color:#c89565;">Policy: POL-MOT-8973-2026 (KDG 123A)</div>
                   </div>
 
                   <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
@@ -3833,14 +3836,14 @@
 
                   <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:12px; margin-bottom:12px;">
                     <div style="font-size:11px; font-weight:600; margin-bottom:6px; color:#f59e0b;">Active Claim Status</div>
-                    <div style="font-size:12px; font-weight:700;">CLM-2026-001 (Nairobi Collision)</div>
-                    <div style="font-size:10px; color:#b5a99f; margin:4px 0 8px;">Repair Stage: Windscreen Replacement (Nairobi Auto Care)</div>
+                    <div id="mobile-client-claim-title" style="font-size:12px; font-weight:700;">CLM-2026-001 (Nairobi Collision)</div>
+                    <div id="mobile-client-claim-sub" style="font-size:10px; color:#b5a99f; margin:4px 0 8px;">Repair Stage: Windscreen Replacement (Nairobi Auto Care)</div>
                     <div style="width:100%; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden;">
-                      <div style="width:75%; height:100%; background:#10b981;"></div>
+                      <div id="mobile-client-claim-bar" style="width:75%; height:100%; background:#10b981;"></div>
                     </div>
                   </div>
 
-                  <button style="width:100%; background:#ef4444; color:#fff; border:none; padding:10px; border-radius:12px; font-weight:700; font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+                  <button id="mobile-sos-btn" onclick="triggerMobileEmergencySOS()" style="width:100%; background:#ef4444; color:#fff; border:none; padding:10px; border-radius:12px; font-weight:700; font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
                     Emergency Roadside Towing
                   </button>
                 </div>
@@ -4293,10 +4296,10 @@
             <div style="position:absolute; bottom:24px; left:24px; background:var(--bg-surface); border:1px solid var(--border-color); padding:12px 16px; border-radius:10px; box-shadow:var(--shadow-md); z-index:100; font-size:11.5px; backdrop-filter:blur(8px);">
               <div style="font-weight:700; margin-bottom:8px; color:var(--primary);">GeoMap Layer Legend</div>
               <div style="display:flex; flex-direction:column; gap:6px;">
-                <div style="display:flex; align-items:center; gap:8px;"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#ef4444;"></span> Active Collision Incidents (4)</div>
-                <div style="display:flex; align-items:center; gap:8px;"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#8b5a2b;"></span> Accredited Repair Garages (4)</div>
-                <div style="display:flex; align-items:center; gap:8px;"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#10b981;"></span> County Branch Offices (6)</div>
-                <div style="display:flex; align-items:center; gap:8px;"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#f59e0b;"></span> Emergency Police & Towing (4)</div>
+                <div style="display:flex; align-items:center; gap:8px;"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#ef4444;"></span> <span id="geomap-count-incidents">Active Claim Incidents (16)</span></div>
+                <div style="display:flex; align-items:center; gap:8px;"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#8b5a2b;"></span> <span id="geomap-count-garages">Accredited Repair Garages (8)</span></div>
+                <div style="display:flex; align-items:center; gap:8px;"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#10b981;"></span> <span id="geomap-count-branches">County Branch Offices (6)</span></div>
+                <div style="display:flex; align-items:center; gap:8px;"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#f59e0b;"></span> <span id="geomap-count-tow">Emergency Police &amp; Towing (4)</span></div>
               </div>
             </div>
           </div>
@@ -4305,19 +4308,19 @@
           <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; margin-bottom:24px;">
             <div class="dashboard-card" style="padding:16px;">
               <div style="font-size:12px; color:var(--text-secondary);">HIGHEST COLLISION DENSITY</div>
-              <div style="font-size:16px; font-weight:700; color:var(--danger); margin-top:4px;">Nairobi Highway Corridor</div>
-              <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">18 Claims Filed (34.6% of total)</div>
+              <div id="geomap-top-corridor" style="font-size:16px; font-weight:700; color:var(--danger); margin-top:4px;">Nairobi Highway Corridor</div>
+              <div id="geomap-top-corridor-sub" style="font-size:11px; color:var(--text-muted); margin-top:4px;">9 Claims Filed (56.3% of 16 total)</div>
             </div>
 
             <div class="dashboard-card" style="padding:16px;">
               <div style="font-size:12px; color:var(--text-secondary);">FASTEST REPAIR SLA REGION</div>
-              <div style="font-size:16px; font-weight:700; color:var(--success); margin-top:4px;">Mombasa Industrial Area</div>
-              <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">96% SLA Compliance Rate</div>
+              <div id="geomap-sla-region" style="font-size:16px; font-weight:700; color:var(--success); margin-top:4px;">Nairobi &amp; Mombasa Industrial Hubs</div>
+              <div id="geomap-sla-sub" style="font-size:11px; color:var(--text-muted); margin-top:4px;">98% SLA Compliance Rate</div>
             </div>
 
             <div class="dashboard-card" style="padding:16px;">
               <div style="font-size:12px; color:var(--text-secondary);">ACTIVE TOW DISPATCHES</div>
-              <div style="font-size:16px; font-weight:700; color:var(--warning); margin-top:4px;">6 Units En-Route</div>
+              <div id="geomap-tow-active" style="font-size:16px; font-weight:700; color:var(--warning); margin-top:4px;">4 Units En-Route</div>
               <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">GPS Telemetry Synced</div>
             </div>
           </div>
@@ -7705,7 +7708,7 @@
   <script src="qrcode.min.js?v=20260817b"></script>
 
   <!-- EIMS application logic -->
-  <script src="app.js?v=20261108g"></script>
+  <script src="app.js?v=20261108k"></script>
 </body>
 </html>
 

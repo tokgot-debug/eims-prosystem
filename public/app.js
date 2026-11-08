@@ -234,6 +234,16 @@ let canvasCircles = [];
 
 // ================= APP INITIALIZATION =================
 document.addEventListener("DOMContentLoaded", () => {
+  // Seed composite multi-line policies & claims FIRST so Dashboard, SLA Watchdog,
+  // Reinsurance, IRA Taxes, and Ticker reconcile from frame 0 without jumping.
+  try {
+    if (typeof seedCompositeInsurancePortfolio === "function") seedCompositeInsurancePortfolio();
+    if (typeof seedMultiLineClaimsAndEcosystem === "function") seedMultiLineClaimsAndEcosystem();
+    if (typeof seedPendingApprovalTimestamps === "function") seedPendingApprovalTimestamps();
+  } catch (seedErr) {
+    console.error("init: portfolio seed failed", seedErr);
+  }
+
   // One setup throwing used to abort the whole chain, so every later module
   // (search, session restore, directory filters) silently never bound.
   for (const setup of [
@@ -243,6 +253,10 @@ document.addEventListener("DOMContentLoaded", () => {
     setupReportsQueryListeners,
   ]) {
     try { setup(); } catch (err) { console.error(`init: ${setup.name} failed`, err); }
+  }
+
+  if (typeof reconcilePlatformMetrics === "function") {
+    try { reconcilePlatformMetrics(); } catch (recErr) { console.error("init: reconcile failed", recErr); }
   }
 
   navigateToView("dashboard");
@@ -263,19 +277,39 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 300);
   }
 
-  // Set up Global Search
+  // Set up Smart Cross-Platform Global Search (Claims, Policies, Fleets, AKI Certs, Garages, Assessors)
   const globalSearch = document.getElementById("global-search");
-  globalSearch.addEventListener("input", (e) => {
-    const query = e.target.value.toLowerCase();
-    if (query.length > 2) {
-      showToast("Searching Database", `Looking up files for "${query}"`, "info");
-      // Search redirect to Directory view
-      document.getElementById("directory-search-input").value = query;
-      navigateToView("claims-directory");
-      renderClaimsDirectory();
-    }
-  });
-  
+  if (globalSearch) {
+    let globalSearchTimer = null;
+    const executeSmartGlobalSearch = (rawQuery, notify = true) => {
+      const trimmed = String(rawQuery || "").trim();
+      if (trimmed.length < 3) return;
+      if (typeof routeGlobalPlatformSearch === "function") {
+        routeGlobalPlatformSearch(trimmed, notify);
+      } else {
+        const dirInput = document.getElementById("directory-search-input");
+        if (dirInput) dirInput.value = trimmed;
+        navigateToView("claims-directory");
+        renderClaimsDirectory();
+      }
+    };
+
+    globalSearch.addEventListener("input", (e) => {
+      clearTimeout(globalSearchTimer);
+      const val = e.target.value;
+      if (val && val.trim().length > 2) {
+        globalSearchTimer = setTimeout(() => executeSmartGlobalSearch(val, true), 260);
+      }
+    });
+
+    globalSearch.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        clearTimeout(globalSearchTimer);
+        executeSmartGlobalSearch(globalSearch.value, true);
+      }
+    });
+  }
 });
 
 // ================= PUBLIC SITE / STAFF LOGIN =================
@@ -554,63 +588,86 @@ function showToast(title, message, type = "success") {
 
 // ================= DASHBOARD CONTROLLER =================
 function renderDashboard() {
+  if (typeof seedCompositeInsurancePortfolio === "function") seedCompositeInsurancePortfolio();
+  if (typeof seedMultiLineClaimsAndEcosystem === "function") seedMultiLineClaimsAndEcosystem();
+
   // Compute Stats
   const totalClaims = claims.length || 1;
-  const settledValue = claims.reduce((acc, curr) => curr.status === "Approved" || curr.status === "Disbursed" ? acc + curr.cost : acc, 0);
+  const settledValue = claims.reduce((acc, curr) => curr.status === "Approved" || curr.status === "Disbursed" ? acc + Number(curr.cost || 0) : acc, 0);
   const investigationCount = claims.filter(c => c.status === "Under Investigation").length;
-  const avgFraudScore = Math.round(claims.reduce((acc, curr) => acc + curr.fraudScore, 0) / totalClaims);
-  
-  document.getElementById("stat-total-claims").innerText = claims.length;
-  document.getElementById("stat-total-payout").innerText = "KSh " + (settledValue / 1000000).toFixed(1) + "M";
-  document.getElementById("stat-investigating").innerText = investigationCount;
-  document.getElementById("stat-avg-fraud").innerText = avgFraudScore + "%";
+  const avgFraudScore = Math.round(claims.reduce((acc, curr) => acc + Number(curr.fraudScore || 0), 0) / totalClaims);
 
-  // Dynamically update Triage Distribution legend & ring
+  const statTotalEl = document.getElementById("stat-total-claims");
+  const statPayoutEl = document.getElementById("stat-total-payout");
+  const statInvEl = document.getElementById("stat-investigating");
+  const statFraudEl = document.getElementById("stat-avg-fraud");
+
+  if (statTotalEl) statTotalEl.innerText = String(claims.length);
+  if (statPayoutEl) statPayoutEl.innerText = "KSh " + (settledValue / 1000000).toFixed(2) + "M";
+  if (statInvEl) statInvEl.innerText = String(investigationCount);
+  if (statFraudEl) statFraudEl.innerText = avgFraudScore + "%";
+
+  // Dynamically update Triage Distribution SVG ring & legend so Green + Yellow + Red === 100%
   const greenCount = claims.filter(c => c.triage === "Green").length;
   const yellowCount = claims.filter(c => c.triage === "Yellow").length;
+  const redCount = Math.max(0, claims.length - greenCount - yellowCount);
   const greenPct = Math.round((greenCount / totalClaims) * 100);
-  const yellowPct = Math.round((yellowCount / totalClaims) * 100);
+  let yellowPct = Math.round((yellowCount / totalClaims) * 100);
+  if (greenPct + yellowPct > 100) yellowPct = Math.max(0, 100 - greenPct);
   const redPct = Math.max(0, 100 - greenPct - yellowPct);
-  const triageLegendStrong = document.querySelectorAll(".triage-legend-item strong");
-  if (triageLegendStrong.length >= 3) {
-    triageLegendStrong[0].innerText = greenPct + "%";
-    triageLegendStrong[1].innerText = yellowPct + "%";
-    triageLegendStrong[2].innerText = redPct + "%";
+
+  const ringCircle = document.getElementById("triage-green-ring");
+  if (ringCircle) {
+    const circumference = 251.2;
+    const offset = circumference * (1 - greenPct / 100);
+    ringCircle.setAttribute("stroke-dashoffset", offset.toFixed(1));
   }
-  const triageRing = document.querySelector(".triage-ring");
-  if (triageRing) {
-    const gEnd = greenPct;
-    const yEnd = greenPct + yellowPct;
-    triageRing.style.background = `conic-gradient(var(--success) 0% ${gEnd}%, var(--warning) ${gEnd}% ${yEnd}%, var(--danger) ${yEnd}% 100%)`;
-  }
-  
-  // Render Recent Table
+  const greenRateEl = document.getElementById("triage-green-rate");
+  if (greenRateEl) greenRateEl.innerText = `${greenPct}%`;
+
+  const legGreen = document.getElementById("triage-legend-green");
+  const legYellow = document.getElementById("triage-legend-yellow");
+  const legRed = document.getElementById("triage-legend-red");
+  if (legGreen) legGreen.innerText = `Green (${greenPct}% • ${greenCount})`;
+  if (legYellow) legYellow.innerText = `Yellow (${yellowPct}% • ${yellowCount})`;
+  if (legRed) legRed.innerText = `Red (${redPct}% • ${redCount})`;
+
+  // Render Recent Table (newest filings first across all 7 insurance lines)
   const tbody = document.querySelector("#dashboard-recent-table tbody");
-  tbody.innerHTML = "";
-  
-  claims.slice(-5).reverse().forEach(claim => {
-    const tr = document.createElement("tr");
-    tr.style.cursor = "pointer";
-    tr.addEventListener("click", () => openAuditModal(claim.id));
-    
-    tr.innerHTML = `
-      <td><strong>${claim.id}</strong></td>
-      <td><code>${claim.plate}</code></td>
-      <td>${claim.owner}</td>
-      <td>${claim.date}</td>
-      <td>KSh ${claim.cost.toLocaleString()}</td>
-      <td><span class="fraud-pill ${getFraudClass(claim.fraudScore)}">${claim.fraudScore}%</span></td>
-      <td><span class="status-badge ${claim.triage.toLowerCase()}">${claim.triage} Path</span></td>
-    `;
-    tbody.appendChild(tr);
-  });
-  
+  if (tbody) {
+    tbody.innerHTML = "";
+    const newestClaims = claims.slice(0, 6);
+    newestClaims.forEach(claim => {
+      const tr = document.createElement("tr");
+      tr.style.cursor = "pointer";
+      tr.addEventListener("click", () => openAuditModal(claim.id));
+      const ln = claim.insuranceLine || "Motor";
+      const lineSub = ln !== "Motor"
+        ? `<div style="font-size:10.5px; color:#c89565; font-weight:700; margin-top:2px;">${escapeHTML(ln)}</div>`
+        : "";
+
+      tr.innerHTML = `
+        <td><strong>${escapeHTML(claim.id)}</strong>${lineSub}</td>
+        <td><code>${escapeHTML(claim.plate)}</code></td>
+        <td>${escapeHTML(claim.owner)}</td>
+        <td>${escapeHTML(claim.date)}</td>
+        <td>KSh ${Number(claim.cost || 0).toLocaleString()}</td>
+        <td><span class="fraud-pill ${getFraudClass(claim.fraudScore)}">${Number(claim.fraudScore || 0)}%</span></td>
+        <td><span class="status-badge ${String(claim.triage || "Green").toLowerCase()}">${escapeHTML(claim.triage || "Green")} Path</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
   // Render Dynamic SVG line chart
   renderDashboardChart();
 
   // Render 60-Minute Overdue Pending Approvals Red Alert Center
   if (typeof renderOverdueApprovalsDashboard === "function") {
     renderOverdueApprovalsDashboard();
+  }
+  if (typeof reconcilePlatformMetrics === "function") {
+    reconcilePlatformMetrics();
   }
 }
 
@@ -623,16 +680,31 @@ function getFraudClass(score) {
 function renderDashboardChart() {
   const chartBox = document.getElementById("dashboard-chart-box");
   if (!chartBox) return;
-  
-  // High fidelity smooth spline chart dataset
+
+  const liveCount = Array.isArray(claims) ? claims.length : 16;
+  const liveIncurredM = (Array.isArray(claims) ? claims.reduce((s, c) => s + Number(c.cost || 0), 0) : 7900000) / 1000000;
+  const prevVal = 14;
+  const momDelta = Math.round(((liveCount - prevVal) / Math.max(1, prevVal)) * 100);
+  const momStr = `${momDelta >= 0 ? "+" : ""}${momDelta}%`;
+
+  // High fidelity smooth spline chart dataset anchored to live current month portfolio
   const data = [
-    { month: "Mar", val: 12, cost: "1.8M", mom: "+0%" },
-    { month: "Apr", val: 19, cost: "2.9M", mom: "+58%" },
-    { month: "May", val: 15, cost: "2.3M", mom: "-21%" },
-    { month: "Jun", val: 34, cost: "5.1M", mom: "+126%" },
-    { month: "Jul", val: 45, cost: "6.8M", mom: "+32%" },
-    { month: "Aug", val: 52, cost: "7.9M", mom: "+15%" }
+    { month: "Jun", val: 11, cost: "2.4M", mom: "+0%" },
+    { month: "Jul", val: 13, cost: "3.1M", mom: "+18%" },
+    { month: "Aug", val: 15, cost: "4.2M", mom: "+15%" },
+    { month: "Sep", val: 12, cost: "3.6M", mom: "-20%" },
+    { month: "Oct", val: prevVal, cost: "5.8M", mom: "+17%" },
+    { month: "Nov", val: liveCount, cost: `${liveIncurredM.toFixed(1)}M`, mom: momStr }
   ];
+
+  const avgPerMonth = (data.reduce((s, d) => s + d.val, 0) / data.length).toFixed(1);
+  const peakEntry = data.reduce((best, d) => (d.val >= best.val ? d : best), data[0]);
+  const avgEl = document.getElementById("dashboard-chart-avg");
+  const peakEl = document.getElementById("dashboard-chart-peak");
+  const momBadge = document.getElementById("dashboard-chart-mom-badge");
+  if (avgEl) avgEl.innerText = `${avgPerMonth}/mo`;
+  if (peakEl) peakEl.innerText = `${peakEntry.month} (${peakEntry.val})`;
+  if (momBadge) momBadge.innerText = momStr;
   
   const width = chartBox.clientWidth || 550;
   const height = 230;
@@ -3482,12 +3554,22 @@ function submitWorkshopRepairRequest() {
   const garage = garages.find(g => g.id === selectedId) || garages[0];
 
   const claimId = document.getElementById("ws-claim-select")?.value || "CLM-2026-001";
+  const linkedClaim = claims.find(c => c.id === claimId) || claims[0];
   const comp = document.getElementById("ws-component-select")?.value || "Windscreen";
   const part = parseFloat(document.getElementById("ws-part-cost")?.value || 0);
   const labor = parseFloat(document.getElementById("ws-labor-cost")?.value || 0);
   const total = part + labor;
   
   const workOrderNo = "WKO-2026-" + Math.floor(10000 + Math.random() * 89999);
+
+  if (garage) {
+    garage.activeRepairs = Number(garage.activeRepairs || 0) + 1;
+  }
+  if (linkedClaim) {
+    linkedClaim.assignedGarage = garage ? garage.name : "Nairobi Auto Care Panel Beaters";
+    linkedClaim.journeyStage = Math.max(Number(linkedClaim.journeyStage || 2), 3);
+    linkedClaim.repairWorkOrder = workOrderNo;
+  }
   
   const resultCard = document.getElementById("ws-approval-result-card");
   const woText = document.getElementById("ws-cert-workorder");
@@ -3499,9 +3581,14 @@ function submitWorkshopRepairRequest() {
     if (amtText) amtText.innerText = `KSh ${total.toLocaleString()}`;
   }
 
+  if (typeof renderGarageNetwork === "function") renderGarageNetwork();
+  if (typeof renderMobileAppPortal === "function") renderMobileAppPortal();
+  if (typeof renderDashboard === "function") renderDashboard();
+
+  const subjectLabel = linkedClaim ? linkedClaim.plate : "KDG 123A";
   showToast(
     " Pre-Repair Permission Granted!",
-    `Work Order ${workOrderNo} authorized for ${garage.name} (KSh ${total.toLocaleString()} for ${comp} replacement on vehicle KDG 123A).`,
+    `Work Order ${workOrderNo} authorized for ${garage ? garage.name : "Accredited Garage"} (KSh ${total.toLocaleString()} for ${comp} replacement on ${subjectLabel}).`,
     "success"
   );
 }
@@ -3695,18 +3782,40 @@ function updateUnderwritingKPIs() {
     .reduce((sum, p) => sum + (Number(p.premium) || 0), 0);
   const certCount = policies.filter(p => Boolean(p.certId) && p.status !== "Cancelled").length;
 
+  const summary = typeof getUnifiedPortfolioSummary === "function" ? getUnifiedPortfolioSummary() : null;
+
   const elActive = document.getElementById("uw-kpi-active");
+  const elActiveSub = document.getElementById("uw-kpi-active-sub");
   const elPending = document.getElementById("uw-kpi-pending");
+  const elPendingSub = document.getElementById("uw-kpi-pending-sub");
   const elGwp = document.getElementById("uw-kpi-gwp");
+  const elGwpSub = document.getElementById("uw-kpi-gwp-sub");
   const elCerts = document.getElementById("uw-kpi-certs");
+  const elCertsSub = document.getElementById("uw-kpi-certs-sub");
 
   if (elActive) elActive.innerText = activeCount.toLocaleString();
+  if (elActiveSub && summary) {
+    elActiveSub.innerText = `+ ${summary.unmirroredActiveFleets} Master Fleets (${summary.unmirroredFleetVehicles} units)`;
+  }
   if (elPending) {
-    elPending.innerText = pendingCount.toLocaleString();
-    elPending.style.color = pendingCount > 0 ? "#dfc09f" : "var(--text-secondary)";
+    const totalPendingUw = summary ? summary.pendingUnderwritingCount : pendingCount;
+    elPending.innerText = totalPendingUw.toLocaleString();
+    elPending.style.color = totalPendingUw > 0 ? "#dfc09f" : "var(--text-secondary)";
+  }
+  if (elPendingSub && summary) {
+    elPendingSub.innerText = `${pendingCount} Policy • ${Math.max(0, summary.pendingUnderwritingCount - pendingCount)} Fleet in 60m SLA`;
   }
   if (elGwp) elGwp.innerText = `KSh ${totalGwp.toLocaleString()}`;
+  if (elGwpSub && summary) {
+    elGwpSub.innerText = `Consolidated w/ Fleets: KSh ${(summary.consolidatedGWP / 1000000).toFixed(2)}M`;
+  }
   if (elCerts) elCerts.innerText = certCount.toLocaleString();
+  if (elCertsSub && summary) {
+    elCertsSub.innerText = `${summary.totalActiveCertificates.toLocaleString()} Total w/ Fleet AKI Stickers`;
+  }
+  if (typeof reconcilePlatformMetrics === "function") {
+    reconcilePlatformMetrics();
+  }
 }
 
 function renderPolicyRegistry() {
@@ -4588,12 +4697,49 @@ function assignGarageClaim(garageName) {
 
 // 2. MULTI-CHANNEL CLAIMS SETTLEMENT GATEWAY (M-PESA, AIRTEL MONEY, BANK TRANSFER)
 let channelTotals = {
-  mpesa: 420000,
-  airtel: 180000,
-  bank: 540000
+  mpesa: 0,
+  airtel: 0,
+  bank: 0
 };
 
+function recomputePayoutChannelTotals() {
+  const totals = { mpesa: 0, airtel: 0, bank: 0 };
+  const countedClaimIds = new Set();
+
+  if (Array.isArray(claims)) {
+    claims.forEach((c) => {
+      if (!c.payoutChannel) {
+        if (c.id === "CLM-2026-004") c.payoutChannel = "bank";
+        else if (c.id === "CLM-2026-009") c.payoutChannel = "airtel";
+        else {
+          const spec = typeof getClaimJourneySpec === "function" ? getClaimJourneySpec(c) : null;
+          c.payoutChannel = spec ? spec.defaultChannel : "mpesa";
+        }
+      }
+      if (c.status === "Disbursed") {
+        const ch = c.payoutChannel === "airtel" ? "airtel" : (c.payoutChannel === "bank" ? "bank" : "mpesa");
+        totals[ch] += Number(c.cost || 0);
+        countedClaimIds.add(c.id);
+      }
+    });
+  }
+
+  if (typeof scheduledPayouts !== "undefined" && Array.isArray(scheduledPayouts)) {
+    scheduledPayouts.forEach((s) => {
+      if (s.status === "Disbursed" && !countedClaimIds.has(s.claimId)) {
+        const chRaw = String(s.channel || "").toLowerCase();
+        const ch = chRaw.includes("airtel") ? "airtel" : (chRaw.includes("bank") || chRaw.includes("pesalink") || chRaw.includes("eft") ? "bank" : "mpesa");
+        totals[ch] += Number(s.amount || 0);
+      }
+    });
+  }
+
+  channelTotals = totals;
+  return totals;
+}
+
 function renderMpesaGateway() {
+  recomputePayoutChannelTotals();
   renderScheduledPayouts();
   const tbody = document.querySelector("#mpesa-payout-table tbody");
   if (!tbody) return;
@@ -4603,7 +4749,6 @@ function renderMpesaGateway() {
   
   if (approvedClaims.length === 0) {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-muted);">No approved payout files in queue.</td></tr>`;
-    return;
   }
   
   let pendingDisbursement = 0;
@@ -4693,18 +4838,16 @@ function executeChannelPayout(claimId) {
     receiptCode = "QK" + Math.floor(10000000 + Math.random() * 90000000);
     channelTitle = "✓ Safaricom M-PESA B2C Successful";
     channelText = "M-PESA B2C Express Gateway";
-    channelTotals.mpesa += amountNum;
   } else if (channel === "airtel") {
     receiptCode = "AM-" + Math.floor(10000000 + Math.random() * 90000000) + "-KE";
     channelTitle = "✓ Airtel Money B2C Transfer Successful";
     channelText = "Airtel Money B2C Gateway";
-    channelTotals.airtel += amountNum;
   } else {
     receiptCode = "PSL-2026-" + Math.floor(100000 + Math.random() * 900000);
     channelTitle = "✓ EFT / PesaLink Bank Transfer Executed";
     channelText = `PesaLink KITS Clearing Bank (${c.bankDetails || "KCB Bank"})`;
-    channelTotals.bank += amountNum;
   }
+  recomputePayoutChannelTotals();
   
   const box = document.getElementById("mpesa-last-receipt-box");
   if (box) {
@@ -4723,6 +4866,7 @@ function executeChannelPayout(claimId) {
   renderDashboard();
   if (typeof renderAllInsuranceLineModules === "function") renderAllInsuranceLineModules();
   if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
+  if (typeof reconcilePlatformMetrics === "function") reconcilePlatformMetrics();
 }
 
 // 3. LOSS ASSESSORS
@@ -4815,28 +4959,55 @@ function dispatchAssessor(firmName) {
 
 // 4. REINSURANCE CEDING
 let reinsurers = [
-  { name: "Kenya Reinsurance Corporation (Kenya Re)", rating: "AA+ (AM Best)", share: "35%", cededPremium: "KSh 14,912,000", status: "Active Treaty (Statutory 35%)" },
-  { name: "Zep-Re (PTA Reinsurance Co)", rating: "AA (GCR)", share: "15%", cededPremium: "KSh 6,390,000", status: "Active Treaty (COMESA 15%)" },
-  { name: "African Reinsurance Corporation (Africa Re)", rating: "A+ (S&P)", share: "10%", cededPremium: "KSh 4,260,000", status: "Active Treaty (Pan-African 10%)" }
+  { name: "Kenya Reinsurance Corporation (Kenya Re)", rating: "AA+ (AM Best)", share: "35%", cededPremium: "KSh 19,482,648", status: "Active Treaty (Statutory 35%)" },
+  { name: "Zep-Re (PTA Reinsurance Co)", rating: "AA (GCR)", share: "15%", cededPremium: "KSh 8,349,706", status: "Active Treaty (COMESA 15%)" },
+  { name: "African Reinsurance Corporation (Africa Re)", rating: "A+ (S&P)", share: "10%", cededPremium: "KSh 5,566,471", status: "Active Treaty (Pan-African 10%)" }
 ];
 
-function calc3ReinsurerRiskSplit() {
-  const gross = parseFloat(document.getElementById("reins-gross-risk-input")?.value || 10000000);
-  
-  const kenyaPctText = reinsurers[0].share.replace("%","");
-  const zepPctText = reinsurers[1].share.replace("%","");
-  const africaPctText = reinsurers[2].share.replace("%","");
+function getNormalizedReinsurerShares() {
+  let k = parseFloat(String(reinsurers[0]?.share || "35").replace("%", "")) || 35;
+  let z = parseFloat(String(reinsurers[1]?.share || "15").replace("%", "")) || 15;
+  let a = parseFloat(String(reinsurers[2]?.share || "10").replace("%", "")) || 10;
+  if (k + z + a > 100) {
+    const scale = 100 / (k + z + a);
+    k = +(k * scale).toFixed(1);
+    z = +(z * scale).toFixed(1);
+    a = +(100 - k - z).toFixed(1);
+  }
+  const r = Math.max(0, +(100 - (k + z + a)).toFixed(1));
+  const totalCeded = +(k + z + a).toFixed(1);
+  return { kenyaPct: k, zepPct: z, africaPct: a, retPct: r, totalCededPct: totalCeded, cededPct: totalCeded };
+}
 
-  const kenyaPct = (parseFloat(kenyaPctText) || 35) / 100;
-  const zepPct = (parseFloat(zepPctText) || 15) / 100;
-  const africaPct = (parseFloat(africaPctText) || 10) / 100;
-  const retPct = Math.max(0, 1 - (kenyaPct + zepPct + africaPct));
+function calc3ReinsurerRiskSplit(fromUserInput = false) {
+  const grossInput = document.getElementById("reins-gross-risk-input");
+  if (fromUserInput && grossInput) {
+    grossInput.dataset.userEdited = "true";
+  }
+  const summary = typeof getUnifiedPortfolioSummary === "function" ? getUnifiedPortfolioSummary() : null;
+  if (grossInput && !grossInput.dataset.userEdited && summary && summary.consolidatedGWP > 0) {
+    grossInput.value = Math.round(summary.consolidatedGWP);
+  }
+  const gross = Math.max(0, parseFloat(grossInput?.value || (summary ? summary.consolidatedGWP : 10000000)));
+  const { kenyaPct, zepPct, africaPct, retPct, totalCededPct } = getNormalizedReinsurerShares();
 
-  const kenyaAmt = gross * kenyaPct;
-  const zepAmt = gross * zepPct;
-  const africaAmt = gross * africaPct;
-  const retAmt = gross * retPct;
+  const kenyaAmt = Math.round(gross * (kenyaPct / 100));
+  const zepAmt = Math.round(gross * (zepPct / 100));
+  const africaAmt = Math.round(gross * (africaPct / 100));
   const totalCededAmt = kenyaAmt + zepAmt + africaAmt;
+  const retAmt = Math.max(0, Math.round(gross) - totalCededAmt);
+
+  const elK = document.getElementById("reins-val-kenya-pct");
+  const elZ = document.getElementById("reins-val-zep-pct");
+  const elA = document.getElementById("reins-val-africa-pct");
+  const elR = document.getElementById("reins-val-ret-pct");
+  const elCededPct = document.getElementById("reins-total-ceded-pct");
+
+  if (elK) elK.innerText = `${kenyaPct.toFixed(1)}%`;
+  if (elZ) elZ.innerText = `${zepPct.toFixed(1)}%`;
+  if (elA) elA.innerText = `${africaPct.toFixed(1)}%`;
+  if (elR) elR.innerText = `${retPct.toFixed(1)}%`;
+  if (elCededPct) elCededPct.innerText = `${totalCededPct.toFixed(1)}% Ceded`;
 
   const elRetAmt = document.getElementById("reins-val-ret-amt");
   const elKenyaAmt = document.getElementById("reins-val-kenya-amt");
@@ -4854,6 +5025,11 @@ function calc3ReinsurerRiskSplit() {
 function openReinsuranceCalculatorModal() {
   const modal = document.getElementById("reinsurance-calculator-modal");
   if (!modal) return;
+  const summary = typeof getUnifiedPortfolioSummary === "function" ? getUnifiedPortfolioSummary() : null;
+  const modalGross = document.getElementById("modal-reins-gross-val");
+  if (modalGross && summary && summary.consolidatedGWP > 0) {
+    modalGross.value = Math.round(summary.consolidatedGWP);
+  }
   modal.classList.add("active");
   updateModalReinsCalc();
 }
@@ -4871,10 +5047,10 @@ function updateModalReinsCalc() {
 
   const retPct = Math.max(0, 100 - (kenyaPct + zepPct + africaPct));
 
-  const kenyaAmt = gross * (kenyaPct / 100);
-  const zepAmt = gross * (zepPct / 100);
-  const africaAmt = gross * (africaPct / 100);
-  const retAmt = gross * (retPct / 100);
+  const kenyaAmt = Math.round(gross * (kenyaPct / 100));
+  const zepAmt = Math.round(gross * (zepPct / 100));
+  const africaAmt = Math.round(gross * (africaPct / 100));
+  const retAmt = Math.max(0, Math.round(gross) - (kenyaAmt + zepAmt + africaAmt));
 
   document.getElementById("modal-kenya-share-label").innerText = kenyaPct + "%";
   document.getElementById("modal-kenya-amt-label").innerText = "KSh " + kenyaAmt.toLocaleString();
@@ -4898,29 +5074,55 @@ function applyReinsuranceSharesToLedger() {
   reinsurers[0].share = kenyaPct + "%";
   reinsurers[1].share = zepPct + "%";
   reinsurers[2].share = africaPct + "%";
+  if (typeof reinsuranceData !== "undefined" && reinsuranceData) {
+    reinsuranceData.kenyaRe = kenyaPct;
+    reinsuranceData.zepRe = zepPct;
+    reinsuranceData.africaRe = africaPct;
+  }
 
   const grossInput = document.getElementById("reins-gross-risk-input");
-  if (grossInput) grossInput.value = gross;
-  
-  const elK = document.getElementById("reins-val-kenya-pct");
-  const elZ = document.getElementById("reins-val-zep-pct");
-  const elA = document.getElementById("reins-val-africa-pct");
-  const elR = document.getElementById("reins-val-ret-pct");
-
-  if (elK) elK.innerText = kenyaPct + ".0%";
-  if (elZ) elZ.innerText = zepPct + ".0%";
-  if (elA) elA.innerText = africaPct + ".0%";
-  if (elR) elR.innerText = (100 - kenyaPct - zepPct - africaPct) + ".0%";
+  if (grossInput) {
+    grossInput.value = gross;
+    grossInput.dataset.userEdited = "true";
+  }
 
   closeReinsuranceCalculatorModal();
-  calc3ReinsurerRiskSplit();
   renderReinsuranceCeding();
 
   showToast("Reinsurer Panel Updated", `Reinsurance Quota Shares adjusted: Kenya Re (${kenyaPct}%), Zep Re (${zepPct}%), Africa Re (${africaPct}%).`, "success");
 }
 
 function renderReinsuranceCeding() {
-  calc3ReinsurerRiskSplit();
+  const summary = typeof getUnifiedPortfolioSummary === "function" ? getUnifiedPortfolioSummary() : null;
+  const portfolioGWP = summary ? summary.consolidatedGWP : policies.filter(p => p.status !== "Cancelled").reduce((s, p) => s + Number(p.premium || 0), 0);
+  const incurredClaims = summary ? summary.incurredClaimsCost : claims.reduce((s, c) => s + Number(c.cost || 0), 0);
+  const { kenyaPct, zepPct, africaPct, totalCededPct } = getNormalizedReinsurerShares();
+
+  const sharesArr = [kenyaPct, zepPct, africaPct];
+  const statuses = [
+    `Active Treaty (Statutory ${kenyaPct}%)`,
+    `Active Treaty (COMESA ${zepPct}%)`,
+    `Active Treaty (Pan-African ${africaPct}%)`
+  ];
+  reinsurers.forEach((r, idx) => {
+    const pct = sharesArr[idx] || 0;
+    r.share = `${pct}%`;
+    r.cededPremium = `KSh ${Math.round(portfolioGWP * (pct / 100)).toLocaleString()}`;
+    r.status = statuses[idx] || r.status;
+  });
+
+  calc3ReinsurerRiskSplit(false);
+
+  const retLimitVal = (typeof reinsuranceData !== "undefined" && reinsuranceData.retentionLimit) ? Number(reinsuranceData.retentionLimit) : 5000000;
+  const recoverableAmt = Math.round(incurredClaims * (totalCededPct / 100));
+
+  const elRetLimit = document.getElementById("reins-kpi-retention-limit");
+  const elCessionSummary = document.getElementById("reins-kpi-cession-summary");
+  const elRecoverable = document.getElementById("reins-kpi-recoverable");
+  if (elRetLimit) elRetLimit.innerText = `KSh ${retLimitVal.toLocaleString()}`;
+  if (elCessionSummary) elCessionSummary.innerText = `${totalCededPct.toFixed(1)}% Ceded (3 Reinsurers)`;
+  if (elRecoverable) elRecoverable.innerText = `KSh ${recoverableAmt.toLocaleString()}`;
+
   const tbody = document.querySelector("#reinsurance-table tbody");
   if (!tbody) return;
   
@@ -4940,8 +5142,70 @@ function renderReinsuranceCeding() {
 
 // 5. MOBILE COMPANION APP PORTAL
 function renderMobileAppPortal() {
-  showToast("Mobile App Portal Active", "Showing live interactive iOS & Android smartphone simulator.", "info");
+  const leadPol = (Array.isArray(policies) && policies.find(p => p.status === "Active")) || policies[0] || null;
+  const leadClaim = (Array.isArray(claims) && claims[0]) || null;
+
+  const nameEl = document.getElementById("mobile-client-name");
+  const polEl = document.getElementById("mobile-client-policy");
+  const clmTitleEl = document.getElementById("mobile-client-claim-title");
+  const clmSubEl = document.getElementById("mobile-client-claim-sub");
+  const clmBarEl = document.getElementById("mobile-client-claim-bar");
+
+  if (leadPol) {
+    if (nameEl) nameEl.innerText = leadPol.clientName;
+    if (polEl) polEl.innerText = `Policy: ${leadPol.policyNo} (${leadPol.plate})`;
+  }
+  if (leadClaim) {
+    const stageIdx = typeof getClaimJourneyStage === "function" ? getClaimJourneyStage(leadClaim) : 3;
+    const pct = Math.min(100, Math.max(20, stageIdx * 20));
+    if (clmTitleEl) clmTitleEl.innerText = `${leadClaim.id} (${leadClaim.insuranceLine || "Motor"})`;
+    if (clmSubEl) clmSubEl.innerText = `Status: ${leadClaim.status} • KSh ${Number(leadClaim.cost || 0).toLocaleString()} (${leadClaim.plate})`;
+    if (clmBarEl) clmBarEl.style.width = `${pct}%`;
+  }
+
+  const wsClaimSel = document.getElementById("ws-claim-select");
+  if (wsClaimSel && Array.isArray(claims)) {
+    const motorClaims = claims.filter(c => (c.insuranceLine || "Motor") === "Motor" || String(c.plate || "").startsWith("K"));
+    const list = motorClaims.length > 0 ? motorClaims : claims.slice(0, 6);
+    wsClaimSel.innerHTML = list.map(c => `<option value="${escapeHTML(c.id)}">${escapeHTML(c.id)} | ${escapeHTML(c.plate)} (${escapeHTML(c.owner)})</option>`).join("");
+  }
+
+  showToast("Mobile App Portal Synced", "Smartphone simulator synchronized with live policy & claims ledger.", "info");
 }
+
+function triggerMobileEmergencySOS() {
+  const leadPol = (Array.isArray(policies) && policies.find(p => p.status === "Active")) || policies[0] || { clientName: "Boniface Mwangi", plate: "KDG 123A", policyNo: "POL-MOT-8973-2026" };
+  const sosRef = "SOS-2026-" + Math.floor(1000 + Math.random() * 8999);
+  if (typeof notificationLogs !== "undefined" && Array.isArray(notificationLogs)) {
+    const nowTime = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    notificationLogs.unshift({
+      id: "LOG-" + Math.floor(1000 + Math.random() * 9000),
+      timestamp: nowTime,
+      date: "Nov 8, 2026",
+      recipient: leadPol.clientName,
+      phone: "+254 712 345678",
+      email: "sos-dispatch@eims-prosystem.go.ke",
+      channel: "SMS Alert",
+      claimId: sosRef,
+      plate: leadPol.plate,
+      event: "GPS Emergency Roadside Tow",
+      status: "Approved",
+      delivery: "Delivered (EIMS SOS GPS Dispatch)",
+      smsMessage: `EIMS SOS ${sosRef}: Breakdown tow unit & traffic patrol dispatched to GPS -1.2864, 36.8172 for ${leadPol.plate}. ETA 11 mins.`,
+      waMessage: `EIMS Emergency SOS *${sosRef}*: Nearest flatbed tow truck dispatched to your live GPS pin for *${leadPol.plate}*.`,
+      emailSubject: `Emergency Roadside Tow Dispatched (${sosRef})`,
+      emailHeader: "GPS SOS Roadside Assistance Active",
+      emailBody: `Emergency towing and police escort unit dispatched for ${leadPol.clientName} (${leadPol.plate}, Policy ${leadPol.policyNo}).`
+    });
+    if (typeof renderNotificationDispatchTable === "function") renderNotificationDispatchTable();
+  }
+  showToast(
+    `GPS SOS Tow Dispatched (${sosRef})`,
+    `Nearest accredited breakdown unit routed to live GPS coordinates for ${leadPol.plate} (${leadPol.clientName}). ETA: 11 mins.`,
+    "warning"
+  );
+}
+window.triggerMobileEmergencySOS = triggerMobileEmergencySOS;
 
 function downloadAppPackage(platform) {
   if (platform === "android") {
@@ -4966,34 +5230,74 @@ function renderIRACompliance() {
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  const phcfPct = (typeof iraTaxRates !== "undefined" && iraTaxRates.phcf) ? iraTaxRates.phcf : 0.25;
-  const trainPct = (typeof iraTaxRates !== "undefined" && iraTaxRates.training) ? iraTaxRates.training : 0.20;
-  const stampVal = (typeof iraTaxRates !== "undefined" && iraTaxRates.stampDuty) ? iraTaxRates.stampDuty : 40;
+  const phcfPct = (typeof iraTaxRates !== "undefined" && iraTaxRates.phcf) ? Number(iraTaxRates.phcf) : 0.25;
+  const trainPct = (typeof iraTaxRates !== "undefined" && iraTaxRates.training) ? Number(iraTaxRates.training) : 0.20;
+  const stampVal = (typeof iraTaxRates !== "undefined" && iraTaxRates.stampDuty) ? Number(iraTaxRates.stampDuty) : 40;
 
   let totalPhcf = 0;
   let totalTrain = 0;
   let totalStamp = 0;
 
-  policies.forEach(p => {
-    const phcf = Math.round(p.premium * (phcfPct / 100));
-    const training = Math.round(p.premium * (trainPct / 100));
-    const stamp = stampVal;
+  const activeOrPendingPolicies = policies.filter(p => p.status !== "Cancelled");
+  activeOrPendingPolicies.forEach(p => {
+    const prem = Number(p.premium || 0);
+    const linkedFleet = p.fleetId && typeof countyFleets !== "undefined"
+      ? countyFleets.find(f => f.id === p.fleetId)
+      : null;
+    const certUnits = linkedFleet ? Math.max(1, Number(linkedFleet.vehicleCount || 1)) : 1;
+    const phcf = Math.round(prem * (phcfPct / 100));
+    const training = Math.round(prem * (trainPct / 100));
+    const stamp = stampVal * certUnits;
     totalPhcf += phcf;
     totalTrain += training;
     totalStamp += stamp;
     
     const tr = document.createElement("tr");
+    const remitBadge = p.status === "Pending"
+      ? `<span class="status-badge pending">Pending Assessment</span>`
+      : `<span class="status-badge approved">Remitted (KRA)</span>`;
     tr.innerHTML = `
-      <td><strong>${p.policyNo}</strong></td>
-      <td>${p.clientName}</td>
-      <td><strong style="color:var(--primary);">KSh ${p.premium.toLocaleString()}</strong></td>
+      <td><strong>${escapeHTML(p.policyNo)}</strong></td>
+      <td>${escapeHTML(p.clientName)}</td>
+      <td><strong style="color:var(--primary);">KSh ${prem.toLocaleString()}</strong></td>
       <td>KSh ${phcf.toLocaleString()}</td>
       <td>KSh ${training.toLocaleString()}</td>
       <td>KSh ${stamp.toLocaleString()}</td>
-      <td><span class="status-badge approved">Remitted (KRA)</span></td>
+      <td>${remitBadge}</td>
     `;
     tbody.appendChild(tr);
   });
+
+  if (typeof countyFleets !== "undefined" && Array.isArray(countyFleets)) {
+    countyFleets.forEach(f => {
+      if (f.status === "Cancelled") return;
+      const alreadyInPolicies = activeOrPendingPolicies.some(p => p.fleetId === f.id || p.policyNo === f.policyNo || p.policyNo === f.id);
+      if (alreadyInPolicies) return;
+      const prem = Number(f.premiumAmount || (typeof parseNumericCurrency === "function" ? parseNumericCurrency(f.premium) : 0));
+      const certUnits = Math.max(1, Number(f.vehicleCount || (Array.isArray(f.vehicles) ? f.vehicles.length : 1)));
+      const phcf = Math.round(prem * (phcfPct / 100));
+      const training = Math.round(prem * (trainPct / 100));
+      const stamp = stampVal * certUnits;
+      totalPhcf += phcf;
+      totalTrain += training;
+      totalStamp += stamp;
+
+      const tr = document.createElement("tr");
+      const remitBadge = f.status === "Pending"
+        ? `<span class="status-badge pending">Pending Assessment</span>`
+        : `<span class="status-badge approved">Remitted (KRA Fleet)</span>`;
+      tr.innerHTML = `
+        <td><strong>${escapeHTML(f.policyNo || f.id)}</strong></td>
+        <td>${escapeHTML(f.county)} <span style="font-size:11px; color:var(--text-muted);">(${certUnits} Fleet Units)</span></td>
+        <td><strong style="color:var(--primary);">KSh ${prem.toLocaleString()}</strong></td>
+        <td>KSh ${phcf.toLocaleString()}</td>
+        <td>KSh ${training.toLocaleString()}</td>
+        <td>KSh ${stamp.toLocaleString()}</td>
+        <td>${remitBadge}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
 
   const elPhcf = document.getElementById("ira-kpi-phcf");
   const elTrain = document.getElementById("ira-kpi-training");
@@ -5010,6 +5314,7 @@ function renderIRACompliance() {
   if (elTrain) elTrain.innerText = `KSh ${totalTrain.toLocaleString()}`;
   if (elStamp) elStamp.innerText = `KSh ${totalStamp.toLocaleString()}`;
   if (elTotal) elTotal.innerText = `KSh ${(totalPhcf + totalTrain + totalStamp).toLocaleString()}`;
+  if (typeof reconcilePlatformMetrics === "function") reconcilePlatformMetrics();
 }
 
 function exportIRAReturnForm() {
@@ -5911,6 +6216,7 @@ function exportOpenFleetCertsCSV() {
 // 9. NATIONAL GIS GEOMAP COMMAND CENTER
 let commandCenterMap = null;
 let commandCenterMarkers = [];
+let activeGeoMapFilter = "all";
 
 // Leaflet caches the container size at construction. When a map is built inside
 // a view that was just un-hidden, that size is stale and the map renders offset
@@ -5923,53 +6229,108 @@ function lockMapView(map, center, zoom) {
   });
 }
 
-function renderGeoMapCenter() {
+function renderGeoMapCenter(silent = false) {
   const mapContainer = document.getElementById("command-center-map");
-  if (!mapContainer || typeof L === "undefined") return;
-  
-  if (commandCenterMap) {
-    commandCenterMap.invalidateSize();
-    return;
-  }
-  
-  // Center map on Kenya (Nairobi / Naivasha corridor)
-  commandCenterMap = L.map("command-center-map").setView([-0.8000, 36.8000], 7);
-  lockMapView(commandCenterMap, [-0.8000, 36.8000], 7);
-  
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 18,
-    attribution: '© OpenStreetMap contributors'
-  }).addTo(commandCenterMap);
-  
-  // Map Pin Data Sets
-  const mapData = [
-    // Incidents
-    { type: "claim", lat: -1.286389, lng: 36.817223, title: " CLM-2026-001 (Nairobi Collision)", desc: "KDG 123A | Damage KSh 142,500 | Green Pass", color: "#ef4444" },
-    { type: "claim", lat: -4.043477, lng: 39.668206, title: " CLM-2026-002 (Mombasa Port Road)", desc: "KBA 456X | Damage KSh 480,000 | Yellow Flag", color: "#ef4444" },
-    { type: "claim", lat: -0.091702, lng: 34.767956, title: " CLM-2026-003 (Kisumu Bypass)", desc: "KCC 789Y | Damage KSh 390,000 | Green Pass", color: "#ef4444" },
-    { type: "claim", lat: -0.303099, lng: 36.080025, title: " CLM-2026-004 (Nakuru Highway)", desc: "KDD 012Z | Damage KSh 620,000 | Disbursed", color: "#ef4444" },
-    { type: "claim", lat: 0.5143, lng: 35.2698, title: " CLM-2026-007 (Eldoret Airport Rd)", desc: "KDE 112W | Damage KSh 175,000 | Green Pass", color: "#ef4444" },
-    { type: "claim", lat: -1.0383, lng: 37.0734, title: " CLM-2026-008 (Thika Superhighway)", desc: "KDA 554P | Damage KSh 540,000 | Red Flag SIU", color: "#ef4444" },
-    { type: "claim", lat: -0.4201, lng: 36.9476, title: " CLM-2026-009 (Nyeri Town Circle)", desc: "KCR 402B | Damage KSh 92,000 | Disbursed", color: "#ef4444" },
-    { type: "claim", lat: -0.0517, lng: 37.6456, title: " CLM-2026-010 (Meru Mall Junction)", desc: "KDB 991S | Damage KSh 310,000 | Pending OB", color: "#ef4444" },
-    
-    // Accredited Garages
-    { type: "garage", lat: -1.3000, lng: 36.8350, title: " Nairobi Auto Care Panel Beaters", desc: "Industrial Area, Nairobi | Rating: 4.9 | SLA 98%", color: "#8b5a2b" },
-    { type: "garage", lat: -4.0500, lng: 39.6500, title: " Coast Breakdown & Refinishing", desc: "Shimanzi, Mombasa | Rating: 4.8 | SLA 96%", color: "#8b5a2b" },
-    { type: "garage", lat: -0.1000, lng: 34.7500, title: " Lakeside Motor Body Works", desc: "Kisumu Industrial Zone | Rating: 4.7 | SLA 94%", color: "#8b5a2b" },
-    { type: "garage", lat: -0.2900, lng: 36.0700, title: " Rift Valley Panel Clinic", desc: "Nakuru Town West | Rating: 4.8 | SLA 97%", color: "#8b5a2b" },
-    { type: "garage", lat: 0.5200, lng: 35.2800, title: " Highland Auto Repairs", desc: "Eldoret Highway Zone | Rating: 4.9 | SLA 96%", color: "#8b5a2b" },
-    { type: "garage", lat: -0.4100, lng: 36.9500, title: " Mount Kenya Motor Works", desc: "Nyeri King'ong'o Area | Rating: 4.7 | SLA 93%", color: "#8b5a2b" },
+  if (!mapContainer) return;
 
-    // County Branch Offices
-    { type: "branch", lat: -1.2830, lng: 36.8200, title: " EIMS Head Office Nairobi", desc: "429 New Policies | KSh 37.28M Gross Premium", color: "#10b981" },
-    { type: "branch", lat: -4.0400, lng: 39.6600, title: " Mombasa Regional Branch", desc: "74 New Policies | KSh 6.42M Gross Premium", color: "#10b981" },
-    { type: "branch", lat: -0.0900, lng: 34.7600, title: " Kisumu Regional Branch", desc: "58 New Policies | KSh 5.04M Gross Premium", color: "#10b981" },
-    { type: "branch", lat: -0.3000, lng: 36.0750, title: " Nakuru Regional Branch", desc: "42 New Policies | KSh 3.65M Gross Premium", color: "#10b981" },
-    { type: "branch", lat: 0.5143, lng: 35.2698, title: " Eldoret Regional Branch", desc: "39 New Policies | KSh 3.39M Gross Premium", color: "#10b981" },
-    { type: "branch", lat: -0.4201, lng: 36.9476, title: " Nyeri Regional Branch", desc: "29 New Policies | KSh 2.52M Gross Premium", color: "#10b981" }
+  const summary = typeof getUnifiedPortfolioSummary === "function" ? getUnifiedPortfolioSummary() : null;
+  const liveGwpM = summary ? (summary.consolidatedGWP / 1000000).toFixed(2) : "55.66";
+  const liveUnits = summary ? summary.totalInsuredUnits : policies.length;
+
+  // Build live incident pins from claims[] with valid GPS coordinates
+  const claimPins = claims
+    .map((c, idx) => {
+      const parts = String(c.coords || "").split(",").map(s => parseFloat(s.trim()));
+      const hasCoords = parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1]);
+      const fallbackLat = -1.2864 + ((idx % 5) * 0.015);
+      const fallbackLng = 36.8172 + ((idx % 4) * 0.015);
+      const lat = hasCoords ? parts[0] : fallbackLat;
+      const lng = hasCoords ? parts[1] : fallbackLng;
+      return {
+        type: "claim",
+        lat,
+        lng,
+        title: ` ${c.id} (${c.insuranceLine || "Motor"})`,
+        desc: `${c.plate} | KSh ${Number(c.cost || 0).toLocaleString()} | ${c.triage} (${c.status})`,
+        color: "#ef4444"
+      };
+    });
+
+  const garageCoords = [
+    [-1.3000, 36.8350],
+    [-4.0500, 39.6500],
+    [-0.1000, 34.7500],
+    [-0.2900, 36.0700],
+    [0.5200, 35.2800],
+    [-0.4100, 36.9500],
+    [-1.1480, 36.9600],
+    [-1.5177, 37.2634]
   ];
-  
+  const garagePins = garages.map((g, idx) => {
+    const [lat, lng] = garageCoords[idx % garageCoords.length];
+    return {
+      type: "garage",
+      lat,
+      lng,
+      title: ` ${g.name}`,
+      desc: `${g.location} | Active Repairs: ${g.activeRepairs} | SLA ${g.slaScore}`,
+      color: "#8b5a2b"
+    };
+  });
+
+  const branchPins = [
+    { type: "branch", lat: -1.2830, lng: 36.8200, title: " EIMS Head Office Nairobi", desc: `${liveUnits.toLocaleString()} Insured Units | KSh ${liveGwpM}M Consolidated GWP`, color: "#10b981" },
+    { type: "branch", lat: -4.0400, lng: 39.6600, title: " Mombasa Regional Branch", desc: "Marine, Fleet & Coastal Hub | Active SLA", color: "#10b981" },
+    { type: "branch", lat: -0.0900, lng: 34.7600, title: " Kisumu Regional Branch", desc: "Lake Basin Fleet & WIBA Hub | Active SLA", color: "#10b981" },
+    { type: "branch", lat: -0.3000, lng: 36.0750, title: " Nakuru Regional Branch", desc: "Rift Valley Agricultural & Motor Hub", color: "#10b981" },
+    { type: "branch", lat: 0.5143, lng: 35.2698, title: " Eldoret Regional Branch", desc: "North Rift Commercial & Fleet Hub", color: "#10b981" },
+    { type: "branch", lat: -0.4201, lng: 36.9476, title: " Nyeri Regional Branch", desc: "Mt. Kenya Composite Underwriting Hub", color: "#10b981" }
+  ];
+
+  const towPins = [
+    { type: "tow", lat: -1.3180, lng: 36.8520, title: " EIMS Rapid Tow Unit NBO-01", desc: "Mombasa Rd Corridor | GPS Telemetry Active", color: "#f59e0b" },
+    { type: "tow", lat: -1.0450, lng: 37.0650, title: " EIMS Rapid Tow Unit THK-02", desc: "Thika Superhighway | Police Patrol Synced", color: "#f59e0b" },
+    { type: "tow", lat: -4.0350, lng: 39.6450, title: " EIMS Rapid Tow Unit MSA-03", desc: "Makupa Causeway | Standby Recovery", color: "#f59e0b" },
+    { type: "tow", lat: -0.2850, lng: 36.0620, title: " EIMS Rapid Tow Unit NKR-04", desc: "Nakuru-Salgaa Highway | Active Patrol", color: "#f59e0b" }
+  ];
+
+  // Update Legend & Regional Density KPIs even if Leaflet isn't loaded in headless tests
+  const setGeoText = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = text;
+  };
+  setGeoText("geomap-count-incidents", `Active Claim Incidents (${claimPins.length})`);
+  setGeoText("geomap-count-garages", `Accredited Repair Garages (${garagePins.length})`);
+  setGeoText("geomap-count-branches", `County Branch Offices (${branchPins.length})`);
+  setGeoText("geomap-count-tow", `Emergency Police & Towing (${towPins.length})`);
+
+  const nairobiClaims = claims.filter(c => {
+    const locStr = `${c.location || ""} ${c.coords || ""}`.toLowerCase();
+    return locStr.includes("nairobi") || locStr.includes("-1.2") || locStr.includes("-1.3") || locStr.includes("thika");
+  }).length;
+  const nboShare = claims.length > 0 ? ((nairobiClaims / claims.length) * 100).toFixed(1) : "0.0";
+  setGeoText("geomap-top-corridor-sub", `${nairobiClaims} Claims Filed (${nboShare}% of ${claims.length} total)`);
+  setGeoText("geomap-tow-active", `${towPins.length} Units En-Route`);
+
+  if (typeof L === "undefined") return;
+
+  const isFirstInit = !commandCenterMap;
+  if (isFirstInit) {
+    commandCenterMap = L.map("command-center-map").setView([-0.8000, 36.8000], 7);
+    lockMapView(commandCenterMap, [-0.8000, 36.8000], 7);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18,
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(commandCenterMap);
+  } else {
+    commandCenterMap.invalidateSize();
+    commandCenterMarkers.forEach(m => {
+      if (commandCenterMap.hasLayer(m)) commandCenterMap.removeLayer(m);
+    });
+    commandCenterMarkers = [];
+  }
+
+  const mapData = [...claimPins, ...garagePins, ...branchPins, ...towPins];
   mapData.forEach(item => {
     const circle = L.circleMarker([item.lat, item.lng], {
       radius: 9,
@@ -5978,8 +6339,7 @@ function renderGeoMapCenter() {
       weight: 2,
       opacity: 1,
       fillOpacity: 0.85
-    }).addTo(commandCenterMap);
-    
+    });
     circle.bindPopup(`
       <div style="font-family:sans-serif; font-size:12px; line-height:1.4;">
         <strong style="color:${item.color}; font-size:13px;">${item.title}</strong><br/>
@@ -5987,30 +6347,38 @@ function renderGeoMapCenter() {
         <small style="color:#b5a99f;">GPS: ${item.lat.toFixed(4)}, ${item.lng.toFixed(4)}</small>
       </div>
     `);
-    
     circle.markerType = item.type;
+    if (activeGeoMapFilter === "all" || activeGeoMapFilter === item.type) {
+      circle.addTo(commandCenterMap);
+    }
     commandCenterMarkers.push(circle);
   });
-  
-  showToast("GeoMap Command Center", "National GIS mapping initialized with 14 live telemetry pins.", "success");
+
+  if (isFirstInit && !silent) {
+    showToast("GeoMap Command Center", `National GIS mapping synced with ${mapData.length} live telemetry pins.`, "success");
+  }
 }
 
 function filterGeoMapMarkers(type) {
-  if (!commandCenterMap) return;
+  activeGeoMapFilter = type || "all";
+  if (!commandCenterMap) {
+    renderGeoMapCenter(true);
+    return;
+  }
   commandCenterMarkers.forEach(m => {
-    if (type === "all" || m.markerType === type) {
+    if (activeGeoMapFilter === "all" || m.markerType === activeGeoMapFilter) {
       m.addTo(commandCenterMap);
     } else {
       commandCenterMap.removeLayer(m);
     }
   });
-  showToast("GeoMap Layer Filtered", `Showing ${type.toUpperCase()} markers on command center map.`, "info");
+  showToast("GeoMap Layer Filtered", `Showing ${activeGeoMapFilter.toUpperCase()} markers on command center map.`, "info");
 }
 
 // ================= UNIVERSAL EDIT & UPDATE ENGINE =================
 
 let activeEditRecord = null;
-let reinsuranceData = { retentionLimit: 5000000, kenyaRe: 40, zepRe: 35, africaRe: 25 };
+let reinsuranceData = { retentionLimit: 5000000, kenyaRe: 35, zepRe: 15, africaRe: 10 };
 let iraTaxRates = { phcf: 0.25, training: 0.20, stampDuty: 40 };
 
 function closeEditModal() {
@@ -6435,16 +6803,27 @@ function saveEditedRecord() {
     }
   } else if (type === "reinsurance") {
     reinsuranceData.retentionLimit = parseFloat(document.getElementById("edit-reinsurance-retention").value) || 5000000;
-    reinsuranceData.kenyaRe = parseFloat(document.getElementById("edit-reinsurance-kenya-re").value) || 40;
-    reinsuranceData.zepRe = parseFloat(document.getElementById("edit-reinsurance-zep-re").value) || 35;
-    reinsuranceData.africaRe = parseFloat(document.getElementById("edit-reinsurance-africa-re").value) || 25;
+    let kShare = Math.max(0, parseFloat(document.getElementById("edit-reinsurance-kenya-re").value) || 35);
+    let zShare = Math.max(0, parseFloat(document.getElementById("edit-reinsurance-zep-re").value) || 15);
+    let aShare = Math.max(0, parseFloat(document.getElementById("edit-reinsurance-africa-re").value) || 10);
+    const totalShare = kShare + zShare + aShare;
+    if (totalShare > 100) {
+      const scale = 100 / totalShare;
+      kShare = Number((kShare * scale).toFixed(1));
+      zShare = Number((zShare * scale).toFixed(1));
+      aShare = Number((100 - kShare - zShare).toFixed(1));
+    }
+    reinsuranceData.kenyaRe = kShare;
+    reinsuranceData.zepRe = zShare;
+    reinsuranceData.africaRe = aShare;
     
     reinsurers[0].share = reinsuranceData.kenyaRe + "%";
     reinsurers[1].share = reinsuranceData.zepRe + "%";
     reinsurers[2].share = reinsuranceData.africaRe + "%";
     
-    showToast("Reinsurance Cessions Saved", "Updated retention limits and pool shares.", "success");
+    showToast("Reinsurance Cessions Saved", "Updated retention limits and normalized 3-pool cession shares.", "success");
     renderReinsuranceCeding();
+    if (typeof reconcilePlatformMetrics === "function") reconcilePlatformMetrics();
   } else if (type === "subrogation") {
     const id = document.getElementById("edit-record-id").value;
     const sub = subrogationCases.find(s => s.claimId === id);
@@ -6500,15 +6879,19 @@ function saveEditedRecord() {
       showToast("Fleet Policy Saved", `Fleet policy ${fleet.id} updated (${fleet.count}, ${fleet.premium}).`, "success");
       renderFleetUnderwriting();
       renderPolicyRegistry();
+      if (typeof renderIRACompliance === "function") renderIRACompliance();
       if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
+      if (typeof reconcilePlatformMetrics === "function") reconcilePlatformMetrics();
     }
   } else if (type === "ira") {
     iraTaxRates.phcf = parseFloat(document.getElementById("edit-ira-phcf").value) || 0.25;
     iraTaxRates.training = parseFloat(document.getElementById("edit-ira-training").value) || 0.20;
     iraTaxRates.stampDuty = parseFloat(document.getElementById("edit-ira-stamp").value) || 40;
     
-    showToast("Statutory Tax Rates Saved", "Updated PHCF, Training Levy, and Stamp Duty values.", "success");
+    showToast("Statutory Tax Rates Saved", "Updated PHCF, Training Levy, and Stamp Duty values across IRA & KRA ledgers.", "success");
     renderIRACompliance();
+    if (typeof renderITaxRemittanceTable === "function") renderITaxRemittanceTable();
+    if (typeof reconcilePlatformMetrics === "function") reconcilePlatformMetrics();
   }
   
   closeEditModal();
@@ -6948,6 +7331,47 @@ let vehicleModelLossRatios = [
 function renderVehicleLossRatios() {
   const tbody = document.getElementById("vehicle-loss-ratios-tbody");
   if (!tbody) return;
+
+  // Dynamically reconcile top 4 Actuarial KPI cards from vehicleModelLossRatios[]
+  const totalEarned = vehicleModelLossRatios.reduce((acc, m) => acc + Number(m.earnedPremium || 0), 0);
+  const totalIncurred = vehicleModelLossRatios.reduce((acc, m) => acc + Number(m.incurredClaims || 0), 0);
+  const overallLr = totalEarned > 0 ? (totalIncurred / totalEarned) * 100 : 0;
+
+  let highestModel = null;
+  let highestLr = -1;
+  let lowestModel = null;
+  let lowestLr = Infinity;
+  let flaggedCount = 0;
+
+  vehicleModelLossRatios.forEach(m => {
+    const lr = m.earnedPremium > 0 ? (m.incurredClaims / m.earnedPremium) * 100 : 0;
+    if (lr > 75) flaggedCount += 1;
+    if (lr > highestLr) {
+      highestLr = lr;
+      highestModel = m;
+    }
+    if (lr < lowestLr) {
+      lowestLr = lr;
+      lowestModel = m;
+    }
+  });
+
+  const setLrText = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = text;
+  };
+  setLrText("model-overall-loss-ratio", `${overallLr.toFixed(1)}%`);
+  if (highestModel) {
+    const shortHigh = highestModel.model.split("(")[0].trim();
+    setLrText("loss-ratio-highest-model", `${shortHigh} (${highestLr.toFixed(1)}%)`);
+    setLrText("loss-ratio-highest-sub", highestModel.loadingPct > 0 ? `Surcharge +${highestModel.loadingPct}% Active` : highestModel.recommendation);
+  }
+  if (lowestModel) {
+    const shortLow = lowestModel.model.split("(")[0].trim();
+    setLrText("loss-ratio-lowest-model", `${shortLow} (${lowestLr.toFixed(1)}%)`);
+    setLrText("loss-ratio-lowest-sub", lowestModel.loadingPct < 0 ? `Preferred Rebate ${lowestModel.loadingPct}%` : lowestModel.recommendation);
+  }
+  setLrText("loss-ratio-flagged-count", `${flaggedCount} Vehicle Model${flaggedCount === 1 ? "" : "s"}`);
 
   tbody.innerHTML = "";
   const search = (document.getElementById("model-search-input")?.value || "").toLowerCase();
@@ -7405,6 +7829,9 @@ function renderPesaFlowTransactionsTable() {
     `;
     tbody.appendChild(tr);
   });
+  if (typeof reconcilePlatformMetrics === "function") {
+    reconcilePlatformMetrics();
+  }
 }
 
 function openECitizenSSOModal() {
@@ -7542,6 +7969,40 @@ let itaxRemittances = [
 function renderITaxRemittanceTable() {
   const tbody = document.getElementById("itax-remittance-tbody");
   if (!tbody) return;
+
+  // Sync Stamp Duty row with consolidated portfolio Stamp Duty (matches IRA Compliance view 1:1)
+  const summary = typeof getUnifiedPortfolioSummary === "function" ? getUnifiedPortfolioSummary() : null;
+  const stampRow = itaxRemittances.find(r => r.head === "Stamp Duty");
+  if (stampRow && summary) {
+    stampRow.grossAmount = summary.totalStampDuty;
+    stampRow.taxAmount = summary.totalStampDuty;
+    stampRow.origin = `Statutory Certificate Stamp Duty (${summary.totalCertBearingUnits.toLocaleString()} Active Policies & Fleet Units)`;
+  }
+
+  // Reconcile top 4 KRA iTax KPI cards directly from itaxRemittances[]
+  const whtSum = itaxRemittances
+    .filter(r => r.head.includes("WHT"))
+    .reduce((acc, r) => acc + Number(r.taxAmount || 0), 0);
+  const exciseSum = itaxRemittances
+    .filter(r => r.head.includes("Excise"))
+    .reduce((acc, r) => acc + Number(r.taxAmount || 0), 0);
+  const stampSum = itaxRemittances
+    .filter(r => r.head.includes("Stamp"))
+    .reduce((acc, r) => acc + Number(r.taxAmount || 0), 0);
+  const totalInvoices = (summary ? summary.totalCertBearingUnits : 0) + itaxRemittances.length;
+
+  const setItaxEl = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  };
+  setItaxEl("itax-etims-count", `${totalInvoices.toLocaleString()} Invoices`);
+  setItaxEl("itax-wht-total", `KSh ${Math.round(whtSum).toLocaleString()}`);
+  setItaxEl("itax-excise-total", `KSh ${Math.round(exciseSum).toLocaleString()}`);
+  setItaxEl("itax-stamp-total", `KSh ${Math.round(stampSum).toLocaleString()}`);
+  if (summary) {
+    const stampFee = (typeof iraTaxRates !== "undefined" && Number(iraTaxRates.stampDuty)) ? Number(iraTaxRates.stampDuty) : 40;
+    setItaxEl("itax-stamp-sub", `${summary.totalCertBearingUnits.toLocaleString()} Units @ KSh ${stampFee}`);
+  }
 
   tbody.innerHTML = "";
   const query = (document.getElementById("itax-search-input")?.value || "").toLowerCase();
@@ -7813,6 +8274,8 @@ function onLPRFormatChange() {
   const anType = document.getElementById("lpr-analysis-type");
   const anConf = document.getElementById("lpr-analysis-conf");
   const anRfid = document.getElementById("lpr-analysis-rfid");
+  const chkPol = document.getElementById("lpr-chk-policy");
+  const statusBadge = document.getElementById("lpr-status-badge");
 
   if (vfPlate) vfPlate.innerText = data.plate;
   if (vfConf) vfConf.innerText = `${data.conf}% CONF`;
@@ -7820,6 +8283,17 @@ function onLPRFormatChange() {
   if (anType) anType.innerText = data.type;
   if (anConf) anConf.innerText = `${data.conf}% Match`;
   if (anRfid) anRfid.innerText = `RFID Tag ID: ${data.rfid}`;
+
+  // Live EIMS policy / fleet coverage cross-check
+  const liveCov = typeof lookupVehicleCoverageByPlate === "function" ? lookupVehicleCoverageByPlate(data.plate) : null;
+  if (liveCov) {
+    data.status = `Active Cover (${liveCov.policyNo})`;
+    if (chkPol) chkPol.innerText = `EIMS Active Policy Match: ${liveCov.policyNo} (${liveCov.certId || "Verified"})`;
+    if (statusBadge) statusBadge.innerText = ` VERIFIED IN NTSA & EIMS (${liveCov.policyNo})`;
+  } else {
+    if (chkPol) chkPol.innerText = `EIMS Registry Status: ${data.status}`;
+    if (statusBadge) statusBadge.innerText = ` VERIFIED IN NTSA DATABASE`;
+  }
 
   showToast(` LPR Recognized: ${data.plate}`, `Extracted ${data.type} with ${data.conf}% OCR Confidence. NTSA Database Synced.`, "info");
 }
@@ -8604,23 +9078,33 @@ function renderNotificationDispatchTable() {
   if (!tbody) return;
 
   tbody.innerHTML = "";
-  notificationLogs.forEach(log => {
+  notificationLogs.forEach((log, idx) => {
+    if (!log.id) log.id = `LOG-AUTO-${1000 + idx}`;
     let channelBadge = "";
     if (log.channel === "SMS Alert") channelBadge = `<span class="badge-tag" style="background:rgba(139, 90, 43,0.15); color:#c89565;"> SMS Alert</span>`;
     else if (log.channel === "WhatsApp") channelBadge = `<span class="badge-tag" style="background:rgba(16,185,129,0.15); color:#34d399;"> WhatsApp</span>`;
+    else if (String(log.channel || "").includes("Multi-Channel")) channelBadge = `<span class="badge-tag" style="background:rgba(16,185,129,0.15); color:#34d399;"> Multi-Channel</span>`;
     else channelBadge = `<span class="badge-tag" style="background:rgba(139, 90, 43,0.15); color:#c89565;"> Rich Email</span>`;
+
+    const ts = log.timestamp || log.time || "Just now";
+    const dt = log.date || "Nov 8, 2026";
+    const contact = log.phone || log.email || "Corporate SMTP Desk";
+    const refNo = log.claimId || log.ref || "EIMS-REF";
+    const subjectPlate = log.plate || "Multi-Line Dossier";
+    const evtLabel = log.event || log.trigger || "Automated Dispatch";
+    const deliveryLabel = log.delivery || log.gateway || log.status || "Delivered (200 OK)";
 
     const tr = document.createElement("tr");
     tr.style.borderBottom = "1px solid var(--border-color)";
     tr.innerHTML = `
-      <td style="padding:10px; font-weight:600;">${log.timestamp}<br><span style="font-size:10px; color:var(--text-muted);">${log.date}</span></td>
-      <td style="padding:10px;"><strong>${log.recipient}</strong><br><span style="font-size:11px; color:var(--text-secondary);">${log.phone}</span></td>
+      <td style="padding:10px; font-weight:600;">${escapeHTML(ts)}<br><span style="font-size:10px; color:var(--text-muted);">${escapeHTML(dt)}</span></td>
+      <td style="padding:10px;"><strong>${escapeHTML(log.recipient || "Policyholder")}</strong><br><span style="font-size:11px; color:var(--text-secondary);">${escapeHTML(contact)}</span></td>
       <td style="padding:10px;">${channelBadge}</td>
-      <td style="padding:10px;"><code style="color:#c89565;">${log.claimId}</code><br><span style="font-size:11px; color:var(--text-muted);">${log.plate}</span></td>
-      <td style="padding:10px; font-weight:600; color:var(--text-primary);">${log.event}</td>
-      <td style="padding:10px; font-size:11.5px; color:var(--text-secondary);"><span style="color:#34d399;"></span> ${log.delivery}</td>
+      <td style="padding:10px;"><code style="color:#c89565;">${escapeHTML(refNo)}</code><br><span style="font-size:11px; color:var(--text-muted);">${escapeHTML(subjectPlate)}</span></td>
+      <td style="padding:10px; font-weight:600; color:var(--text-primary);">${escapeHTML(evtLabel)}</td>
+      <td style="padding:10px; font-size:11.5px; color:var(--text-secondary);"><span style="color:#34d399;"></span> ${escapeHTML(deliveryLabel)}</td>
       <td style="padding:10px; text-align:right;">
-        <button class="btn btn-secondary" onclick="loadNotificationLogToPhone('${log.id}')" style="font-size:11.5px; padding:4px 10px;">
+        <button class="btn btn-secondary" onclick="loadNotificationLogToPhone('${escapeHTML(log.id)}')" style="font-size:11.5px; padding:4px 10px;">
            Load in Sim
         </button>
       </td>
@@ -8633,10 +9117,20 @@ function loadNotificationLogToPhone(logId) {
   const log = notificationLogs.find(l => l.id === logId);
   if (!log) return;
 
+  const refNo = log.claimId || log.ref || "EIMS-REF";
+  const subjectPlate = log.plate || "Multi-Line Dossier";
+  const ts = log.timestamp || log.time || "Just now";
+  const evtLabel = log.event || log.trigger || "Automated Dispatch";
+  const smsBody = log.smsMessage || log.message || `EIMS Notice: ${evtLabel} for ${refNo} (${subjectPlate}).`;
+  const waBody = log.waMessage || log.message || `Habari, ${evtLabel} registered for *${refNo}* (*${subjectPlate}*).`;
+  const emailSubj = log.emailSubject || evtLabel;
+  const emailHdr = log.emailHeader || evtLabel;
+  const emailTxt = log.emailBody || log.message || `Official EIMS notification regarding ${refNo} (${subjectPlate}).`;
+
   const selector = document.getElementById("alert-claim-selector");
   if (selector) {
-    const matchedOption = Array.from(selector.options).find(o => o.value === log.claimId);
-    if (matchedOption) selector.value = log.claimId;
+    const matchedOption = Array.from(selector.options).find(o => o.value === refNo);
+    if (matchedOption) selector.value = refNo;
   }
 
   if (log.channel === "SMS Alert") selectAlertTab("sms");
@@ -8647,8 +9141,8 @@ function loadNotificationLogToPhone(logId) {
   if (smsContainer) {
     smsContainer.innerHTML = `
       <div class="sms-bubble">
-        ${log.smsMessage}
-        <div class="sms-timestamp">${log.timestamp}</div>
+        ${smsBody}
+        <div class="sms-timestamp">${ts}</div>
       </div>
     `;
   }
@@ -8657,36 +9151,37 @@ function loadNotificationLogToPhone(logId) {
   if (waContainer) {
     waContainer.innerHTML = `
       <div class="wa-bubble sent">
-        First Notice of Loss registered for vehicle ${log.plate}.
-        <div class="sms-timestamp" style="color:var(--text-muted)">${log.timestamp}</div>
+        Event logged for ${subjectPlate} (${refNo}).
+        <div class="sms-timestamp" style="color:var(--text-muted)">${ts}</div>
       </div>
       <div class="wa-bubble">
-        ${log.waMessage}
+        ${waBody}
         <a href="#" class="wa-btn-link">Track EIMS Portal</a>
-        <div class="sms-timestamp">${log.timestamp}</div>
+        <div class="sms-timestamp">${ts}</div>
       </div>
     `;
   }
 
   const emailContainer = document.getElementById("email-messages-container");
   if (emailContainer) {
-    document.querySelector(".email-frame h1").innerText = log.emailSubject;
+    const frameH1 = document.querySelector(".email-frame h1");
+    if (frameH1) frameH1.innerText = emailSubj;
     emailContainer.innerHTML = `
-      <h2>${log.emailHeader}</h2>
-      <p>Dear ${log.recipient},</p>
-      <p>${log.emailBody}</p>
+      <h2>${emailHdr}</h2>
+      <p>Dear ${log.recipient || "Policyholder"},</p>
+      <p>${emailTxt}</p>
       <table class="email-details-table">
         <tr>
           <td class="label">Reference No</td>
-          <td>${log.claimId}</td>
+          <td>${refNo}</td>
         </tr>
         <tr>
-          <td class="label">Vehicle Plate</td>
-          <td>${log.plate}</td>
+          <td class="label">Subject / Plate</td>
+          <td>${subjectPlate}</td>
         </tr>
         <tr>
           <td class="label">Event Gate</td>
-          <td>${log.event}</td>
+          <td>${evtLabel}</td>
         </tr>
       </table>
       <p>For inquiries, contact the EIMS Support Desk.</p>
@@ -8694,7 +9189,7 @@ function loadNotificationLogToPhone(logId) {
     `;
   }
 
-  showToast(` Telemetry Loaded: ${log.id}`, `Previewing ${log.channel} for ${log.recipient} (${log.plate}).`, "info");
+  showToast(` Telemetry Loaded: ${log.id}`, `Previewing ${log.channel} for ${log.recipient} (${subjectPlate}).`, "info");
 }
 
 // ================= CAMERA CAPTURE SYSTEM =================
@@ -9172,41 +9667,69 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ================= REPORT QUERYING & CALENDAR PERIOD MANAGER =================
 function applyReportPeriodPreset() {
-  const preset = document.getElementById("report-period-preset")?.value || "this-month";
+  const preset = document.getElementById("report-period-preset")?.value || "ytd";
   const startInput = document.getElementById("report-start-date");
   const endInput = document.getElementById("report-end-date");
 
   const today = new Date();
-  let start = new Date();
-  let end = new Date();
+  const yr = today.getFullYear() >= 2026 ? today.getFullYear() : 2026;
+  let start = new Date(yr, 0, 1);
+  let end = new Date(yr, 11, 31);
 
   if (preset === "this-month") {
-    start = new Date(today.getFullYear(), today.getMonth(), 1);
-    end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    start = new Date(yr, today.getMonth(), 1);
+    end = new Date(yr, today.getMonth() + 1, 0);
   } else if (preset === "last-month") {
-    start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    end = new Date(today.getFullYear(), today.getMonth(), 0);
+    start = new Date(yr, today.getMonth() - 1, 1);
+    end = new Date(yr, today.getMonth(), 0);
   } else if (preset === "this-quarter") {
     const qMonth = Math.floor(today.getMonth() / 3) * 3;
-    start = new Date(today.getFullYear(), qMonth, 1);
-    end = new Date(today.getFullYear(), qMonth + 3, 0);
+    start = new Date(yr, qMonth, 1);
+    end = new Date(yr, qMonth + 3, 0);
   } else if (preset === "ytd") {
-    start = new Date(today.getFullYear(), 0, 1);
-    end = today;
+    start = new Date(yr, 0, 1);
+    end = new Date(yr, 11, 31);
   }
 
   if (preset !== "custom" && startInput && endInput) {
-    startInput.value = start.toISOString().split('T')[0];
-    endInput.value = end.toISOString().split('T')[0];
+    const fmt = (d) => {
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${d.getFullYear()}-${m}-${day}`;
+    };
+    startInput.value = fmt(start);
+    endInput.value = fmt(end);
   }
+}
+
+function mapLineToReportLOB(rawLine) {
+  const s = String(rawLine || "").toLowerCase();
+  if (s.includes("medical") || s.includes("health")) return "Medical & Health";
+  if (s.includes("life") || s.includes("pension") || s.includes("annuit")) return "Life & Pension";
+  if (s.includes("wiba") || s.includes("liability") || s.includes("fidelity") || s.includes("injury")) return "WIBA & Liability";
+  if (s.includes("agri") || s.includes("livestock") || s.includes("crop") || s.includes("climate")) return "Agriculture & Livestock";
+  if (s.includes("marine") || s.includes("aviation") || s.includes("cargo") || s.includes("transit")) return "Marine Cargo";
+  if (s.includes("engineer") || s.includes("bond") || s.includes("contractor")) return "Engineering";
+  if (s.includes("property") || s.includes("fire") || s.includes("peril") || s.includes("burglary")) return "Fire & Perils";
+  if (s.includes("fleet") || s.includes("commercial") || s.includes("psv") || s.includes("heavy") || s.includes("county")) return "Motor Commercial";
+  return "Motor Comprehensive";
+}
+
+function normalizeReportBranch(rawBranch, fallbackText) {
+  const b = String(rawBranch || fallbackText || "HQ");
+  if (/mombasa|coast/i.test(b)) return "Mombasa";
+  if (/kisumu|lake/i.test(b)) return "Kisumu";
+  if (/nakuru|naivasha|rift/i.test(b)) return "Nakuru";
+  if (/eldoret|uasin/i.test(b)) return "Eldoret";
+  return "HQ";
 }
 
 function executeReportQuery() {
   const ledger = document.getElementById("report-ledger-type")?.value || "underwriting";
   const branch = document.getElementById("report-branch")?.value || "ALL";
   const lob = document.getElementById("report-lob-filter")?.value || "ALL";
-  const startDate = document.getElementById("report-start-date")?.value || "2026-08-01";
-  const endDate = document.getElementById("report-end-date")?.value || "2026-08-31";
+  const startDate = document.getElementById("report-start-date")?.value || "2026-01-01";
+  const endDate = document.getElementById("report-end-date")?.value || "2026-12-31";
 
   const titleLabel = document.getElementById("report-title-label");
   const dateLabel = document.getElementById("report-date-label");
@@ -9260,9 +9783,9 @@ function executeReportQuery() {
     { ref: "POL-MOT-9912", holder: "Jane Wanjiku Mutua", cat: "Motor Private (Mazda CX-5)", lob: "Motor Comprehensive", date: "2026-08-08", branch: "HQ", sumInsured: 2400000, premium: 120000 },
     { ref: "POL-AV-8841", holder: "Airports Ground Handling", cat: "Aviation Ground Liability", lob: "Engineering", date: "2026-08-09", branch: "HQ", sumInsured: 180000000, premium: 2700000 },
     { ref: "POL-MOT-6623", holder: "Naivasha Flower Logistics", cat: "Refrigerated Fleet", lob: "Motor Commercial", date: "2026-08-10", branch: "Nakuru", sumInsured: 14000000, premium: 700000 },
-    { ref: "POL-HEALTH-301", holder: "Public Officers Medical", cat: "Group Medical Cover", lob: "Fire & Perils", date: "2026-08-11", branch: "HQ", sumInsured: 95000000, premium: 4750000 },
+    { ref: "POL-HEALTH-301", holder: "Public Officers Medical", cat: "Group Medical Cover", lob: "Medical & Health", date: "2026-08-11", branch: "HQ", sumInsured: 95000000, premium: 4750000 },
     { ref: "POL-MOT-2281", holder: "Peter Kiprop", cat: "Motor Private (Subaru)", lob: "Motor Comprehensive", date: "2026-08-12", branch: "Eldoret", sumInsured: 1950000, premium: 97500 },
-    { ref: "POL-WIBA-5510", holder: "Mombasa Port Services", cat: "Work Injury Benefits (WIBA)", lob: "Marine Cargo", date: "2026-08-13", branch: "Mombasa", sumInsured: 60000000, premium: 1200000 },
+    { ref: "POL-WIBA-5510", holder: "Mombasa Port Services", cat: "Work Injury Benefits (WIBA)", lob: "WIBA & Liability", date: "2026-08-13", branch: "Mombasa", sumInsured: 60000000, premium: 1200000 },
     { ref: "POL-MOT-1092", holder: "Kisumu Shuttle Express", cat: "PSV Matatu (14-Seater)", lob: "Motor Commercial", date: "2026-08-14", branch: "Kisumu", sumInsured: 9000000, premium: 630000 },
     { ref: "POL-BOND-4401", holder: "Great Rift Construction", cat: "Performance Bond", lob: "Engineering", date: "2026-08-15", branch: "Nakuru", sumInsured: 75000000, premium: 1125000 },
     { ref: "POL-MOT-MOM-01", holder: "Salim Said Omar", cat: "Motor Private (Toyota Harrier)", lob: "Motor Comprehensive", date: "2026-08-16", branch: "Mombasa", sumInsured: 3200000, premium: 160000 },
@@ -9281,7 +9804,7 @@ function executeReportQuery() {
     { ref: "POL-FLEET-KSM-01", holder: "Lake Basin Wholesalers", cat: "Motor Commercial Fleet", lob: "Motor Commercial", date: "2026-08-19", branch: "Kisumu", sumInsured: 12000000, premium: 600000 },
     { ref: "POL-MOT-KSM-02", holder: "George Otieno", cat: "Motor Private", lob: "Motor Comprehensive", date: "2026-08-20", branch: "Kisumu", sumInsured: 1800000, premium: 90000 },
     { ref: "POL-FIRE-KSM-03", holder: "Kisumu Sugar Miller", cat: "Fire & Perils", lob: "Fire & Perils", date: "2026-08-21", branch: "Kisumu", sumInsured: 60000000, premium: 900000 },
-    { ref: "POL-MAR-KSM-04", holder: "Lake Victoria Fish Exporters", cat: "Marine Cargo", lob: "Marine Cargo", date: "2026-08-22", branch: "Kisumu", sumInsured: 15000000, premium: 22500 },
+    { ref: "POL-MAR-KSM-04", holder: "Lake Victoria Fish Exporters", cat: "Marine Cargo", lob: "Marine Cargo", date: "2026-08-22", branch: "Kisumu", sumInsured: 15000000, premium: 225000 },
     { ref: "POL-ENG-KSM-05", holder: "Kisumu Lakefront Developers", cat: "Engineering All Risks", lob: "Engineering", date: "2026-08-23", branch: "Kisumu", sumInsured: 50000000, premium: 750000 },
     { ref: "POL-FLEET-NKR-01", holder: "Rift Valley Farmers", cat: "Motor Commercial Fleet", lob: "Motor Commercial", date: "2026-08-19", branch: "Nakuru", sumInsured: 8000000, premium: 400000 },
     { ref: "POL-MOT-NKR-02", holder: "Lucy Njeri", cat: "Motor Private", lob: "Motor Comprehensive", date: "2026-08-20", branch: "Nakuru", sumInsured: 1200000, premium: 60000 },
@@ -9295,6 +9818,59 @@ function executeReportQuery() {
     { ref: "POL-ENG-ELD-05", holder: "Eldoret Airport Road Extension", cat: "Engineering All Risks", lob: "Engineering", date: "2026-08-23", branch: "Eldoret", sumInsured: 40000000, premium: 600000 }
   ];
 
+  // Dynamically merge live policies[] & countyFleets[] into underwritingData
+  if (typeof policies !== "undefined" && Array.isArray(policies)) {
+    policies.forEach(p => {
+      if (p.status === "Cancelled") return;
+      const existing = underwritingData.find(u => u.ref === p.policyNo);
+      const mappedLob = mapLineToReportLOB(p.line);
+      const mappedBranch = normalizeReportBranch(p.branch, p.clientName);
+      const premVal = Number(p.premium || p.debited || 0);
+      const siVal = Number(p.sumInsured || Math.round(premVal * 25));
+      if (existing) {
+        existing.holder = p.clientName || existing.holder;
+        existing.premium = premVal || existing.premium;
+        existing.sumInsured = siVal || existing.sumInsured;
+        existing.lob = mappedLob;
+      } else {
+        underwritingData.unshift({
+          ref: p.policyNo,
+          holder: p.clientName,
+          cat: `${p.line || "Composite"} (${p.makeModel || p.plate || "Active"})`,
+          lob: mappedLob,
+          date: p.inceptionDate || "2026-10-15",
+          branch: mappedBranch,
+          sumInsured: siVal,
+          premium: premVal
+        });
+      }
+    });
+  }
+
+  if (typeof countyFleets !== "undefined" && Array.isArray(countyFleets)) {
+    countyFleets.forEach(f => {
+      if (f.status === "Cancelled") return;
+      const refNo = f.policyNo || f.id;
+      const alreadyMirrored = underwritingData.some(u => u.ref === refNo || u.ref === f.id);
+      if (!alreadyMirrored) {
+        const premVal = Number(f.premiumAmount) || (typeof parseNumericCurrency === "function" ? parseNumericCurrency(f.premium) : 0);
+        const siVal = Array.isArray(f.vehicles) && f.vehicles.length > 0
+          ? f.vehicles.reduce((s, v) => s + Number(v.sumInsured || 0), 0)
+          : Math.round(premVal * 20);
+        underwritingData.unshift({
+          ref: refNo,
+          holder: f.county,
+          cat: `${f.line || "County Fleet"} (${f.count || "Bulk Schedule"})`,
+          lob: "Motor Commercial",
+          date: "2026-09-01",
+          branch: normalizeReportBranch(f.county, f.county),
+          sumInsured: siVal,
+          premium: premVal
+        });
+      }
+    });
+  }
+
   // Claims Master Dataset
   const claimsData = [
     { ref: "CLM-2026-JAN01", claimant: "Josphat Kamau", polRef: "POL-MOT-JAN01", lob: "Motor Comprehensive", date: "2026-01-18", branch: "HQ", amount: 120000, status: "Paid / Settled", statusType: "approved" },
@@ -9307,32 +9883,35 @@ function executeReportQuery() {
     { ref: "CLM-2026-MAY02", claimant: "Eldoret Flower Exporters", polRef: "POL-MAR-MAY02", lob: "Marine Cargo", date: "2026-05-24", branch: "Eldoret", amount: 130000, status: "Paid / Settled", statusType: "approved" },
     { ref: "CLM-2026-JUN01", claimant: "Coast Petrol Haulers", polRef: "POL-FLEET-JUN03", lob: "Motor Commercial", date: "2026-06-29", branch: "Mombasa", amount: 1500000, status: "Paid / Settled", statusType: "approved" },
     { ref: "CLM-2026-JUL01", claimant: "Ezekiel Kemboi", polRef: "POL-MOT-JUL02", lob: "Motor Comprehensive", date: "2026-07-22", branch: "Eldoret", amount: 95000, status: "Paid / Settled", statusType: "approved" },
-    { ref: "CLM-2026-JUL02", claimant: "Nairobi Industrial Park", polRef: "POL-FIRE-JUL03", lob: "Fire & Perils", date: "2026-07-30", branch: "HQ", amount: 4500000, status: "Under Assessment", statusType: "pending" },
-    { ref: "CLM-2026-001", claimant: "Boniface Mwangi", polRef: "POL-MOT-8973-2026", lob: "Motor Comprehensive", date: "2026-08-03", branch: "HQ", amount: 450000, status: "Paid / Settled", statusType: "approved" },
-    { ref: "CLM-2026-002", claimant: "Sarah Njeri", polRef: "POL-MOT-4412-2026", lob: "Motor Commercial", date: "2026-08-04", branch: "Mombasa", amount: 1200000, status: "Under Assessment", statusType: "pending" },
-    { ref: "CLM-2026-003", claimant: "County Fleet Direct", polRef: "POL-FLEET-0091", lob: "Motor Commercial", date: "2026-08-05", branch: "Kisumu", amount: 2800000, status: "Paid / Settled", statusType: "approved" },
-    { ref: "CLM-2026-004", claimant: "David Omondi", polRef: "POL-MOT-7731-2026", lob: "Motor Comprehensive", date: "2026-08-06", branch: "Nakuru", amount: 350000, status: "ANPR Verifying", statusType: "pending" },
-    { ref: "CLM-2026-005", claimant: "Coastal Warehousing", polRef: "POL-FIRE-3321", lob: "Fire & Perils", date: "2026-08-07", branch: "Mombasa", amount: 4500000, status: "Reinsurance Claim", statusType: "approved" },
-    { ref: "CLM-2026-006", claimant: "Naivasha Flower Logistics", polRef: "POL-MOT-6623", lob: "Motor Commercial", date: "2026-08-08", branch: "Nakuru", amount: 680000, status: "Approved for Pay", statusType: "pending" },
-    { ref: "CLM-2026-007", claimant: "Peter Kiprop", polRef: "POL-MOT-2281", lob: "Motor Comprehensive", date: "2026-08-09", branch: "Eldoret", amount: 180000, status: "Paid / Settled", statusType: "approved" },
-    { ref: "CLM-2026-008", claimant: "Rift Valley Exporters", polRef: "POL-MAR-7719", lob: "Marine Cargo", date: "2026-08-10", branch: "Nakuru", amount: 1450000, status: "Subrogation Recovery", statusType: "approved" },
-    { ref: "CLM-2026-009", claimant: "Kenya Ports Authority", polRef: "POL-ENG-1102", lob: "Engineering", date: "2026-08-11", branch: "Mombasa", amount: 3200000, status: "Adjuster Report", statusType: "pending" },
-    { ref: "CLM-2026-010", claimant: "Kisumu Shuttle Express", polRef: "POL-MOT-1092", lob: "Motor Commercial", date: "2026-08-12", branch: "Kisumu", amount: 520000, status: "Paid / Settled", statusType: "approved" },
-    { ref: "CLM-2026-011", claimant: "Salim Said Omar", polRef: "POL-MOT-MOM-01", lob: "Motor Comprehensive", date: "2026-08-16", branch: "Mombasa", amount: 380000, status: "Paid / Settled", statusType: "approved" },
-    { ref: "CLM-2026-012", claimant: "Mombasa Coastal Transporters", polRef: "POL-MOT-MOM-02", lob: "Motor Comprehensive", date: "2026-08-17", branch: "Mombasa", amount: 620000, status: "Approved for Pay", statusType: "pending" },
-    { ref: "CLM-2026-013", claimant: "Amina Hassan Mohamed", polRef: "POL-MOT-MOM-03", lob: "Motor Comprehensive", date: "2026-08-18", branch: "Mombasa", amount: 140000, status: "Paid / Settled", statusType: "approved" },
-    { ref: "CLM-2026-014", claimant: "Nairobi Transport Services", polRef: "POL-FLEET-HQ-01", lob: "Motor Commercial", date: "2026-08-24", branch: "HQ", amount: 180000, status: "Approved for Pay", statusType: "pending" },
-    { ref: "CLM-2026-015", claimant: "Kenyatta Ave Complex", polRef: "POL-FIRE-HQ-03", lob: "Fire & Perils", date: "2026-08-25", branch: "HQ", amount: 650000, status: "Paid / Settled", statusType: "approved" },
-    { ref: "CLM-2026-016", claimant: "Mombasa Shipping Hub", polRef: "POL-FLEET-MSA-01", lob: "Motor Commercial", date: "2026-08-24", branch: "Mombasa", amount: 350000, status: "Paid / Settled", statusType: "approved" },
-    { ref: "CLM-2026-017", claimant: "Mombasa Port Terminals", polRef: "POL-FIRE-MSA-03", lob: "Fire & Perils", date: "2026-08-25", branch: "Mombasa", amount: 1200000, status: "Under Assessment", statusType: "pending" },
-    { ref: "CLM-2026-018", claimant: "East Africa Coffee Traders", polRef: "POL-MAR-MSA-04", lob: "Marine Cargo", date: "2026-08-26", branch: "Mombasa", amount: 220000, status: "Paid / Settled", statusType: "approved" },
-    { ref: "CLM-2026-019", claimant: "Lake Basin Wholesalers", polRef: "POL-FLEET-KSM-01", lob: "Motor Commercial", date: "2026-08-24", branch: "Kisumu", amount: 150000, status: "Paid / Settled", statusType: "approved" },
-    { ref: "CLM-2026-020", claimant: "Kisumu Sugar Miller", polRef: "POL-FIRE-KSM-03", lob: "Fire & Perils", date: "2026-08-25", branch: "Kisumu", amount: 480000, status: "Under Assessment", statusType: "pending" },
-    { ref: "CLM-2026-021", claimant: "Lucy Njeri", polRef: "POL-MOT-NKR-02", lob: "Motor Comprehensive", date: "2026-08-25", branch: "Nakuru", amount: 45000, status: "Paid / Settled", statusType: "approved" },
-    { ref: "CLM-2026-022", claimant: "Nakuru Wheat Silos", polRef: "POL-FIRE-NKR-03", lob: "Fire & Perils", date: "2026-08-26", branch: "Nakuru", amount: 300000, status: "Paid / Settled", statusType: "approved" },
-    { ref: "CLM-2026-023", claimant: "Eldoret Maize Millers", polRef: "POL-FLEET-ELD-01", lob: "Motor Commercial", date: "2026-08-24", branch: "Eldoret", amount: 95000, status: "Paid / Settled", statusType: "approved" },
-    { ref: "CLM-2026-024", claimant: "Kipchumba Rono", polRef: "POL-MOT-ELD-02", lob: "Motor Comprehensive", date: "2026-08-25", branch: "Eldoret", amount: 65000, status: "Approved for Pay", statusType: "pending" }
+    { ref: "CLM-2026-JUL02", claimant: "Nairobi Industrial Park", polRef: "POL-FIRE-JUL03", lob: "Fire & Perils", date: "2026-07-30", branch: "HQ", amount: 4500000, status: "Under Assessment", statusType: "pending" }
   ];
+
+  // Dynamically merge all live claims[] (Motor + all 6 non-motor lines + newly filed claims)
+  if (typeof claims !== "undefined" && Array.isArray(claims)) {
+    claims.slice().reverse().forEach(c => {
+      const isSettled = c.status === "Disbursed" || c.status === "Approved";
+      const mappedStatus = c.status === "Disbursed" ? "Paid / Settled" : (c.status === "Approved" ? "Approved for Pay" : c.status);
+      const mappedType = c.status === "Disbursed" ? "approved" : "pending";
+      const rawDate = /^\d{4}-\d{2}-\d{2}/.test(String(c.date || "")) ? String(c.date).slice(0, 10) : "2026-11-08";
+      const existing = claimsData.find(x => x.ref === c.id);
+      const rowObj = {
+        ref: c.id,
+        claimant: c.owner,
+        polRef: c.policyNo || c.plate,
+        lob: mapLineToReportLOB(c.insuranceLine || "Motor Comprehensive"),
+        date: rawDate,
+        branch: normalizeReportBranch(c.location, c.owner),
+        amount: Number(c.cost || 0),
+        status: mappedStatus,
+        statusType: mappedType
+      };
+      if (existing) {
+        Object.assign(existing, rowObj);
+      } else {
+        claimsData.unshift(rowObj);
+      }
+    });
+  }
 
   if (ledger === "claims") {
     if (titleLabel) titleLabel.innerText = `Queried Claims & Loss Recovery Ledger - ${branchText} (${lobText})`;
@@ -9362,7 +9941,7 @@ function executeReportQuery() {
     setSafeText("kpi-3-sub", `${filtered.length - paidItems.length} Pending Claims`);
 
     setSafeText("kpi-4-label", "Subrogation Recoveries");
-    setSafeText("kpi-4-val", `KSh ${(totalPaid * 0.18).toFixed(0).toLocaleString()}`);
+    setSafeText("kpi-4-val", `KSh ${Math.round(totalPaid * 0.18).toLocaleString()}`);
     setSafeText("kpi-4-sub", "Third-Party Recoveries");
 
     if (thead) {
@@ -9429,7 +10008,7 @@ function executeReportQuery() {
     setSafeText("kpi-3-sub", `${lobText} Average`);
 
     setSafeText("kpi-4-label", "Active Compliance");
-    setSafeText("kpi-4-val", "100% AKI Certs");
+    setSafeText("kpi-4-val", "100% AKI & IRA Certs");
     setSafeText("kpi-4-sub", "IRA & KRA Compliant");
 
     if (thead) {
@@ -9466,26 +10045,68 @@ function executeReportQuery() {
     }
 
     if (aiSummary) {
-      aiSummary.innerHTML = `<strong>Underwriting Audit Query (${branchText} | ${lobText}):</strong> ${filtered.length} active policies queried. Total gross written premium reached KSh ${totalPremium.toLocaleString()} against total sum insured of KSh ${totalSumInsured.toLocaleString()} with 100% automated AKI digital certificate verification.`;
+      aiSummary.innerHTML = `<strong>Underwriting Audit Query (${branchText} | ${lobText}):</strong> ${filtered.length} active policies queried. Total gross written premium reached KSh ${totalPremium.toLocaleString()} against total sum insured of KSh ${totalSumInsured.toLocaleString()} with 100% automated AKI & IRA digital certificate verification.`;
     }
 
   } else if (ledger === "reinsurance") {
     if (titleLabel) titleLabel.innerText = `Queried Reinsurance & Ceding Share Ledger - ${branchText}`;
 
+    const queriedUw = underwritingData.filter(d => {
+      const matchBranch = branch === "ALL" || d.branch === branch;
+      const matchLob = lob === "ALL" || d.lob === lob;
+      const matchDate = (!startDate || d.date >= startDate) && (!endDate || d.date <= endDate);
+      return matchBranch && matchLob && matchDate;
+    });
+    const queriedClm = claimsData.filter(d => {
+      const matchBranch = branch === "ALL" || d.branch === branch;
+      const matchLob = lob === "ALL" || d.lob === lob;
+      const matchDate = (!startDate || d.date >= startDate) && (!endDate || d.date <= endDate);
+      return matchBranch && matchLob && matchDate;
+    });
+
+    const grossWritten = queriedUw.reduce((s, x) => s + Number(x.premium || 0), 0);
+    const grossLosses = queriedClm.reduce((s, x) => s + Number(x.amount || 0), 0);
+    const shares = typeof getNormalizedReinsurerShares === "function"
+      ? getNormalizedReinsurerShares()
+      : { kenyaPct: 35, zepPct: 15, africaPct: 10, cededPct: 60, retPct: 40 };
+
+    const treaties = [
+      { name: "Kenya Reinsurance Corp", label: `${shares.kenyaPct.toFixed(1)}% Quota Share`, pct: shares.kenyaPct },
+      { name: "ZEP-RE (PTA Re)", label: `${shares.zepPct.toFixed(1)}% Regional Quota Share`, pct: shares.zepPct },
+      { name: "African Reinsurance Corp", label: `${shares.africaPct.toFixed(1)}% Pan-African Cession`, pct: shares.africaPct }
+    ];
+
+    let totalCededPrem = 0;
+    let totalRecovClaims = 0;
+    let totalComm = 0;
+    const netRetainedPrem = Math.round(grossWritten * (shares.retPct / 100));
+
+    let rowsHtml = "";
+    treaties.forEach(t => {
+      const cededP = Math.round(grossWritten * (t.pct / 100));
+      const recovC = Math.round(grossLosses * (t.pct / 100));
+      const comm = Math.round(cededP * 0.15);
+      const poolRetainedRef = Math.round(grossWritten - cededP);
+      totalCededPrem += cededP;
+      totalRecovClaims += recovC;
+      totalComm += comm;
+      rowsHtml += `<tr><td><strong>${t.name}</strong></td><td>${t.label}</td><td>KSh ${cededP.toLocaleString()}</td><td>KSh ${recovC.toLocaleString()}</td><td>KSh ${comm.toLocaleString()}</td><td>KSh ${poolRetainedRef.toLocaleString()}</td><td><span class="status-badge approved">Active Treaty</span></td></tr>`;
+    });
+
     setSafeText("kpi-1-label", "Gross Ceded Premium");
-    setSafeText("kpi-1-val", "KSh 18,200,000");
-    setSafeText("kpi-1-sub", "Quota Share Ceded");
+    setSafeText("kpi-1-val", `KSh ${totalCededPrem.toLocaleString()}`);
+    setSafeText("kpi-1-sub", `${shares.cededPct.toFixed(1)}% Quota Share Ceded`);
 
     setSafeText("kpi-2-label", "Reinsurer Claims Share");
-    setSafeText("kpi-2-val", "KSh 8,400,000");
+    setSafeText("kpi-2-val", `KSh ${totalRecovClaims.toLocaleString()}`);
     setSafeText("kpi-2-sub", "Reinsurance Recovery");
 
     setSafeText("kpi-3-label", "Net Company Retention");
-    setSafeText("kpi-3-val", "62.48%");
-    setSafeText("kpi-3-sub", "Net Earned Margin");
+    setSafeText("kpi-3-val", `${shares.retPct.toFixed(1)}%`);
+    setSafeText("kpi-3-sub", `KSh ${netRetainedPrem.toLocaleString()} Retained`);
 
     setSafeText("kpi-4-label", "Ceding Commission");
-    setSafeText("kpi-4-val", "KSh 2,730,000");
+    setSafeText("kpi-4-val", `KSh ${totalComm.toLocaleString()}`);
     setSafeText("kpi-4-sub", "15% Reinsurance Comm");
 
     if (thead) {
@@ -9496,7 +10117,7 @@ function executeReportQuery() {
           <th>Ceded Premium</th>
           <th>Recoverable Claims</th>
           <th>Ceding Commission (15%)</th>
-          <th>Net Retention</th>
+          <th>Net Unceded Reference</th>
           <th>Treaty Status</th>
         </tr>
       `;
@@ -9504,24 +10125,20 @@ function executeReportQuery() {
 
     if (tbody) {
       tbody.innerHTML = `
-        <tr><td><strong>Kenya Reinsurance Corp</strong></td><td>25.0% Quota Share</td><td>KSh 12,125,000</td><td>KSh 3,550,000</td><td>KSh 1,818,750</td><td>KSh 36,375,000</td><td><span class="status-badge approved">Active Treaty</span></td></tr>
-        <tr><td><strong>ZEP-RE (PTA Re)</strong></td><td>10.0% Surplus Share</td><td>KSh 4,850,000</td><td>KSh 1,420,000</td><td>KSh 727,500</td><td>KSh 43,650,000</td><td><span class="status-badge approved">Active Treaty</span></td></tr>
-        <tr><td><strong>African Reinsurance Corp</strong></td><td>5.0% Obligatory Cession</td><td>KSh 2,425,000</td><td>KSh 710,000</td><td>KSh 363,750</td><td>KSh 46,075,000</td><td><span class="status-badge approved">Active Treaty</span></td></tr>
-        <tr><td><strong>Swiss Re (Catastrophe Cover)</strong></td><td>Excess of Loss (XOL)</td><td>KSh 1,800,000</td><td>KSh 2,120,000</td><td>KSh 270,000</td><td>KSh 150,000,000</td><td><span class="status-badge approved">Active Treaty</span></td></tr>
-        <tr><td><strong>Munich Re (Aviation/Marine)</strong></td><td>Facultative Treaty</td><td>KSh 1,250,000</td><td>KSh 600,000</td><td>KSh 187,500</td><td>KSh 75,000,000</td><td><span class="status-badge approved">Active Treaty</span></td></tr>
+        ${rowsHtml}
         <tr style="background:rgba(139, 90, 43,0.08); font-weight:800; border-top:2px solid var(--primary);">
-          <td colspan="2" style="text-align:right;">TOTAL REINSURANCE TREATIES:</td>
-          <td><strong style="color:var(--primary); font-size:14px;">KSh 22,450,000</strong></td>
-          <td><strong style="color:var(--warning);">KSh 8,400,000</strong></td>
-          <td><strong>KSh 3,367,500</strong></td>
-          <td><strong>KSh 351,100,000</strong></td>
-          <td><span class="status-badge approved">5 Active Treaties</span></td>
+          <td colspan="2" style="text-align:right;">TOTAL REINSURANCE TREATIES (${shares.cededPct.toFixed(1)}%):</td>
+          <td><strong style="color:var(--primary); font-size:14px;">KSh ${totalCededPrem.toLocaleString()}</strong></td>
+          <td><strong style="color:var(--warning);">KSh ${totalRecovClaims.toLocaleString()}</strong></td>
+          <td><strong>KSh ${totalComm.toLocaleString()}</strong></td>
+          <td><strong>KSh ${netRetainedPrem.toLocaleString()} Net Retained</strong></td>
+          <td><span class="status-badge approved">${treaties.length} Active Treaties</span></td>
         </tr>
       `;
     }
 
     if (aiSummary) {
-      aiSummary.innerHTML = `<strong>Reinsurance Ceding Audit (${startDate} to ${endDate}):</strong> Quota share & surplus treaties with Kenya Re, ZEP-RE, Africa Re, Swiss Re, and Munich Re ceded KSh 22.45M premium while protecting KSh 8.4M in recoverable claims. Net company retention remains robust at 62.48%.`;
+      aiSummary.innerHTML = `<strong>Reinsurance Ceding Audit (${startDate} to ${endDate}):</strong> 3-pool treaties with Kenya Re (${shares.kenyaPct.toFixed(1)}%), ZEP-RE (${shares.zepPct.toFixed(1)}%), and Africa Re (${shares.africaPct.toFixed(1)}%) ceded KSh ${totalCededPrem.toLocaleString()} premium while recovering KSh ${totalRecovClaims.toLocaleString()} in claims and earning KSh ${totalComm.toLocaleString()} in 15% ceding commissions. Net company retention stands at ${shares.retPct.toFixed(1)}% (KSh ${netRetainedPrem.toLocaleString()}).`;
     }
 
   } else if (ledger === "financials") {
@@ -10015,6 +10632,9 @@ window.activateCertInline = function(certOrPlate) {
   if (typeof renderPolicyRegistry === "function") renderPolicyRegistry();
   if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
   if (typeof renderIRACompliance === "function") renderIRACompliance();
+  if (typeof renderITaxRemittanceTable === "function") renderITaxRemittanceTable();
+  if (typeof renderReinsuranceCeding === "function") renderReinsuranceCeding();
+  if (typeof reconcilePlatformMetrics === "function") reconcilePlatformMetrics();
   
   const resBox = document.getElementById("cert-status-result");
   if (resBox) {
@@ -10042,6 +10662,7 @@ window.activateCertInline = function(certOrPlate) {
   } else if (typeof showToast === "function") {
     showToast("Certificate Registered", `Certificate ${assignedCert} registered under ${newPolicy.policyNo}.`, "success");
   }
+  return newPolicy;
 };
 
 window.handleAISend = function() {
@@ -10414,15 +11035,31 @@ function dispatchDesignatedEmailAlert(eventType, record) {
 
   // 1. Prepend to notificationLogs for the Multi-Channel Telemetry Dispatch Audit Table
   if (typeof notificationLogs !== "undefined" && Array.isArray(notificationLogs)) {
+    const recName = record.owner || record.clientName || record.county || "Approver Desk";
+    const recPlate = record.plate || record.policyNo || record.id || "Composite Dossier";
     notificationLogs.unshift({
       id: "NTF-EML-" + Math.floor(1000 + Math.random() * 9000),
+      timestamp: nowStr,
       time: "Just now (" + nowStr + ")",
-      recipient: `${record.owner || record.clientName || "Approver Desk"} (${recipientsStr})`,
+      date: dateStr,
+      recipient: recName,
+      phone: recipientsStr,
+      email: recipientsStr,
       channel: "Rich Email",
+      claimId: refId,
       ref: refId,
+      plate: recPlate,
+      event: triggerLabel,
       trigger: triggerLabel,
+      status: eventType === "SLA_60MIN_ESCALATION" ? "Escalated" : "Dispatched",
+      delivery: "Delivered (AWS SES / EIMS SMTP 250 OK)",
       gateway: "AWS SES / EIMS SMTP (200 OK)",
-      message: smsSummary
+      message: smsSummary,
+      smsMessage: smsSummary,
+      waMessage: smsSummary,
+      emailSubject: subject,
+      emailHeader: triggerLabel,
+      emailBody: smsSummary
     });
     if (typeof renderNotificationDispatchTable === "function") {
       renderNotificationDispatchTable();
@@ -12825,13 +13462,21 @@ function dispatchAKICertToPolicyholder(sourceType, sourceKey, fleetId = "") {
 
   if (typeof notificationLogs !== "undefined" && Array.isArray(notificationLogs)) {
     notificationLogs.unshift({
-      time: "Just now",
+      id: "LOG-AKI-" + Math.floor(1000 + Math.random() * 8999),
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      date: "Nov 8, 2026",
       claimId: rec.policyNo,
-      recipient: `${rec.holder} (SMS + WhatsApp + Email)`,
+      plate: rec.plate || "Motor Asset",
+      recipient: rec.holder || "Policyholder",
+      phone: "SMS + WhatsApp + Email",
       channel: "Multi-Channel AKI Dispatch",
-      event: `AKI Digital Cert ${rec.certId} (${rec.plate})`,
-      status: "Delivered"
+      event: `AKI Digital Cert ${rec.certId}`,
+      delivery: "DMVIC + Safaricom + SMTP (Delivered)",
+      message: `EIMS AKI Cap 405 Certificate ${rec.certId} issued for ${rec.plate} (${rec.policyNo}). Verify via *352# or QR scan.`
     });
+    if (typeof renderNotificationDispatchTable === "function") {
+      renderNotificationDispatchTable();
+    }
   }
 
   recordAKIAuditEvent("DISPATCHED_CLIENT", rec.certId, rec.plate, `Dispatched QR verification link & *352# USSD token to ${rec.holder} via SMS, WhatsApp & Email.`);
@@ -15351,19 +15996,402 @@ function printMultiLineCertificate() {
 }
 window.printMultiLineCertificate = printMultiLineCertificate;
 
-// Auto-initialize Composite Multi-Line Portfolio, Claims Ecosystem & Tab Badges
+// ================= UNIFIED PORTFOLIO RECONCILIATION & CROSS-PLATFORM ROUTING ENGINE =================
+function getUnifiedPortfolioSummary() {
+  const safePolicies = Array.isArray(policies) ? policies : [];
+  const safeFleets = (typeof countyFleets !== "undefined" && Array.isArray(countyFleets)) ? countyFleets : [];
+  const safeClaims = Array.isArray(claims) ? claims : [];
+
+  const nonCancelledPolicies = safePolicies.filter(p => p.status !== "Cancelled");
+  const policiesGWP = nonCancelledPolicies.reduce((sum, p) => sum + Number(p.premium || 0), 0);
+
+  const unmirroredFleets = safeFleets.filter(f => {
+    if (f.status === "Cancelled") return false;
+    return !nonCancelledPolicies.some(
+      p => p.fleetId === f.id || p.policyNo === f.policyNo || p.policyNo === f.id
+    );
+  });
+
+  const getFleetPrem = (f) => Number(
+    f.premiumAmount || (typeof parseNumericCurrency === "function" ? parseNumericCurrency(f.premium) : 0)
+  );
+  const getFleetUnits = (f) => Math.max(
+    1,
+    Number(f.vehicleCount || (Array.isArray(f.vehicles) ? f.vehicles.length : 1))
+  );
+
+  const unmirroredFleetsGWP = unmirroredFleets.reduce((sum, f) => sum + getFleetPrem(f), 0);
+  const consolidatedGWP = policiesGWP + unmirroredFleetsGWP;
+
+  const individualActivePolicies = safePolicies.filter(p => p.status === "Active").length;
+  const individualPendingPolicies = safePolicies.filter(
+    p => p.status === "Pending" || p.approvalStatus === "Pending Approval"
+  ).length;
+
+  const unmirroredActiveFleets = unmirroredFleets.filter(f => (f.status || "Active") === "Active").length;
+  const unmirroredPendingFleets = unmirroredFleets.filter(f => f.status === "Pending").length;
+  const unmirroredFleetVehicles = unmirroredFleets.reduce((sum, f) => sum + getFleetUnits(f), 0);
+
+  let policyUnits = 0;
+  let activePolicyCerts = 0;
+  nonCancelledPolicies.forEach(p => {
+    const linkedFleet = p.fleetId ? safeFleets.find(f => f.id === p.fleetId) : null;
+    const units = linkedFleet ? getFleetUnits(linkedFleet) : 1;
+    policyUnits += units;
+    if (linkedFleet && Array.isArray(linkedFleet.vehicles)) {
+      activePolicyCerts += linkedFleet.vehicles.filter(
+        v => Boolean(v.certId) && v.certStatus !== "Cancelled"
+      ).length;
+    } else if (p.certId) {
+      activePolicyCerts += 1;
+    }
+  });
+
+  const unmirroredActiveCerts = unmirroredFleets.reduce((sum, f) => {
+    if (Array.isArray(f.vehicles) && f.vehicles.length > 0) {
+      return sum + f.vehicles.filter(v => Boolean(v.certId) && v.certStatus !== "Cancelled").length;
+    }
+    return sum + Number(f.issuedCertCount || 0);
+  }, 0);
+
+  const totalInsuredUnits = policyUnits + unmirroredFleetVehicles;
+  const totalActiveCertificates = activePolicyCerts + unmirroredActiveCerts;
+
+  // Exact per-record statutory levy calculation matching renderIRACompliance() 1:1
+  const phcfPct = (typeof iraTaxRates !== "undefined" && iraTaxRates.phcf) ? Number(iraTaxRates.phcf) : 0.25;
+  const trainPct = (typeof iraTaxRates !== "undefined" && iraTaxRates.training) ? Number(iraTaxRates.training) : 0.20;
+  const stampVal = (typeof iraTaxRates !== "undefined" && iraTaxRates.stampDuty) ? Number(iraTaxRates.stampDuty) : 40;
+
+  let totalPhcf = 0;
+  let totalTraining = 0;
+  let totalStampDuty = 0;
+  let totalCertBearingUnits = 0;
+
+  nonCancelledPolicies.forEach(p => {
+    const prem = Number(p.premium || 0);
+    const linkedFleet = p.fleetId ? safeFleets.find(f => f.id === p.fleetId) : null;
+    const certUnits = linkedFleet ? Math.max(1, Number(linkedFleet.vehicleCount || 1)) : 1;
+    totalCertBearingUnits += certUnits;
+    totalPhcf += Math.round(prem * (phcfPct / 100));
+    totalTraining += Math.round(prem * (trainPct / 100));
+    totalStampDuty += stampVal * certUnits;
+  });
+
+  unmirroredFleets.forEach(f => {
+    const prem = getFleetPrem(f);
+    const certUnits = getFleetUnits(f);
+    totalCertBearingUnits += certUnits;
+    totalPhcf += Math.round(prem * (phcfPct / 100));
+    totalTraining += Math.round(prem * (trainPct / 100));
+    totalStampDuty += stampVal * certUnits;
+  });
+
+  const totalStatutoryLevies = totalPhcf + totalTraining + totalStampDuty;
+
+  // Claims & Triage Reconciliation
+  const totalClaims = safeClaims.length;
+  const incurredClaimsCost = safeClaims.reduce((sum, c) => sum + Number(c.cost || 0), 0);
+  const approvedUnpaidCost = safeClaims
+    .filter(c => c.status === "Approved")
+    .reduce((sum, c) => sum + Number(c.cost || 0), 0);
+  const disbursedClaimsCost = safeClaims
+    .filter(c => c.status === "Disbursed")
+    .reduce((sum, c) => sum + Number(c.cost || 0), 0);
+  const settledAndApprovedCost = approvedUnpaidCost + disbursedClaimsCost;
+
+  const greenCount = safeClaims.filter(c => c.triage === "Green").length;
+  const yellowCount = safeClaims.filter(c => c.triage === "Yellow").length;
+  const redCount = safeClaims.filter(c => c.triage === "Red").length;
+  const greenPassPct = totalClaims > 0 ? Math.round((greenCount / totalClaims) * 100) : 0;
+
+  const pendingUnderwritingCount = individualPendingPolicies + unmirroredPendingFleets;
+  const pendingClaimsCount = safeClaims.filter(
+    c => c.status === "Pending" || c.status === "Investigation" || c.approvalStatus === "Pending Approval"
+  ).length;
+  const pendingApprovalsCount = pendingUnderwritingCount + pendingClaimsCount;
+
+  const nowTs = Date.now();
+  const slaMs = 60 * 60 * 1000;
+  const overduePolicies = safePolicies.filter(
+    p => (p.status === "Pending" || p.approvalStatus === "Pending Approval") &&
+         p.submittedAt && (nowTs - Number(p.submittedAt)) > slaMs
+  ).length;
+  const overdueClaims = safeClaims.filter(
+    c => (c.status === "Pending" || c.approvalStatus === "Pending Approval") &&
+         c.submittedAt && (nowTs - Number(c.submittedAt)) > slaMs
+  ).length;
+  const overdueApprovalsCount = overduePolicies + overdueClaims;
+
+  return {
+    policiesGWP,
+    unmirroredFleets,
+    unmirroredFleetsGWP,
+    consolidatedGWP,
+    individualActivePolicies,
+    individualPendingPolicies,
+    unmirroredActiveFleets,
+    unmirroredPendingFleets,
+    unmirroredFleetVehicles,
+    totalInsuredUnits,
+    totalCertBearingUnits,
+    totalActiveCertificates,
+    totalClaims,
+    incurredClaimsCost,
+    approvedUnpaidCost,
+    disbursedClaimsCost,
+    settledAndApprovedCost,
+    greenCount,
+    yellowCount,
+    redCount,
+    greenPassPct,
+    pendingUnderwritingCount,
+    pendingClaimsCount,
+    pendingApprovalsCount,
+    overdueApprovalsCount,
+    totalPhcf,
+    totalTraining,
+    totalStampDuty,
+    totalStatutoryLevies
+  };
+}
+window.getUnifiedPortfolioSummary = getUnifiedPortfolioSummary;
+
+let __isReconcilingPlatformMetrics = false;
+function reconcilePlatformMetrics() {
+  if (__isReconcilingPlatformMetrics) return null;
+  __isReconcilingPlatformMetrics = true;
+  try {
+    const summary = getUnifiedPortfolioSummary();
+
+    const setTxt = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.innerText = val;
+    };
+
+    // 1. Public Landing Shell Live Telemetry Ticker
+    setTxt("public-kpi-gwp", `KSh ${(summary.consolidatedGWP / 1000000).toFixed(2)}M`);
+    setTxt("public-kpi-gwp-lbl", "Consolidated Portfolio GWP");
+    setTxt("public-kpi-triage", `${summary.greenPassPct}%`);
+    setTxt("public-kpi-triage-lbl", `AI Fast-Track (${summary.greenCount}/${summary.totalClaims} Claims)`);
+    setTxt("public-kpi-policies", summary.totalInsuredUnits.toLocaleString());
+    setTxt("public-kpi-policies-lbl", "Insured Policies & Fleet Units");
+    setTxt("public-kpi-sla", "60-Min");
+
+    // 2. e-Citizen PesaFlow Last Settled Bill Sync
+    if (typeof pesaflowTransactions !== "undefined" && Array.isArray(pesaflowTransactions) && pesaflowTransactions.length > 0) {
+      setTxt("ecitizen-last-bill", pesaflowTransactions[0].billNo);
+    }
+
+    // 3. Header Notification Bell & Overdue SLA Tooltip
+    const alertBadge = document.getElementById("header-alert-badge");
+    if (alertBadge) {
+      alertBadge.style.display = summary.pendingApprovalsCount > 0 ? "block" : "none";
+    }
+    const alertBtn = document.getElementById("header-alert-btn");
+    if (alertBtn) {
+      alertBtn.title = `${summary.pendingApprovalsCount} Pending SLA Item(s) • ${summary.overdueApprovalsCount} Overdue (>60m)`;
+    }
+
+    // 4. Sync QR Generator Presets to Live Active Motor Policy
+    if (typeof qrPresets !== "undefined" && qrPresets && Array.isArray(policies)) {
+      const leadMotor = policies.find(
+        p => p.status === "Active" && (typeof isMotorUnderwritingLine === "function" ? isMotorUnderwritingLine(p.line, p.plate) : true)
+      ) || policies[0];
+      if (leadMotor) {
+        const originUrl = (typeof window !== "undefined" && window.location && window.location.origin && window.location.origin !== "null")
+          ? window.location.origin
+          : "https://eims-prosystem.web.app";
+        const hashVal = typeof generateCertSHA256Hash === "function" ? generateCertSHA256Hash(leadMotor) : "SHA256-VERIFIED";
+        if (typeof qrPresets.aki === "string") {
+          qrPresets.aki = `${originUrl}/?verifyCert=true&certId=${encodeURIComponent(leadMotor.certId || "CERT-AKI-2026")}&policy=${encodeURIComponent(leadMotor.policyNo)}&plate=${encodeURIComponent(leadMotor.plate)}&owner=${encodeURIComponent(leadMotor.clientName)}&hash=${encodeURIComponent(hashVal)}`;
+        }
+        if (typeof qrPresets.ntsa === "string") {
+          qrPresets.ntsa = `https://ntsa.go.ke/v/${encodeURIComponent(String(leadMotor.plate || "KDG123A").replace(/\s+/g, ""))}?policy=${encodeURIComponent(leadMotor.policyNo)}`;
+        }
+      }
+    }
+
+    return summary;
+  } finally {
+    __isReconcilingPlatformMetrics = false;
+  }
+}
+window.reconcilePlatformMetrics = reconcilePlatformMetrics;
+
+function jumpToPendingApprovalsCenter() {
+  const summary = getUnifiedPortfolioSummary();
+  if (typeof navigateToView === "function") {
+    navigateToView("dashboard");
+  }
+  if (typeof renderOverdueApprovalsDashboard === "function") {
+    renderOverdueApprovalsDashboard();
+  }
+  const banner = document.getElementById("overdue-approvals-red-banner");
+  if (banner && typeof banner.scrollIntoView === "function") {
+    banner.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  showToast(
+    "SLA Approvals Queue",
+    `${summary.pendingApprovalsCount} pending item(s) across claims & underwriting (${summary.overdueApprovalsCount} overdue >60m).`,
+    summary.overdueApprovalsCount > 0 ? "warning" : "info"
+  );
+}
+window.jumpToPendingApprovalsCenter = jumpToPendingApprovalsCenter;
+
+function routeGlobalPlatformSearch(rawQuery, notify = false) {
+  const trimmed = String(rawQuery || "").trim();
+  if (!trimmed) {
+    const dirSearch = document.getElementById("directory-search-input");
+    if (dirSearch) dirSearch.value = "";
+    if (typeof renderClaimsDirectory === "function") renderClaimsDirectory();
+    return { matched: false, targetView: null, recordId: null };
+  }
+
+  const q = trimmed.toLowerCase();
+  const qUpper = trimmed.toUpperCase();
+
+  // 1. Direct or fuzzy match in Claims Ledger
+  const matchedClaim = Array.isArray(claims)
+    ? claims.find(c =>
+        (c.id || "").toLowerCase().includes(q) ||
+        (c.plate || "").toLowerCase().includes(q) ||
+        (c.owner || "").toLowerCase().includes(q) ||
+        (c.statutoryRef || "").toLowerCase().includes(q) ||
+        (c.perilType || "").toLowerCase().includes(q)
+      )
+    : null;
+
+  // Prefer Fleet or Policy routing if user explicitly typed FLT- or POL- or CERT-
+  const explicitPolicyOrFleet =
+    qUpper.startsWith("FLT-") ||
+    qUpper.startsWith("POL-") ||
+    qUpper.startsWith("CERT-") ||
+    qUpper.startsWith("BOND-") ||
+    qUpper.startsWith("MCI-");
+
+  if (matchedClaim && !explicitPolicyOrFleet) {
+    const lineSel = document.getElementById("directory-line-select");
+    const statusSel = document.getElementById("directory-status-select");
+    const triageSel = document.getElementById("directory-triage-select");
+    const dirInput = document.getElementById("directory-search-input");
+    if (lineSel) lineSel.value = "ALL";
+    if (statusSel) statusSel.value = "ALL";
+    if (triageSel) triageSel.value = "ALL";
+    if (dirInput) dirInput.value = trimmed;
+    if (typeof navigateToView === "function") navigateToView("claims-directory");
+    if (typeof renderClaimsDirectory === "function") renderClaimsDirectory();
+    if (notify) {
+      showToast("Claims Ledger Match", `Showing claim ${matchedClaim.id} (${matchedClaim.insuranceLine || "Motor"}).`, "info");
+    }
+    return { matched: true, targetView: "claims-directory", recordId: matchedClaim.id };
+  }
+
+  // 2. Match in County & Corporate Fleets (especially FLT-*, POL-CTY-*, POL-FLT-*, or Fleet Vehicle Plates)
+  const matchedFleet = (typeof countyFleets !== "undefined" && Array.isArray(countyFleets))
+    ? countyFleets.find(f =>
+        (f.id || "").toLowerCase().includes(q) ||
+        (f.policyNo || "").toLowerCase().includes(q) ||
+        (f.county || "").toLowerCase().includes(q) ||
+        (Array.isArray(f.vehicles) && f.vehicles.some(v =>
+          (v.plate || "").toLowerCase().includes(q) ||
+          (v.certId || "").toLowerCase().includes(q)
+        ))
+      )
+    : null;
+
+  if (matchedFleet && (qUpper.startsWith("FLT-") || qUpper.startsWith("POL-CTY-") || qUpper.startsWith("CERT-FLT") || !policies.some(p =>
+      (p.policyNo || "").toLowerCase().includes(q) ||
+      (p.plate || "").toLowerCase().includes(q) ||
+      (p.certId || "").toLowerCase().includes(q)
+    ))) {
+    const fleetSearch = document.getElementById("fleet-search-input");
+    if (fleetSearch) fleetSearch.value = trimmed;
+    if (typeof navigateToView === "function") navigateToView("fleet-underwriting");
+    if (typeof renderFleetUnderwriting === "function") renderFleetUnderwriting();
+    if (notify) {
+      showToast("Fleet Schedule Match", `Located ${matchedFleet.id} (${matchedFleet.county}).`, "info");
+    }
+    return { matched: true, targetView: "fleet-underwriting", recordId: matchedFleet.id };
+  }
+
+  // 3. Match in Master Policy Registry (All 7 Composite Insurance Lines)
+  const matchedPolicy = Array.isArray(policies)
+    ? policies.find(p =>
+        (p.policyNo || "").toLowerCase().includes(q) ||
+        (p.plate || "").toLowerCase().includes(q) ||
+        (p.clientName || "").toLowerCase().includes(q) ||
+        (p.certId || "").toLowerCase().includes(q) ||
+        (p.line || "").toLowerCase().includes(q)
+      )
+    : null;
+
+  if (matchedPolicy) {
+    const polLine = document.getElementById("policy-line-filter");
+    const polStatus = document.getElementById("policy-status-filter");
+    const polSearch = document.getElementById("policy-search-input");
+    if (polLine) polLine.value = "ALL";
+    if (polStatus) polStatus.value = "ALL";
+    if (polSearch) polSearch.value = trimmed;
+    if (typeof navigateToView === "function") navigateToView("policy-registry");
+    if (typeof renderPolicyRegistry === "function") renderPolicyRegistry();
+    if (notify) {
+      showToast("Policy Registry Match", `Located ${matchedPolicy.policyNo} (${matchedPolicy.line}).`, "info");
+    }
+    return { matched: true, targetView: "policy-registry", recordId: matchedPolicy.policyNo };
+  }
+
+  // 4. Match in Accredited Garages or Specialist Loss Assessors
+  const matchedGarage = (typeof garages !== "undefined" && Array.isArray(garages))
+    ? garages.find(g => (g.name || "").toLowerCase().includes(q) || (g.id || "").toLowerCase().includes(q))
+    : null;
+  if (matchedGarage) {
+    if (typeof navigateToView === "function") navigateToView("garage-network");
+    if (typeof renderGarageNetwork === "function") renderGarageNetwork();
+    if (notify) showToast("Accredited Garage Match", `Opened Garage Network for ${matchedGarage.name}.`, "info");
+    return { matched: true, targetView: "garage-network", recordId: matchedGarage.id };
+  }
+
+  const matchedAssessor = (typeof assessors !== "undefined" && Array.isArray(assessors))
+    ? assessors.find(a => (a.name || "").toLowerCase().includes(q) || (a.spec || "").toLowerCase().includes(q))
+    : null;
+  if (matchedAssessor) {
+    if (typeof navigateToView === "function") navigateToView("loss-assessors");
+    if (typeof renderLossAssessors === "function") renderLossAssessors();
+    if (notify) showToast("Specialist Assessor Match", `Opened Loss Assessors for ${matchedAssessor.name}.`, "info");
+    return { matched: true, targetView: "loss-assessors", recordId: matchedAssessor.name };
+  }
+
+  if (notify) {
+    showToast("No Exact Record Found", `No claim, policy, fleet, or certificate matched "${trimmed}".`, "warning");
+  }
+  return { matched: false, targetView: null, recordId: null };
+}
+window.routeGlobalPlatformSearch = routeGlobalPlatformSearch;
+
+// Auto-initialize Composite Multi-Line Portfolio, Claims Ecosystem, Financial Ledgers & Tab Badges
 function initCompositeInsuranceSystem() {
   seedCompositeInsurancePortfolio();
   seedMultiLineClaimsAndEcosystem();
+  if (typeof seedPendingApprovalTimestamps === "function") seedPendingApprovalTimestamps();
   ensureFNOLSelectorInitialized();
   renderAllInsuranceLineModules();
   renderPolicyRegistry();
+  if (typeof renderFleetUnderwriting === "function") renderFleetUnderwriting();
   if (typeof renderClaimsDirectory === "function") renderClaimsDirectory();
   if (typeof renderDashboard === "function") renderDashboard();
   if (typeof renderGarageNetwork === "function") renderGarageNetwork();
   if (typeof renderMpesaGateway === "function") renderMpesaGateway();
   if (typeof renderLossAssessors === "function") renderLossAssessors();
   if (typeof renderSubrogationRecovery === "function") renderSubrogationRecovery();
+  if (typeof renderReinsuranceCeding === "function") renderReinsuranceCeding();
+  if (typeof renderIRACompliance === "function") renderIRACompliance();
+  if (typeof renderITaxRemittanceTable === "function") renderITaxRemittanceTable();
+  if (typeof renderPesaFlowTransactionsTable === "function") renderPesaFlowTransactionsTable();
+  if (typeof renderVehicleLossRatios === "function") renderVehicleLossRatios();
+  if (typeof renderMobileAppPortal === "function") renderMobileAppPortal();
+  if (typeof renderGeoMapCenter === "function") renderGeoMapCenter(true);
+  if (typeof renderNotificationDispatchTable === "function") renderNotificationDispatchTable();
+  reconcilePlatformMetrics();
   syncInsuranceLinesTabBar(typeof activeView === "string" && activeView ? activeView : "dashboard");
 }
 
