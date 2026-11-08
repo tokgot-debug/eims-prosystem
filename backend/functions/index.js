@@ -123,14 +123,42 @@ exports.onPolicyCreated = onDocumentCreated("policies/{policyNo}", async (event)
   if (!snap) return;
   const policy = snap.data();
   const tax = statutoryTax(policy.premium || 0);
+  const year = new Date().getFullYear();
+  const certId = policy.certId || `CERT-${year}-${snap.id.slice(-5)}`;
+  const commencingDate = policy.commencingDate || new Date().toISOString().slice(0, 10);
+  const expiryDate = policy.expiryDate || new Date(Date.now() + 364 * 86_400_000).toISOString().slice(0, 10);
 
   await snap.ref.update({
     statutory: tax,
     payable: (policy.premium || 0) + tax.total,
-    certId: policy.certId || `AKI-${new Date().getFullYear()}-${snap.id.slice(-5)}`,
+    certId,
+    commencingDate,
+    expiryDate,
     issuedAt: now(),
   });
   await audit("policy", snap.id, "levies-computed", tax);
+});
+
+/** Keeps the public AKI certificates/{certId} ledger synchronized with policy status changes. */
+exports.onPolicyStatusChanged = onDocumentUpdated("policies/{policyNo}", async (event) => {
+  const before = event.data?.before.data();
+  const after = event.data?.after.data();
+  if (!before || !after || before.status === after.status || !after.certId) return;
+
+  const certStatus = after.status === "Active"
+    ? "Valid"
+    : (after.status === "Suspended" ? "Suspended" : (after.status === "Cancelled" ? "Revoked" : "Pending"));
+
+  await db.collection("certificates").doc(String(after.certId)).set({
+    certId: after.certId,
+    policyNo: event.params.policyNo,
+    plate: after.plate || "",
+    holder: after.clientName || "",
+    status: certStatus,
+    updatedAt: now(),
+  }, { merge: true });
+
+  await audit("certificate", after.certId, "status-synced", { policyNo: event.params.policyNo, status: certStatus });
 });
 
 /** A released payout is a money movement: log it and close the loop. */
@@ -156,11 +184,21 @@ function requireAuth(request) {
   return request.auth;
 }
 
+function classifyCap405Type(policyData = {}) {
+  const line = String(policyData.line || "").toLowerCase();
+  const make = String(policyData.makeModel || "").toLowerCase();
+  if (policyData.akiClass) return policyData.akiClass;
+  if (line.includes("psv") || make.includes("bus") || make.includes("matatu")) return "TYPE-A";
+  if (line.includes("fleet") || make.includes("truck") || make.includes("hilux") || make.includes("bowser")) return "TYPE-B";
+  if (line.includes("electric") || line.includes("ev")) return "TYPE-D";
+  return "TYPE-C";
+}
+
 /** NTSA registry lookup. Server-side so the registry credential never ships to a browser. */
 exports.verifyPlate = onCall(async (request) => {
   requireAuth(request);
   const plate = String(request.data?.plate || "").trim().toUpperCase();
-  if (!/^K[A-Z]{2} ?\d{3}[A-Z]$/.test(plate)) {
+  if (!/^K[A-Z0-9]{2,4} ?\d{3}[A-Z]$/.test(plate)) {
     throw new HttpsError("invalid-argument", `"${plate}" is not a Kenyan plate format.`);
   }
   const doc = await db.collection("ntsaRegistry").doc(plate).get();
@@ -169,28 +207,100 @@ exports.verifyPlate = onCall(async (request) => {
   return { plate, found: true, ...doc.data() };
 });
 
-/** Issues an AKI digital motor certificate with a verifiable hash. */
+/** Issues an AKI DMVIC digital motor certificate with Cap 405 classification, double-insurance check & SHA-256 seal. */
 exports.issueCertificate = onCall(async (request) => {
   const auth = requireAuth(request);
-  const { policyNo } = request.data || {};
+  const { policyNo, supersedeExisting = false, akiClass } = request.data || {};
   const policyRef = db.collection("policies").doc(String(policyNo));
-  const policy = await policyRef.get();
-  if (!policy.exists) throw new HttpsError("not-found", `Policy ${policyNo} does not exist.`);
-  if (policy.data().status !== "Active") {
+  const policySnap = await policyRef.get();
+  if (!policySnap.exists) throw new HttpsError("not-found", `Policy ${policyNo} does not exist.`);
+  const pData = policySnap.data();
+  if (pData.status !== "Active") {
     throw new HttpsError("failed-precondition", "Only active policies can be certified.");
   }
 
-  const certId = `AKI-${new Date().getFullYear()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
-  const payload = `${certId}|${policyNo}|${policy.data().plate}|${policy.data().clientName}`;
+  const plate = String(pData.plate || "").trim().toUpperCase();
+  // AKI IMIDS Double-Insurance Guard on active registration plate
+  if (plate) {
+    const existingActive = await db.collection("certificates")
+      .where("plate", "==", plate)
+      .where("status", "==", "Valid")
+      .limit(5)
+      .get();
+    const conflict = existingActive.docs.find((d) => d.data().policyNo !== String(policyNo));
+    if (conflict && !supersedeExisting) {
+      throw new HttpsError(
+        "already-exists",
+        `AKI IMIDS Double-Insurance Lock: Plate ${plate} already holds active certificate ${conflict.id}.`,
+      );
+    }
+    for (const prevDoc of existingActive.docs) {
+      await prevDoc.ref.update({ status: "Superseded", supersededAt: now() });
+    }
+  }
+
+  const certType = akiClass || classifyCap405Type(pData);
+  const typeTag = certType.replace("TYPE-", "");
+  const certId = `CERT-${typeTag}-${new Date().getFullYear()}-${crypto.randomBytes(2).toString("hex").toUpperCase()}`;
+  const commencingDate = pData.commencingDate || new Date().toISOString().slice(0, 10);
+  const expiryDate = pData.expiryDate || new Date(Date.now() + 364 * 86_400_000).toISOString().slice(0, 10);
+  const payload = `${certId}|${certType}|${policyNo}|${plate}|${pData.clientName}|${commencingDate}|${expiryDate}`;
   const hash = crypto.createHash("sha256").update(payload).digest("hex");
 
   await db.collection("certificates").doc(certId).set({
-    certId, policyNo, plate: policy.data().plate, holder: policy.data().clientName,
-    hash, issuedBy: auth.uid, issuedAt: now(), status: "Valid",
+    certId,
+    certType,
+    policyNo: String(policyNo),
+    plate,
+    chassis: pData.chassis || null,
+    holder: pData.clientName,
+    commencingDate,
+    expiryDate,
+    coverScope: pData.coverScope || "COMPREHENSIVE",
+    hash,
+    issuedBy: auth.uid,
+    issuedAt: now(),
+    status: "Valid",
   });
-  await policyRef.update({ certId });
-  await audit("certificate", certId, "issued", { policyNo });
-  return { certId, hash, payload };
+  await policyRef.update({ certId, akiClass: certType, commencingDate, expiryDate });
+  await audit("certificate", certId, "issued", { policyNo, certType, plate });
+  return { certId, certType, commencingDate, expiryDate, hash, payload };
+});
+
+/** Public unauthenticated AKI DMVIC verification endpoint for traffic police & citizens. */
+exports.verifyCertificate = onCall(async (request) => {
+  const query = String(request.data?.query || request.data?.certId || "").trim().toUpperCase();
+  if (!query) throw new HttpsError("invalid-argument", "Provide a Certificate ID or Registration Plate.");
+
+  const direct = await db.collection("certificates").doc(query).get();
+  if (direct.exists) {
+    return { found: true, ...direct.data() };
+  }
+  const byPlate = await db.collection("certificates")
+    .where("plate", "==", query)
+    .limit(5)
+    .get();
+  if (byPlate.empty) return { found: false, query };
+  const preferred = byPlate.docs.find((d) => d.data().status === "Valid") || byPlate.docs[0];
+  return { found: true, ...preferred.data() };
+});
+
+/** Statutory Cap 405 revocation of an AKI digital motor certificate. */
+exports.revokeCertificate = onCall(async (request) => {
+  const auth = requireAuth(request);
+  const { certId, reason = "Statutory Cap 405 Cancellation" } = request.data || {};
+  const certRef = db.collection("certificates").doc(String(certId));
+  const snap = await certRef.get();
+  if (!snap.exists) throw new HttpsError("not-found", `Certificate ${certId} does not exist.`);
+
+  await certRef.update({
+    status: "Revoked",
+    revocationReason: String(reason),
+    revokedBy: auth.uid,
+    revokedAt: now(),
+  });
+  await audit("certificate", certId, "revoked", { reason, by: auth.uid });
+  return { certId, status: "Revoked", reason };
 });
 
 /**

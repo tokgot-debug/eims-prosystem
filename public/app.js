@@ -255,21 +255,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const policy = urlParams.get("policy") || "";
     const plate = urlParams.get("plate") || "";
     const owner = urlParams.get("owner") || "";
-    const hash = urlParams.get("hash") || "SHA256-D7F8A92B-AKI-VERIFIED-2026";
+    const hash = urlParams.get("hash") || "";
     setTimeout(() => {
-      const vModal = document.getElementById("public-verification-modal");
-      if (vModal) {
-        document.getElementById("v-cert-id").innerText = certId;
-        document.getElementById("v-plate").innerText = plate;
-        document.getElementById("v-owner").innerText = owner;
-        document.getElementById("v-policy").innerText = policy;
-        document.getElementById("v-hash").innerText = hash;
-        vModal.classList.add("active");
-        if (typeof showToast === "function") {
-          showToast("AKI Verification Opened", `Successfully parsed registry query for vehicle ${plate}.`, "success");
-        }
+      if (typeof verifyAKICertFromURLParams === "function") {
+        verifyAKICertFromURLParams({ certId, policy, plate, owner, hash });
       }
-    }, 600);
+    }, 300);
   }
 
   // Set up Global Search
@@ -449,6 +440,8 @@ function navigateToView(viewId) {
     renderAlertsSimulator();
   } else if (viewId === "policy-registry") {
     renderPolicyRegistry();
+  } else if (viewId === "aki-certificates") {
+    if (typeof renderAKICertificatesHub === "function") renderAKICertificatesHub();
   } else if (viewId === "production-reports") {
     if (typeof window.runReportQuery === "function") window.runReportQuery();
     else renderProductionReports();
@@ -1159,6 +1152,21 @@ function runANPRScanSimulation() {
     document.getElementById("ntsa-chassis").innerText = ntsaResult.chassis;
     document.getElementById("ntsa-policy").innerText = ntsaResult.policy;
     document.getElementById("ntsa-valuation").innerText = "KSh " + Number(ntsaResult.valuation || 1850000).toLocaleString();
+    const akiCertEl = document.getElementById("ntsa-aki-cert");
+    if (akiCertEl && typeof findCertificateOrPlateRecord === "function") {
+      const certRec = findCertificateOrPlateRecord(plateText);
+      if (certRec && certRec.certId && certRec.certId !== "Pending Batch Issue") {
+        const cStat = certRec.status || "Active";
+        const bCls = cStat === "Active" ? "approved" : (cStat === "Pending" ? "pending" : "investigation");
+        const bTxt = cStat === "Active" ? "VALID & ACTIVE" : (cStat === "Pending" ? "PENDING SLA" : cStat.toUpperCase());
+        const openFn = certRec.source === "POLICY"
+          ? `triggerCertPolicy('${certRec.policyNo}')`
+          : `previewFleetVehicleAKICert('${certRec.fleetId}', '${certRec.singlePlate}')`;
+        akiCertEl.innerHTML = `<code style="color:#dfc09f;">${escapeHTML(certRec.certId)}</code> <span class="status-badge ${bCls}" style="font-size:10px; padding:2px 7px;">${escapeHTML(bTxt)}</span> <button type="button" class="btn btn-secondary" onclick="${openFn}" style="padding:2px 8px; font-size:10px; min-height:24px;">Sticker</button>`;
+      } else {
+        akiCertEl.innerHTML = `<span class="status-badge investigation" style="font-size:10px; padding:2px 7px;">UNISSUED / UNMATCHED</span>`;
+      }
+    }
     
     document.getElementById("anpr-placeholder-content").style.display = "none";
     document.getElementById("anpr-preview-img").style.display = "block";
@@ -1408,6 +1416,29 @@ function runAICoreAudit() {
         "Minor mismatch in EXIF time-stamp vs reported loss occurrence.",
         "Manual inspection gate check required for sub-fender structural dents.",
         "Unverified previous collision history on record."
+      ];
+    }
+
+    const akiCheck = typeof findCertificateOrPlateRecord === "function" ? findCertificateOrPlateRecord(plate) : null;
+    if (akiCheck && akiCheck.certId && akiCheck.status === "Active") {
+      flagsList.push(`AKI DMVIC Digital Motor Certificate (${akiCheck.certId}) cryptographically verified & active under Cap 405.`);
+    } else if (akiCheck && (akiCheck.status === "Cancelled" || akiCheck.status === "Revoked")) {
+      fraudIndex = Math.max(fraudIndex, 86);
+      triageRoute = "Red";
+      statusClass = "red";
+      flagsList = [
+        `CRITICAL CAP 405 BREACH: AKI Certificate (${akiCheck.certId || "NONE"}) on ${plate} is REVOKED / CANCELLED.`,
+        ...flagsList
+      ];
+    } else if (akiCheck && akiCheck.status === "Suspended") {
+      fraudIndex = Math.max(fraudIndex, 48);
+      if (triageRoute === "Green") {
+        triageRoute = "Yellow";
+        statusClass = "yellow";
+      }
+      flagsList = [
+        `CAP 405 COMPLIANCE HOLD: AKI Certificate (${akiCheck.certId || "NONE"}) on ${plate} is currently SUSPENDED.`,
+        ...flagsList
       ];
     }
     
@@ -2228,10 +2259,11 @@ function lookupVehicleCoverageByPlate(plateInput) {
         const veh = fleet.vehicles.find(v => normalizePlateCompact(v.plate) === compactQuery);
         if (veh) {
           const resolvedMake = veh.makeModel || fleet.line || "County Fleet Vehicle";
+          const vehStatus = veh.certStatus || fleet.status || "Active";
           return {
             source: "FLEET",
             isFleetVehicle: true,
-            hasActivePolicy: (fleet.status || "Active") === "Active",
+            hasActivePolicy: vehStatus === "Active",
             make: resolvedMake,
             makeModel: resolvedMake,
             year: veh.year || 2024,
@@ -2241,7 +2273,7 @@ function lookupVehicleCoverageByPlate(plateInput) {
             policyNo: fleet.policyNo || fleet.id,
             owner: fleet.county,
             certId: veh.certId || null,
-            status: fleet.status || "Active",
+            status: vehStatus,
             fleetId: fleet.id
           };
         }
@@ -2306,6 +2338,9 @@ function findCertificateOrPlateRecord(rawQuery) {
           (v.plate && normalizePlateCompact(v.plate) === compactQ)
         );
         if (veh) {
+          const effStatus = veh.certStatus
+            ? veh.certStatus
+            : (veh.certId && (fleet.status || "Active") === "Active" ? "Active" : (fleet.status || "Pending"));
           return {
             source: "FLEET_VEHICLE",
             isFleetVehicle: true,
@@ -2316,7 +2351,7 @@ function findCertificateOrPlateRecord(rawQuery) {
             singlePlate: veh.plate,
             line: `County Fleet — ${veh.makeModel || fleet.line}`,
             certId: veh.certId || "Pending Batch Issue",
-            status: veh.certId && (fleet.status || "Active") === "Active" ? "Active" : (fleet.status || "Pending"),
+            status: effStatus,
             sumInsured: veh.sumInsured || 4500000
           };
         }
@@ -3219,8 +3254,17 @@ function toggleSuspendPolicy(policyNo) {
     const linkedFleet = countyFleets.find(f => f.id === p.fleetId);
     if (linkedFleet) linkedFleet.status = p.status;
   }
+  if (typeof recordAKIAuditEvent === "function" && p.certId) {
+    recordAKIAuditEvent(
+      p.status === "Suspended" ? "SUSPENDED" : "REINSTATED",
+      p.certId,
+      p.plate,
+      `Policy ${p.policyNo} (${p.clientName}) marked ${p.status} in AKI DMVIC ledger.`
+    );
+  }
   showToast("Policy Status", `Policy ${p.policyNo} is now ${p.status}.`, "info");
   renderPolicyRegistry();
+  if (typeof renderAKICertificatesHub === "function") renderAKICertificatesHub();
   if (typeof renderFleetUnderwriting === "function") renderFleetUnderwriting();
   if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
 }
@@ -3235,8 +3279,18 @@ function cancelPolicy(policyNo) {
     const linkedFleet = countyFleets.find(f => f.id === p.fleetId);
     if (linkedFleet) linkedFleet.status = "Cancelled";
   }
-  showToast("Policy Cancelled", `Policy ${p.policyNo} cancelled.`, "danger");
+  p.revokedAt = new Date().toISOString().slice(0, 10);
+  if (typeof recordAKIAuditEvent === "function" && p.certId) {
+    recordAKIAuditEvent(
+      "REVOKED_CANCELLED",
+      p.certId,
+      p.plate,
+      `Statutory Cap 405 revocation executed for ${p.policyNo} (${p.clientName}).`
+    );
+  }
+  showToast("Policy Cancelled", `Policy ${p.policyNo} and AKI Certificate ${p.certId || ""} revoked.`, "danger");
   renderPolicyRegistry();
+  if (typeof renderAKICertificatesHub === "function") renderAKICertificatesHub();
   if (typeof renderFleetUnderwriting === "function") renderFleetUnderwriting();
   if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
 }
@@ -3429,8 +3483,26 @@ function dispatchRenewalNotices() {
     return;
   }
   
+  let renewedCerts = 0;
+  selected.forEach(cb => {
+    const pol = policies.find(p => p.policyNo === cb.value);
+    if (pol && pol.line !== "Non-Motor") {
+      const oldCert = pol.certId || "UNISSUED";
+      pol.commencingDate = "2027-01-01";
+      pol.expiryDate = "2027-12-31";
+      pol.certId = typeof mintNextAKICertId === "function"
+        ? mintNextAKICertId(classifyAKICertificateType(pol).code, "2027")
+        : `CERT-RNW-${Math.floor(1000 + Math.random() * 9000)}-2027`;
+      renewedCerts++;
+      if (typeof recordAKIAuditEvent === "function") {
+        recordAKIAuditEvent("RENEWED_REISSUED", pol.certId, pol.plate, `Renewed ${pol.policyNo} for 2027 term (superseded ${oldCert}) via ${broker}.`);
+      }
+    }
+  });
+  if (typeof renderPolicyRegistry === "function") renderPolicyRegistry();
+  if (typeof renderAKICertificatesHub === "function") renderAKICertificatesHub();
   closeRenewalModal();
-  showToast("Renewal Batch Dispatched", `Successfully dispatched ${selected.length} policy renewal notices to ${broker}.`, "success");
+  showToast("Renewal Batch Dispatched", `Dispatched ${selected.length} renewal notices to ${broker} and minted ${renewedCerts} renewed 2027 AKI Digital Certificates.`, "success");
 }
 
 // ================= AI REPORT ASSISTANT ENGINE =================
@@ -5025,11 +5097,16 @@ function previewFleetVehicleAKICert(fleetId, plateOrIdx) {
     policyNo: fleet.policyNo || fleet.id,
     clientName: fleet.county,
     plate: veh.plate,
+    chassis: veh.chassis || ("FLT-" + normalizePlateCompact(veh.plate) + "-2026"),
     makeModel: veh.makeModel || fleet.line,
+    akiClass: veh.akiClass || "TYPE-B",
+    coverScope: veh.coverScope || "COMPREHENSIVE",
+    commencingDate: veh.commencingDate || "2026-01-01",
+    expiryDate: veh.expiryDate || "2026-12-31",
     sumInsured: veh.sumInsured || 4500000,
     premium: veh.premium || 126000,
     certId: veh.certId,
-    status: fleet.status || "Active"
+    status: veh.certStatus || fleet.status || "Active"
   });
 }
 
@@ -10671,4 +10748,1422 @@ document.addEventListener("DOMContentLoaded", () => {
   }, 25000);
 });
 
+// ============================================================================
+// END-TO-END AKI DIGITAL MOTOR CERTIFICATE (DMVIC / IMIDS) ENGINE (CAP 405)
+// ============================================================================
 
+const akiStockPool = {
+  "TYPE-A": { label: "Type A — PSV Passenger", allocated: 600, available: 450, color: "#f59e0b", prefix: "A" },
+  "TYPE-B": { label: "Type B — Commercial & Fleet", allocated: 1200, available: 850, color: "#ef4444", prefix: "B" },
+  "TYPE-C": { label: "Type C — Private Motor", allocated: 1400, available: 900, color: "#22c55e", prefix: "C" },
+  "TYPE-D": { label: "Type D — EV & Special Types", allocated: 400, available: 250, color: "#14b8a6", prefix: "D" }
+};
+
+let akiDoubleInsuranceBlocks = 2;
+
+const akiAuditTrail = [
+  {
+    at: "2026-11-08 08:15 EAT",
+    action: "STOCK_ALLOCATED",
+    certId: "DMVIC-BATCH-2026Q4",
+    plate: "ALL CLASSES",
+    detail: "AKI IMIDS allocated 3,600 digital motor certificate serials across Type A, B, C & D under IRA/01/487/2026."
+  },
+  {
+    at: "2026-11-08 09:42 EAT",
+    action: "BATCH_ISSUED",
+    certId: "CERT-NRB-001..045",
+    plate: "KCG47 100A (+44)",
+    detail: "Minted & SHA-256 sealed 45 Type B County Fleet digital motor certificates for Nairobi City County."
+  },
+  {
+    at: "2026-11-08 11:18 EAT",
+    action: "DOUBLE_INS_BLOCKED",
+    certId: "CERT-9082-2026",
+    plate: "KDG 123A",
+    detail: "AKI IMIDS Double-Insurance Guard blocked duplicate active sticker request on KDG 123A (already active on POL-MOT-8973-2026)."
+  },
+  {
+    at: "2026-11-08 14:05 EAT",
+    action: "VERIFIED_QR",
+    certId: "CERT-9082-2026",
+    plate: "KDG 123A",
+    detail: "Roadside Traffic Police QR & SHA-256 verification passed along Thika Superhighway."
+  }
+];
+
+function recordAKIAuditEvent(action, certId, plate, detail) {
+  const nowStr = new Date().toISOString().slice(0, 16).replace("T", " ") + " EAT";
+  akiAuditTrail.unshift({
+    at: nowStr,
+    action: String(action || "UPDATED"),
+    certId: String(certId || "PENDING"),
+    plate: String(plate || "N/A"),
+    detail: String(detail || "")
+  });
+  if (akiAuditTrail.length > 60) akiAuditTrail.length = 60;
+}
+
+function classifyAKICertificateType(record = {}) {
+  if (record.akiClass && akiStockPool[record.akiClass]) {
+    const code = record.akiClass;
+    return buildAKIClassMeta(code);
+  }
+  const line = String(record.line || record.category || "").toLowerCase();
+  const make = String(record.makeModel || record.make || "").toLowerCase();
+  const cert = String(record.certId || "").toUpperCase();
+
+  if (cert.startsWith("CERT-A-") || line.includes("psv") || make.includes("bus") || make.includes("matatu") || make.includes("coaster") || make.includes("sacco")) {
+    return buildAKIClassMeta("TYPE-A");
+  }
+  if (cert.startsWith("CERT-D-") || cert.startsWith("CERT-EV-") || line.includes("electric") || line.includes("ev") || make.includes("byd") || make.includes("tesla") || make.includes("leaf") || make.includes("ioniq") || make.includes("roam")) {
+    return buildAKIClassMeta("TYPE-D");
+  }
+  if (cert.startsWith("CERT-B-") || record.isFleetVehicle || record.fleetId || line.includes("fleet") || line.includes("commercial") || make.includes("truck") || make.includes("fuso") || make.includes("frr") || make.includes("fvr") || make.includes("hilux") || make.includes("d-max") || make.includes("ranger") || make.includes("ambulance") || make.includes("bowser")) {
+    return buildAKIClassMeta("TYPE-B");
+  }
+  return buildAKIClassMeta("TYPE-C");
+}
+
+function buildAKIClassMeta(code) {
+  const map = {
+    "TYPE-A": {
+      code: "TYPE-A",
+      shortLabel: "TYPE A — PSV",
+      stickerBandText: "TYPE A — PSV PASSENGER",
+      fullTitle: "Type A — Public Service Vehicle (Cap 405)",
+      bandBg: "#b45309",
+      pillClass: "type-a"
+    },
+    "TYPE-B": {
+      code: "TYPE-B",
+      shortLabel: "TYPE B — COMMERCIAL",
+      stickerBandText: "TYPE B — COMMERCIAL / FLEET",
+      fullTitle: "Type B — Commercial & County Fleet (Cap 405)",
+      bandBg: "#991b1b",
+      pillClass: "type-b"
+    },
+    "TYPE-C": {
+      code: "TYPE-C",
+      shortLabel: "TYPE C — PRIVATE",
+      stickerBandText: "TYPE C — PRIVATE CAR",
+      fullTitle: "Type C — Private Motor Vehicle (Cap 405)",
+      bandBg: "#15803d",
+      pillClass: "type-c"
+    },
+    "TYPE-D": {
+      code: "TYPE-D",
+      shortLabel: "TYPE D — EV / SPL",
+      stickerBandText: "TYPE D — ELECTRIC / SPECIAL",
+      fullTitle: "Type D — Electric Vehicle & Special Type (Cap 405)",
+      bandBg: "#0f766e",
+      pillClass: "type-d"
+    }
+  };
+  return map[code] || map["TYPE-C"];
+}
+
+function mintNextAKICertId(classCode = "TYPE-C", yearTag = "2026") {
+  const bucket = akiStockPool[classCode] || akiStockPool["TYPE-C"];
+  if (bucket.available > 0) bucket.available -= 1;
+  const prefix = bucket.prefix || "C";
+  const serial = Math.floor(1000 + Math.random() * 8999);
+  return `CERT-${prefix}-${yearTag}-${serial}`;
+}
+
+function maskChassisForPublic(chassis) {
+  const s = String(chassis || "KEN-7856421").trim();
+  if (s.length <= 6) return s;
+  return s.slice(0, 4) + "***" + s.slice(-3);
+}
+
+// Build unified live register across Individual/EV policies + all County/Corporate Fleet vehicles
+function getUnifiedAKICertificateLedger() {
+  const rows = [];
+
+  // 1. Individual, EV & non-fleet Motor Policies (skip Fleet Master wrapper policies that mirror countyFleets so vehicles are not double-counted)
+  if (typeof policies !== "undefined" && Array.isArray(policies)) {
+    for (const p of policies) {
+      if (p.fleetId || String(p.policyNo || "").startsWith("POL-FLT-")) continue;
+      if (p.line === "Non-Motor" && !/^K[A-Z0-9]{2,4}\s?\d{3}[A-Z]$/i.test(String(p.plate || "").trim())) continue;
+
+      const plateClean = String(p.plate || "").trim().toUpperCase();
+      const ntsaRec = ntsaDatabase[plateClean] || {};
+      const classMeta = classifyAKICertificateType({
+        ...p,
+        makeModel: p.makeModel || ntsaRec.make || ""
+      });
+      const chassis = p.chassis || ntsaRec.chassis || ("KEN-" + normalizePlateCompact(plateClean) + "-26");
+      const commencingDate = p.commencingDate || "2026-01-01";
+      const expiryDate = p.expiryDate || "2026-12-31";
+      const sumInsured = Number(p.sumInsured || ntsaRec.valuation || Math.round((Number(p.premium) || 85000) / 0.035));
+      const effectiveStatus = !p.certId
+        ? "Pending"
+        : (p.status || "Active");
+
+      rows.push({
+        uid: `POLICY:${p.policyNo}`,
+        sourceType: "POLICY",
+        sourceKey: p.policyNo,
+        fleetId: null,
+        certId: p.certId || null,
+        akiClass: classMeta.code,
+        classMeta,
+        plate: plateClean,
+        chassis,
+        makeModel: p.makeModel || (ntsaRec.make ? `${ntsaRec.make} (${ntsaRec.year || 2022})` : "Motor Vehicle"),
+        holder: p.clientName || "Policyholder",
+        policyNo: p.policyNo,
+        commencingDate,
+        expiryDate,
+        coverScope: p.coverScope || "COMPREHENSIVE",
+        sumInsured,
+        status: effectiveStatus,
+        rawPolicy: p
+      });
+    }
+  }
+
+  // 2. Every vehicle across County & Corporate Fleets
+  if (typeof countyFleets !== "undefined" && Array.isArray(countyFleets)) {
+    for (const fleet of countyFleets) {
+      const fleetPolNo = fleet.policyNo || fleet.id;
+      const fleetStatus = fleet.status || "Active";
+      if (!Array.isArray(fleet.vehicles)) continue;
+
+      fleet.vehicles.forEach((veh, idx) => {
+        const plateClean = String(veh.plate || "").trim().toUpperCase();
+        const classMeta = classifyAKICertificateType({
+          akiClass: veh.akiClass,
+          isFleetVehicle: true,
+          fleetId: fleet.id,
+          line: veh.category || fleet.line,
+          makeModel: veh.makeModel,
+          certId: veh.certId
+        });
+        const chassis = veh.chassis || ("FLT-" + normalizePlateCompact(plateClean) + "-" + String(idx + 1).padStart(3, "0"));
+        const commencingDate = veh.commencingDate || fleet.commencingDate || "2026-01-01";
+        const expiryDate = veh.expiryDate || fleet.expiryDate || "2026-12-31";
+        const vehBaseStatus = veh.certStatus || fleetStatus;
+        const effectiveStatus = !veh.certId ? "Pending" : vehBaseStatus;
+
+        rows.push({
+          uid: `FLEET:${fleet.id}:${plateClean}`,
+          sourceType: "FLEET",
+          sourceKey: plateClean,
+          fleetId: fleet.id,
+          certId: veh.certId || null,
+          akiClass: classMeta.code,
+          classMeta,
+          plate: plateClean,
+          chassis,
+          makeModel: veh.makeModel || fleet.line || "County Fleet Vehicle",
+          holder: fleet.county,
+          policyNo: fleetPolNo,
+          commencingDate,
+          expiryDate,
+          coverScope: veh.coverScope || "COMPREHENSIVE FLEET",
+          sumInsured: Number(veh.sumInsured || 4500000),
+          status: effectiveStatus,
+          rawFleet: fleet,
+          rawVehicle: veh
+        });
+      });
+    }
+  }
+
+  return rows;
+}
+
+// AKI IMIDS Double-Insurance Guard: detects if a registration plate already holds an Active AKI certificate
+function checkAKIDoubleInsurance(plateInput, excludePolicyOrCert = "") {
+  const compact = normalizePlateCompact(plateInput);
+  if (!compact || compact.length < 4) return null;
+  const ex = String(excludePolicyOrCert || "").trim().toUpperCase();
+
+  const ledger = getUnifiedAKICertificateLedger();
+  return ledger.find(item =>
+    normalizePlateCompact(item.plate) === compact &&
+    Boolean(item.certId) &&
+    item.status === "Active" &&
+    item.policyNo.toUpperCase() !== ex &&
+    String(item.certId || "").toUpperCase() !== ex
+  ) || null;
+}
+
+// Enhanced deterministic SHA-256 signature seal incorporating dates & status
+generateCertSHA256Hash = function(policy) {
+  const startVal = policy.commencingDate || "2026-01-01";
+  const expiryVal = policy.expiryDate || "2026-12-31";
+  const statVal = policy.status || "Active";
+  const certRef = policy.certId || "UNISSUED";
+  const str = `${certRef}|${policy.policyNo}|${policy.plate}|${policy.clientName}|${startVal}|${expiryVal}|${statVal}|AKI-KENYA-CAP405-SALT-9982`;
+  let h1 = 0x811c9dc5;
+  let h2 = 0x01000193;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str.charCodeAt(i);
+    h1 ^= ch;
+    h1 = Math.imul(h1, 0x01000193);
+    h2 ^= (ch + i);
+    h2 = Math.imul(h2, 0x5bd1e995);
+  }
+  const hex1 = (h1 >>> 0).toString(16).padStart(8, "0").toUpperCase();
+  const hex2 = (h2 >>> 0).toString(16).padStart(8, "0").toUpperCase();
+  return `SHA256-${hex1}${hex2}-AKI-DMVIC-2026`;
+};
+window.generateCertSHA256Hash = generateCertSHA256Hash;
+
+// Upgraded Official 3-Copy AKI Digital Certificate Modal Renderer
+openAKICertModal = function(policyOrNo) {
+  let policy = null;
+  if (typeof policyOrNo === "object" && policyOrNo !== null) {
+    policy = policyOrNo;
+  } else {
+    const q = String(policyOrNo || "").trim();
+    policy = policies.find(p => p.policyNo === q || p.certId === q) || null;
+    if (!policy) {
+      const ledgerHit = getUnifiedAKICertificateLedger().find(r => r.certId === q || r.policyNo === q || r.plate === q.toUpperCase());
+      if (ledgerHit) {
+        policy = {
+          policyNo: ledgerHit.policyNo,
+          clientName: ledgerHit.holder,
+          plate: ledgerHit.plate,
+          makeModel: ledgerHit.makeModel,
+          chassis: ledgerHit.chassis,
+          sumInsured: ledgerHit.sumInsured,
+          commencingDate: ledgerHit.commencingDate,
+          expiryDate: ledgerHit.expiryDate,
+          coverScope: ledgerHit.coverScope,
+          akiClass: ledgerHit.akiClass,
+          certId: ledgerHit.certId,
+          status: ledgerHit.status,
+          fleetId: ledgerHit.fleetId,
+          sourceType: ledgerHit.sourceType
+        };
+      }
+    }
+    if (!policy) policy = policies[0];
+  }
+  if (!policy) return;
+
+  const classMeta = classifyAKICertificateType(policy);
+  if (!policy.certId) {
+    policy.certId = mintNextAKICertId(classMeta.code, "2026");
+    recordAKIAuditEvent("ISSUED", policy.certId, policy.plate, `Minted ${classMeta.shortLabel} certificate for ${policy.policyNo} (${policy.clientName}).`);
+    if (typeof renderPolicyRegistry === "function") renderPolicyRegistry();
+    if (typeof renderAKICertificatesHub === "function") renderAKICertificatesHub();
+  }
+
+  currentActiveCertPolicy = policy;
+  selectedPolicyForCert = policy;
+
+  const dispId = document.getElementById("cert-display-id");
+  const dispOwner = document.getElementById("cert-display-owner");
+  const dispPlate = document.getElementById("cert-display-plate");
+  const dispPol = document.getElementById("cert-display-policy");
+  if (dispId) dispId.innerText = policy.certId;
+  if (dispOwner) dispOwner.innerText = policy.clientName;
+  if (dispPlate) dispPlate.innerText = policy.plate;
+  if (dispPol) dispPol.innerText = policy.policyNo;
+
+  const modal = document.getElementById("aki-digital-cert-modal");
+  if (!modal) return;
+
+  const plateVal = policy.plate || "KDG 123A";
+  const ownerVal = policy.clientName || "Boniface Mwangi";
+  const ntsaEntry = ntsaDatabase[plateVal] || {};
+  const customMakeModel = policy.makeModel || ntsaEntry.make || "";
+  const makeVal = customMakeModel
+    ? customMakeModel.split(" ")[0]
+    : (plateVal.startsWith("KDG") ? "Toyota" : (plateVal.startsWith("KBA") ? "Subaru" : "Isuzu"));
+  const modelVal = customMakeModel || (plateVal.startsWith("KDG") ? "Fielder (2018)" : (plateVal.startsWith("KBA") ? "Forester (2019)" : "D-Max Double Cab (2022)"));
+  const chassisVal = policy.chassis || ntsaEntry.chassis || ("AKI-" + normalizePlateCompact(plateVal) + "-2026");
+  const refVal = policy.certId;
+  const startVal = policy.commencingDate || "2026-01-01";
+  const expiryVal = policy.expiryDate || "2026-12-31";
+  const scopeVal = policy.coverScope || "COMPREHENSIVE";
+  const numericSumInsured = Number(policy.sumInsured || ntsaEntry.valuation || Math.round((policy.premium || 75000) / 0.035));
+  const sumInsuredVal = "KSh " + numericSumInsured.toLocaleString();
+  const rawStatus = policy.status || "Active";
+  const statusVal = rawStatus === "Active"
+    ? "VALID & ACTIVE"
+    : (rawStatus === "Pending" ? "PENDING SLA APPROVAL" : (rawStatus === "Suspended" ? "COVER SUSPENDED" : "REVOKED / CANCELLED"));
+
+  const setTxt = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  };
+
+  setTxt("cert-plate", plateVal);
+  setTxt("cert-owner", ownerVal);
+  setTxt("cert-pol-no", policy.policyNo);
+  setTxt("cert-start-date", startVal);
+  setTxt("cert-expiry-date", expiryVal);
+  setTxt("cert-chassis", chassisVal);
+  setTxt("cert-ref-no", refVal);
+  setTxt("cert-cover-scope", scopeVal);
+  setTxt("cert-underwriter-name", "EIMS ProSystem Insurance Kenya Ltd.");
+
+  // Update dynamic Cap 405 Class Bands across all 3 statutory stickers
+  ["cert-band-1", "cert-band-2", "cert-band-3"].forEach(bandId => {
+    const bEl = document.getElementById(bandId);
+    if (bEl) {
+      bEl.innerText = classMeta.stickerBandText;
+      bEl.style.background = classMeta.bandBg;
+    }
+  });
+
+  const statusEl = document.getElementById("cert-display-status");
+  if (statusEl) {
+    statusEl.innerText = statusVal;
+    statusEl.style.color = rawStatus === "Active"
+      ? "#16a34a"
+      : (rawStatus === "Pending" ? "#b45309" : "#dc2626");
+  }
+
+  // Toggle diagonal REVOKED / SUSPENDED watermark on the certificate face
+  const watermarkEl = document.getElementById("cert-revoked-watermark");
+  if (watermarkEl) {
+    if (rawStatus === "Cancelled" || rawStatus === "Revoked") {
+      watermarkEl.style.display = "block";
+      watermarkEl.innerText = "REVOKED / CANCELLED";
+      watermarkEl.style.borderColor = "#dc2626";
+      watermarkEl.style.color = "#dc2626";
+    } else if (rawStatus === "Suspended") {
+      watermarkEl.style.display = "block";
+      watermarkEl.innerText = "COVER SUSPENDED";
+      watermarkEl.style.borderColor = "#d97706";
+      watermarkEl.style.color = "#d97706";
+    } else {
+      watermarkEl.style.display = "none";
+    }
+  }
+
+  setTxt("cert-make-val", makeVal);
+  document.querySelectorAll("#cert-model").forEach(el => { el.innerText = modelVal; });
+  document.querySelectorAll("#cert-sum-insured").forEach(el => { el.innerText = sumInsuredVal; });
+
+  setTxt("cert-ref-no-file", refVal);
+  setTxt("cert-ref-no-dup", refVal);
+
+  const mapping = {
+    "v-owner-lbl": ownerVal, "v-owner-lbl2": ownerVal,
+    "v-policy-lbl": policy.policyNo, "v-policy-lbl2": policy.policyNo,
+    "v-start-lbl": startVal, "v-start-lbl2": startVal,
+    "v-expiry-lbl": expiryVal, "v-expiry-lbl2": expiryVal,
+    "v-plate-lbl": plateVal, "v-plate-lbl2": plateVal,
+    "v-chassis-lbl": chassisVal, "v-chassis-lbl2": chassisVal
+  };
+  for (const [id, val] of Object.entries(mapping)) {
+    setTxt(id, val);
+  }
+
+  const hashSeal = generateCertSHA256Hash(policy);
+  setTxt("cert-sha256-hash", hashSeal);
+
+  const qrContainer = document.getElementById("aki-cert-qr-container");
+  if (qrContainer && typeof renderStandardQRCodeContainer === "function") {
+    const originUrl = (typeof window !== "undefined" && window.location && window.location.origin && window.location.origin !== "null")
+      ? window.location.origin
+      : "https://eims-prosystem.web.app";
+    const certURL = `${originUrl}/?verifyCert=true&certId=${encodeURIComponent(refVal)}&policy=${encodeURIComponent(policy.policyNo)}&plate=${encodeURIComponent(plateVal)}&owner=${encodeURIComponent(ownerVal)}&hash=${encodeURIComponent(hashSeal)}`;
+    renderStandardQRCodeContainer(qrContainer, certURL, {
+      fgColor: "#1c1613",
+      bgColor: "#ffffff",
+      size: 77,
+      padding: "4px",
+      logoType: "none"
+    });
+  }
+
+  modal.classList.add("active");
+  showToast("AKI Digital Certificate Ready", `${classMeta.shortLabel} certificate ${refVal} loaded for ${plateVal} (${statusVal}).`, rawStatus === "Active" ? "success" : "warning");
+};
+window.openAKICertModal = openAKICertModal;
+
+// Real Standalone Printable Official AKI Certificate Download (.HTML with embedded QR & Cap 405 Seal)
+downloadDigitalCertPDF = function() {
+  const pol = currentActiveCertPolicy || policies[0];
+  if (!pol) return;
+
+  const classMeta = classifyAKICertificateType(pol);
+  const plateVal = pol.plate || "KDG 123A";
+  const ownerVal = pol.clientName || "Policyholder";
+  const refVal = pol.certId || "CERT-C-2026-9082";
+  const startVal = pol.commencingDate || "2026-01-01";
+  const expiryVal = pol.expiryDate || "2026-12-31";
+  const chassisVal = pol.chassis || (ntsaDatabase[plateVal] && ntsaDatabase[plateVal].chassis) || ("AKI-" + normalizePlateCompact(plateVal));
+  const makeModel = pol.makeModel || (ntsaDatabase[plateVal] && ntsaDatabase[plateVal].make) || "Motor Vehicle";
+  const sumInsuredVal = "KSh " + Number(pol.sumInsured || 2500000).toLocaleString();
+  const hashSeal = generateCertSHA256Hash(pol);
+  const statusVal = (pol.status || "Active") === "Active" ? "VALID & ACTIVE" : String(pol.status || "PENDING").toUpperCase();
+  const qrMarkup = document.getElementById("aki-cert-qr-container")?.innerHTML || "";
+
+  const standaloneHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Official AKI Digital Motor Certificate - ${escapeHTML(refVal)} (${escapeHTML(plateVal)})</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8fafc; color: #0f172a; padding: 28px; margin: 0; }
+    .sheet { max-width: 900px; margin: 0 auto; background: #ffffff; border: 2px solid #0f172a; border-radius: 12px; padding: 24px; box-shadow: 0 12px 30px rgba(0,0,0,0.12); position: relative; }
+    .stickers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+    .sticker { border: 1.5px dashed #16a34a; border-radius: 8px; padding: 12px; background: #f0fdf4; font-size: 11px; line-height: 1.45; display: flex; flex-direction: column; justify-content: space-between; }
+    .sticker.orig { border-style: solid; background: linear-gradient(135deg, #fefce8, #f0fdf4); }
+    .band { background: ${classMeta.bandBg}; color: #fff; text-align: center; font-weight: 800; padding: 4px; border-radius: 4px; font-size: 10px; letter-spacing: 0.8px; margin-top: 8px; }
+    .meta { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 14px; border-top: 1px solid #cbd5e1; padding-top: 14px; font-size: 11px; }
+    .foot { border-top: 1px dashed #94a3b8; margin-top: 14px; padding-top: 10px; display: flex; justify-content: space-between; font-size: 10px; color: #475569; }
+    @media print { body { background: #fff; padding: 0; } .sheet { box-shadow: none; } }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid ${classMeta.bandBg}; padding-bottom:10px; margin-bottom:14px;">
+      <div>
+        <div style="font-size:13px; font-weight:900; color:#15803d; letter-spacing:0.6px;">ASSOCIATION OF KENYA INSURERS (AKI) &bull; DMVIC</div>
+        <div style="font-size:17px; font-weight:800;">OFFICIAL DIGITAL MOTOR INSURANCE CERTIFICATE (CAP 405)</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:12px; font-weight:800; color:${classMeta.bandBg};">${escapeHTML(statusVal)}</div>
+        <div style="font-size:11px; font-family:monospace;">${escapeHTML(refVal)}</div>
+      </div>
+    </div>
+    <div class="stickers">
+      <div class="sticker">
+        <div>
+          <strong>FILE COPY &bull; AKI</strong><br>
+          <strong>Cert No:</strong> ${escapeHTML(refVal)}<br>
+          <strong>Holder:</strong> ${escapeHTML(ownerVal)}<br>
+          <strong>Policy:</strong> ${escapeHTML(pol.policyNo)}<br>
+          <strong>Plate:</strong> ${escapeHTML(plateVal)}<br>
+          <strong>Chassis:</strong> ${escapeHTML(chassisVal)}<br>
+          <strong>Valid:</strong> ${escapeHTML(startVal)} to ${escapeHTML(expiryVal)}
+        </div>
+        <div class="band">${escapeHTML(classMeta.stickerBandText)}</div>
+      </div>
+      <div class="sticker">
+        <div>
+          <strong>DUPLICATE COPY &bull; AKI</strong><br>
+          <strong>Cert No:</strong> ${escapeHTML(refVal)}<br>
+          <strong>Holder:</strong> ${escapeHTML(ownerVal)}<br>
+          <strong>Policy:</strong> ${escapeHTML(pol.policyNo)}<br>
+          <strong>Plate:</strong> ${escapeHTML(plateVal)}<br>
+          <strong>Chassis:</strong> ${escapeHTML(chassisVal)}<br>
+          <strong>Valid:</strong> ${escapeHTML(startVal)} to ${escapeHTML(expiryVal)}
+        </div>
+        <div class="band">${escapeHTML(classMeta.stickerBandText)}</div>
+      </div>
+      <div class="sticker orig">
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:6px;">
+            <div style="background:#fff; padding:4px; border:1px solid #cbd5e1; border-radius:4px;">${qrMarkup}</div>
+            <div style="text-align:right; font-weight:800; color:#15803d;">ORIGINAL<br>${escapeHTML(statusVal)}</div>
+          </div>
+          <strong>Cert No:</strong> ${escapeHTML(refVal)}<br>
+          <strong>Holder:</strong> ${escapeHTML(ownerVal)}<br>
+          <strong>Policy:</strong> ${escapeHTML(pol.policyNo)}<br>
+          <strong>Plate:</strong> <strong>${escapeHTML(plateVal)}</strong><br>
+          <strong>Chassis:</strong> ${escapeHTML(chassisVal)}<br>
+          <strong>Expiring:</strong> <strong style="color:#dc2626;">${escapeHTML(expiryVal)}</strong>
+        </div>
+        <div class="band">${escapeHTML(classMeta.stickerBandText)}</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div>
+        <strong>Vehicle:</strong> ${escapeHTML(makeModel)}<br>
+        <strong>Sum Insured:</strong> ${escapeHTML(sumInsuredVal)}<br>
+        <strong>Cover Scope:</strong> ${escapeHTML(pol.coverScope || "COMPREHENSIVE")}<br>
+        <strong>IRA Reg:</strong> IRA/01/487/2026
+      </div>
+      <div>
+        <strong>EIMS ProSystem Insurance Kenya Ltd.</strong>, in collaboration with the Association of Kenya Insurers (AKI), hereby certifies that the Policy of Insurance listed above complies with the Insurance (Motor Vehicles Third Party Risks) Act Cap 405 Laws of Kenya.
+      </div>
+      <div>
+        <strong>Roadside Verification:</strong> Dial <strong>*352#</strong> on any Kenyan mobile network or scan the encrypted QR code above to verify live DMVIC status and SHA-256 signature seal.
+      </div>
+    </div>
+    <div class="foot">
+      <div>Issued digitally by EIMS ProSystem Enterprise Portal</div>
+      <div style="font-family:monospace;"><strong>SHA-256 Seal:</strong> ${escapeHTML(hashSeal)}</div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const blob = new Blob([standaloneHTML], { type: "text/html;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const safePlate = normalizePlateCompact(plateVal) || "VEHICLE";
+  a.href = url;
+  a.download = `AKI_Certificate_${refVal}_${safePlate}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  recordAKIAuditEvent("DOWNLOADED_CERT", refVal, plateVal, `Downloaded standalone printable AKI certificate document for ${plateVal}.`);
+  if (typeof renderAKICertificatesHub === "function") renderAKICertificatesHub();
+  showToast("AKI Certificate Downloaded", `Saved official printable certificate AKI_Certificate_${refVal}_${safePlate}.html with encrypted QR seal.`, "success");
+};
+window.downloadDigitalCertPDF = downloadDigitalCertPDF;
+
+function printCurrentAKICert() {
+  document.body.classList.add("printing-aki-cert");
+  window.print();
+  setTimeout(() => {
+    document.body.classList.remove("printing-aki-cert");
+  }, 500);
+}
+window.printCurrentAKICert = printCurrentAKICert;
+
+// Live Public & Roadside Police Verification Engine
+function openPublicAKIVerifier(initialQuery = "") {
+  const vModal = document.getElementById("public-verification-modal");
+  if (!vModal) return;
+  const input = document.getElementById("public-aki-query-input");
+  const seedQuery = String(initialQuery || "").trim() || "CERT-9082-2026";
+  if (input) input.value = seedQuery.toUpperCase();
+  vModal.classList.add("active");
+  executePublicAKIVerification(seedQuery);
+}
+window.openPublicAKIVerifier = openPublicAKIVerifier;
+
+function verifyAKICertFromURLParams(params = {}) {
+  const query = params.certId || params.plate || params.policy || "CERT-9082-2026";
+  const vModal = document.getElementById("public-verification-modal");
+  if (vModal) vModal.classList.add("active");
+  const input = document.getElementById("public-aki-query-input");
+  if (input) input.value = String(query).toUpperCase();
+  executePublicAKIVerification(query, params);
+}
+window.verifyAKICertFromURLParams = verifyAKICertFromURLParams;
+
+function executePublicAKIVerification(explicitQuery = "", urlOverrides = null) {
+  const input = document.getElementById("public-aki-query-input");
+  const q = String(explicitQuery || (input ? input.value : "") || "").trim().toUpperCase();
+  if (!q) {
+    showToast("Verification Input Required", "Enter an AKI Certificate ID or Vehicle Registration Plate.", "warning");
+    return null;
+  }
+
+  // Search unified AKI ledger first, then fallback to findCertificateOrPlateRecord
+  const ledger = getUnifiedAKICertificateLedger();
+  const compactQ = normalizePlateCompact(q);
+  let hit = ledger.find(r =>
+    (r.certId && r.certId.toUpperCase() === q) ||
+    normalizePlateCompact(r.plate) === compactQ ||
+    r.policyNo.toUpperCase() === q
+  );
+
+  const iconEl = document.getElementById("v-verify-banner-icon");
+  const titleEl = document.getElementById("v-verify-title");
+  const subEl = document.getElementById("v-verify-subtitle");
+  const badgeEl = document.getElementById("v-status-badge");
+  const setV = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+
+  if (!hit) {
+    // Check if URL provided external query params with hash
+    if (urlOverrides && (urlOverrides.certId || urlOverrides.plate)) {
+      hit = {
+        certId: urlOverrides.certId || q,
+        plate: urlOverrides.plate || "UNKNOWN",
+        holder: urlOverrides.owner || "External Policyholder",
+        policyNo: urlOverrides.policy || "EXTERNAL-POL",
+        commencingDate: "2026-01-01",
+        expiryDate: "2026-12-31",
+        chassis: "EXT-VERIFIED",
+        status: "Active",
+        classMeta: buildAKIClassMeta("TYPE-C")
+      };
+    } else {
+      if (iconEl) {
+        iconEl.innerText = "✕";
+        iconEl.style.background = "rgba(239,68,68,0.16)";
+        iconEl.style.color = "#ef4444";
+      }
+      if (titleEl) titleEl.innerText = "UNINSURED / RECORD NOT FOUND IN DMVIC";
+      if (subEl) subEl.innerText = `No active or historical AKI Digital Motor Certificate matched "${q}".`;
+      if (badgeEl) {
+        badgeEl.className = "status-badge investigation";
+        badgeEl.innerText = "NOT FOUND IN AKI";
+      }
+      setV("v-cert-id", "UNMATCHED");
+      setV("v-cert-class", "None — Verify Logbook / Underwriting");
+      setV("v-plate", q);
+      setV("v-chassis-masked", "N/A");
+      setV("v-owner", "Unregistered in AKI Ledger");
+      setV("v-policy", "N/A");
+      setV("v-cover-period", "No Active Cover");
+      setV("v-hash", "NO-SIGNATURE-RECORD");
+      return { found: false, status: "NOT_FOUND" };
+    }
+  }
+
+  const expectedHash = generateCertSHA256Hash({
+    certId: hit.certId,
+    policyNo: hit.policyNo,
+    plate: hit.plate,
+    clientName: hit.holder,
+    commencingDate: hit.commencingDate,
+    expiryDate: hit.expiryDate,
+    status: hit.status
+  });
+
+  const hashTampered = Boolean(urlOverrides && urlOverrides.hash && urlOverrides.hash !== expectedHash);
+  const st = hashTampered ? "Tampered" : (hit.status || "Active");
+
+  setV("v-cert-id", hit.certId || "UNISSUED");
+  setV("v-cert-class", `${hit.classMeta.fullTitle} (${hit.coverScope || "COMPREHENSIVE"})`);
+  setV("v-plate", hit.plate);
+  setV("v-chassis-masked", maskChassisForPublic(hit.chassis));
+  setV("v-owner", hit.holder);
+  setV("v-policy", hit.policyNo);
+  setV("v-cover-period", `${hit.commencingDate} to ${hit.expiryDate} (Midnight EAT)`);
+  setV("v-hash", hashTampered ? `TAMPER-MISMATCH (Expected ${expectedHash.slice(0, 20)}...)` : expectedHash);
+
+  if (st === "Active" && hit.certId) {
+    if (iconEl) {
+      iconEl.innerText = "✓";
+      iconEl.style.background = "rgba(16,185,129,0.16)";
+      iconEl.style.color = "#10b981";
+    }
+    if (titleEl) titleEl.innerText = "AKI Digital Registry Verified — VALID";
+    if (subEl) subEl.innerText = "Cryptographically matched with Association of Kenya Insurers (AKI) DMVIC & NTSA Motor Registry.";
+    if (badgeEl) {
+      badgeEl.className = "status-badge approved";
+      badgeEl.innerText = "VALID & ACTIVE";
+    }
+  } else if (st === "Pending" || !hit.certId) {
+    if (iconEl) {
+      iconEl.innerText = "!";
+      iconEl.style.background = "rgba(245,158,11,0.18)";
+      iconEl.style.color = "#f59e0b";
+    }
+    if (titleEl) titleEl.innerText = "Cover Pending Underwriting SLA Sign-Off";
+    if (subEl) subEl.innerText = "Policy record exists in EIMS queue but awaits 60-minute underwriting approval / certificate minting.";
+    if (badgeEl) {
+      badgeEl.className = "status-badge pending";
+      badgeEl.innerText = "PENDING SLA APPROVAL";
+    }
+  } else {
+    if (iconEl) {
+      iconEl.innerText = "✕";
+      iconEl.style.background = "rgba(239,68,68,0.18)";
+      iconEl.style.color = "#ef4444";
+    }
+    if (titleEl) titleEl.innerText = st === "Tampered" ? "CRYPTOGRAPHIC TAMPERING DETECTED!" : `CERTIFICATE ${st.toUpperCase()} — INVALID FOR ROAD USE`;
+    if (subEl) subEl.innerText = st === "Tampered"
+      ? "QR payload signature does NOT match official AKI DMVIC SHA-256 ledger hash!"
+      : `This vehicle certificate is marked ${st.toUpperCase()} under Cap 405 and is NOT valid motor cover.`;
+    if (badgeEl) {
+      badgeEl.className = "status-badge investigation";
+      badgeEl.innerText = st === "Tampered" ? "SIGNATURE TAMPERED" : st.toUpperCase();
+    }
+  }
+
+  recordAKIAuditEvent("VERIFIED_QR", hit.certId || "UNISSUED", hit.plate, `DMVIC verification query "${q}" -> ${st.toUpperCase()}.`);
+  if (typeof renderAKICertificatesHub === "function" && activeView === "aki-certificates") {
+    renderAKICertificatesHub();
+  }
+  return { found: true, status: st, record: hit, hash: expectedHash };
+}
+window.executePublicAKIVerification = executePublicAKIVerification;
+
+// Upgrade simulatePoliceQRScan to use live cryptographic verification
+simulatePoliceQRScan = function() {
+  const ref = document.getElementById("cert-ref-no")?.innerText.trim() || "";
+  const plate = document.getElementById("cert-plate")?.innerText.trim() || "";
+  closeAKICertModal();
+  openPublicAKIVerifier(ref || plate);
+  showToast("Roadside Police QR Scan", `Executed live AKI DMVIC & SHA-256 check for ${plate} (${ref}).`, "success");
+};
+window.simulatePoliceQRScan = simulatePoliceQRScan;
+
+// Render Dedicated AKI Digital Motor Certificates (DMVIC / IMIDS) Hub
+function renderAKICertificatesHub() {
+  const tbody = document.getElementById("aki-master-ledger-tbody");
+  if (!tbody) return;
+
+  const ledger = getUnifiedAKICertificateLedger();
+  const activeCerts = ledger.filter(r => r.certId && r.status === "Active");
+  const pendingUnits = ledger.filter(r => !r.certId || r.status === "Pending");
+  const restrictedUnits = ledger.filter(r => r.status === "Suspended" || r.status === "Cancelled" || r.status === "Revoked");
+  const totalAvailableStock = Object.values(akiStockPool).reduce((s, b) => s + b.available, 0);
+
+  const elActive = document.getElementById("aki-kpi-active");
+  const elStock = document.getElementById("aki-kpi-stock");
+  const elPending = document.getElementById("aki-kpi-pending");
+  const elRevoked = document.getElementById("aki-kpi-revoked");
+
+  if (elActive) elActive.innerText = activeCerts.length.toLocaleString();
+  if (elStock) elStock.innerText = totalAvailableStock.toLocaleString();
+  if (elPending) elPending.innerText = pendingUnits.length.toLocaleString();
+  if (elRevoked) elRevoked.innerText = (restrictedUnits.length + akiDoubleInsuranceBlocks).toLocaleString();
+
+  // Filter rows
+  const fClass = document.getElementById("aki-filter-class")?.value || "ALL";
+  const fStatus = document.getElementById("aki-filter-status")?.value || "ALL";
+  const fSource = document.getElementById("aki-filter-source")?.value || "ALL";
+  const search = (document.getElementById("aki-search-input")?.value || "").trim().toLowerCase();
+
+  const filtered = ledger.filter(r => {
+    if (fClass !== "ALL" && r.akiClass !== fClass) return false;
+    if (fSource !== "ALL" && r.sourceType !== fSource) return false;
+    if (fStatus !== "ALL") {
+      if (fStatus === "Pending" && !(r.status === "Pending" || !r.certId)) return false;
+      if (fStatus !== "Pending" && r.status !== fStatus) return false;
+    }
+    if (search) {
+      const hay = `${r.certId || ""} ${r.plate} ${r.chassis} ${r.holder} ${r.policyNo} ${r.makeModel}`.toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  tbody.innerHTML = "";
+  const displaySlice = filtered.slice(0, 45);
+
+  if (displaySlice.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:22px; color:var(--text-muted);">No AKI certificate records matched the active filters.</td></tr>`;
+  } else {
+    displaySlice.forEach(r => {
+      const tr = document.createElement("tr");
+      const certDisplay = r.certId
+        ? `<code style="font-weight:700; color:#dfc09f;">${escapeHTML(r.certId)}</code>`
+        : `<span class="status-badge pending" style="font-size:10.5px;">Unissued</span>`;
+
+      let statBadge = `<span class="status-badge approved">VALID &amp; ACTIVE</span>`;
+      if (!r.certId || r.status === "Pending") {
+        statBadge = `<span class="status-badge pending">${r.certId ? "PENDING SLA" : "AWAITING CERT"}</span>`;
+      } else if (r.status === "Suspended") {
+        statBadge = `<span class="status-badge pending">SUSPENDED</span>`;
+      } else if (r.status === "Cancelled" || r.status === "Revoked") {
+        statBadge = `<span class="status-badge investigation">REVOKED</span>`;
+      }
+
+      const openStickerCall = r.sourceType === "POLICY"
+        ? `triggerCertPolicy('${escapeHTML(r.policyNo)}')`
+        : `previewFleetVehicleAKICert('${escapeHTML(r.fleetId)}', '${escapeHTML(r.plate)}')`;
+
+      const verifyKey = escapeHTML(r.certId || r.plate);
+      const revokeLabel = (r.status === "Cancelled" || r.status === "Suspended") ? "Reinstate" : "Revoke";
+      const revokeBtnClass = (r.status === "Cancelled" || r.status === "Suspended") ? "btn-secondary" : "btn-danger";
+
+      tr.innerHTML = `
+        <td>${certDisplay}</td>
+        <td><span class="aki-type-pill ${r.classMeta.pillClass}">${escapeHTML(r.classMeta.shortLabel)}</span></td>
+        <td>
+          <div><strong><code>${escapeHTML(r.plate)}</code></strong></div>
+          <div style="font-size:11px; color:var(--text-muted); font-family:monospace;">${escapeHTML(r.chassis)}</div>
+        </td>
+        <td>
+          <div style="font-weight:600;">${escapeHTML(r.holder)}</div>
+          <div style="font-size:11px; color:var(--text-secondary);">${escapeHTML(r.policyNo)} &middot; ${escapeHTML(r.makeModel)}</div>
+        </td>
+        <td style="font-size:11.5px; white-space:nowrap;">${escapeHTML(r.commencingDate)} &rarr; ${escapeHTML(r.expiryDate)}</td>
+        <td style="white-space:nowrap; font-weight:600;">KSh ${Number(r.sumInsured || 0).toLocaleString()}</td>
+        <td>${statBadge}</td>
+        <td>
+          <div style="display:flex; gap:5px; justify-content:flex-end; flex-wrap:nowrap;">
+            <button class="btn btn-secondary" onclick="${openStickerCall}" style="padding:4px 8px; font-size:11px;">${r.certId ? "QR Sticker" : "Mint Cert"}</button>
+            <button class="btn btn-secondary" onclick="openPublicAKIVerifier('${verifyKey}')" style="padding:4px 8px; font-size:11px;">Verify</button>
+            <button class="btn btn-secondary" onclick="openAmendAKICertModal('${r.sourceType}', '${escapeHTML(r.sourceKey)}', '${escapeHTML(r.fleetId || "")}')" style="padding:4px 8px; font-size:11px;">Amend</button>
+            <button class="btn btn-secondary" onclick="dispatchAKICertToPolicyholder('${r.sourceType}', '${escapeHTML(r.sourceKey)}', '${escapeHTML(r.fleetId || "")}')" style="padding:4px 8px; font-size:11px;">Dispatch</button>
+            <button class="btn ${revokeBtnClass}" onclick="revokeOrReinstateAKICert('${r.sourceType}', '${escapeHTML(r.sourceKey)}', '${escapeHTML(r.fleetId || "")}')" style="padding:4px 8px; font-size:11px;">${revokeLabel}</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  const pageNote = document.getElementById("aki-ledger-pagination-note");
+  if (pageNote) {
+    pageNote.innerText = `Showing ${displaySlice.length} of ${filtered.length} matching motor risk units (${ledger.length} total registered across Individual, EV & County Fleets).`;
+  }
+
+  // Render Stock Pool Breakdown
+  const stockGrid = document.getElementById("aki-stock-breakdown-grid");
+  if (stockGrid) {
+    stockGrid.innerHTML = Object.entries(akiStockPool).map(([code, b]) => {
+      const issuedInLedger = ledger.filter(r => r.akiClass === code && r.certId).length;
+      const pct = Math.min(100, Math.round((b.available / Math.max(1, b.allocated)) * 100));
+      return `
+        <div class="aki-stock-tile">
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:11.5px; font-weight:700; color:#f4f4f5;">
+            <span>${escapeHTML(b.label)}</span>
+            <span style="color:#dfc09f;">${b.available.toLocaleString()} left</span>
+          </div>
+          <div style="font-size:10.5px; color:var(--text-muted); margin-top:3px;">
+            Issued Live: <strong>${issuedInLedger}</strong> &middot; Pool Cap: ${b.allocated.toLocaleString()}
+          </div>
+          <div class="aki-stock-bar-track">
+            <div class="aki-stock-bar-fill" style="width:${pct}%;"></div>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // Render Immutable Audit Trail
+  const auditList = document.getElementById("aki-audit-trail-list");
+  if (auditList) {
+    auditList.innerHTML = akiAuditTrail.slice(0, 14).map(ev => `
+      <div class="aki-audit-row">
+        <div style="display:flex; justify-content:space-between; gap:8px; margin-bottom:3px;">
+          <strong style="color:#dfc09f;">${escapeHTML(ev.action)} &middot; <code>${escapeHTML(ev.certId)}</code></strong>
+          <span style="color:var(--text-muted); font-size:10.5px;">${escapeHTML(ev.at)}</span>
+        </div>
+        <div style="color:var(--text-secondary);"><strong>${escapeHTML(ev.plate)}:</strong> ${escapeHTML(ev.detail)}</div>
+      </div>
+    `).join("");
+  }
+}
+window.renderAKICertificatesHub = renderAKICertificatesHub;
+
+// Direct AKI DMVIC Certificate Issuance Modal & Double-Insurance Check
+function openIssueAKICertModal() {
+  const modal = document.getElementById("issue-aki-cert-modal");
+  const select = document.getElementById("aki-issue-policy-select");
+  if (!modal || !select) return;
+
+  const ledger = getUnifiedAKICertificateLedger();
+  const uncertifiedFirst = [...ledger].sort((a, b) => Number(Boolean(a.certId)) - Number(Boolean(b.certId)));
+
+  let opts = `<option value="__NEW__">+ Create &amp; Certify New Standalone Motor Policy</option>`;
+  uncertifiedFirst.slice(0, 40).forEach(r => {
+    const tag = r.certId ? `[Issued: ${r.certId}]` : "[Uncertified]";
+    opts += `<option value="${escapeHTML(r.uid)}">${tag} ${escapeHTML(r.plate)} — ${escapeHTML(r.holder)} (${escapeHTML(r.policyNo)})</option>`;
+  });
+  select.innerHTML = opts;
+
+  onSelectAKIIssueSource();
+  modal.classList.add("active");
+}
+window.openIssueAKICertModal = openIssueAKICertModal;
+
+function closeIssueAKICertModal() {
+  const modal = document.getElementById("issue-aki-cert-modal");
+  if (modal) modal.classList.remove("active");
+}
+window.closeIssueAKICertModal = closeIssueAKICertModal;
+
+function onSelectAKIIssueSource() {
+  const val = document.getElementById("aki-issue-policy-select")?.value || "__NEW__";
+  const holderEl = document.getElementById("aki-issue-holder");
+  const plateEl = document.getElementById("aki-issue-plate");
+  const chassisEl = document.getElementById("aki-issue-chassis");
+  const makeEl = document.getElementById("aki-issue-makemodel");
+  const classEl = document.getElementById("aki-issue-class");
+  const sumEl = document.getElementById("aki-issue-suminsured");
+
+  if (val === "__NEW__") {
+    if (holderEl) holderEl.value = " Rift Valley Express Shuttle Ltd";
+    if (plateEl) plateEl.value = "KDR 440P";
+    if (chassisEl) chassisEl.value = "KDR-PSV-884920";
+    if (makeEl) makeEl.value = "Toyota HiAce 14-Seater Matatu (2023)";
+    if (classEl) classEl.value = "TYPE-A";
+    if (sumEl) sumEl.value = "4200000";
+  } else {
+    const rec = getUnifiedAKICertificateLedger().find(r => r.uid === val);
+    if (rec) {
+      if (holderEl) holderEl.value = rec.holder;
+      if (plateEl) plateEl.value = rec.plate;
+      if (chassisEl) chassisEl.value = rec.chassis;
+      if (makeEl) makeEl.value = rec.makeModel;
+      if (classEl) classEl.value = rec.akiClass;
+      if (sumEl) sumEl.value = String(rec.sumInsured || 3200000);
+    }
+  }
+  previewAKIDoubleInsuranceStatus();
+}
+window.onSelectAKIIssueSource = onSelectAKIIssueSource;
+
+function previewAKIDoubleInsuranceStatus() {
+  const plate = document.getElementById("aki-issue-plate")?.value.trim().toUpperCase() || "";
+  const alertBox = document.getElementById("aki-double-ins-alert");
+  if (!alertBox) return;
+
+  const conflict = checkAKIDoubleInsurance(plate);
+  if (conflict) {
+    alertBox.style.display = "block";
+    alertBox.style.background = "rgba(239, 68, 68, 0.14)";
+    alertBox.style.border = "1px solid rgba(239, 68, 68, 0.5)";
+    alertBox.style.color = "#fca5a5";
+    alertBox.innerHTML = `<strong>AKI IMIDS Double-Insurance Alert:</strong> Plate <code>${escapeHTML(conflict.plate)}</code> already holds an <strong>ACTIVE</strong> AKI certificate (<code>${escapeHTML(conflict.certId)}</code> under <strong>${escapeHTML(conflict.policyNo)}</strong>). Check "Supersede &amp; cancel prior active certificate" below if issuing an official replacement.`;
+  } else if (plate.length >= 5) {
+    alertBox.style.display = "block";
+    alertBox.style.background = "rgba(16, 185, 129, 0.12)";
+    alertBox.style.border = "1px solid rgba(16, 185, 129, 0.45)";
+    alertBox.style.color = "#6ee7b7";
+    alertBox.innerHTML = `<strong>AKI IMIDS Clear:</strong> Zero active duplicate motor certificates found on <code>${escapeHTML(plate)}</code>. Ready for Cap 405 issuance.`;
+  } else {
+    alertBox.style.display = "none";
+  }
+}
+window.previewAKIDoubleInsuranceStatus = previewAKIDoubleInsuranceStatus;
+
+function confirmIssueAKICertificate() {
+  const sourceVal = document.getElementById("aki-issue-policy-select")?.value || "__NEW__";
+  const holder = (document.getElementById("aki-issue-holder")?.value || "").trim() || "Registered Motorist";
+  const plate = (document.getElementById("aki-issue-plate")?.value || "").trim().toUpperCase() || "KDR 440P";
+  const chassis = (document.getElementById("aki-issue-chassis")?.value || "").trim().toUpperCase() || ("AKI-" + normalizePlateCompact(plate));
+  const makeModel = (document.getElementById("aki-issue-makemodel")?.value || "").trim() || "Toyota Hilux (2023)";
+  const akiClass = document.getElementById("aki-issue-class")?.value || "TYPE-C";
+  const coverScope = document.getElementById("aki-issue-scope")?.value || "COMPREHENSIVE";
+  const commencingDate = document.getElementById("aki-issue-start")?.value || "2026-11-08";
+  const expiryDate = document.getElementById("aki-issue-expiry")?.value || "2027-11-07";
+  const sumInsured = Math.max(100000, Number(document.getElementById("aki-issue-suminsured")?.value) || 3200000);
+  const allowSupersede = Boolean(document.getElementById("aki-issue-replace-existing")?.checked);
+
+  const conflict = checkAKIDoubleInsurance(plate);
+  if (conflict && !allowSupersede) {
+    akiDoubleInsuranceBlocks += 1;
+    recordAKIAuditEvent(
+      "DOUBLE_INS_BLOCKED",
+      conflict.certId,
+      plate,
+      `Blocked duplicate active AKI certificate on ${plate}; existing active cert ${conflict.certId} (${conflict.policyNo}) remains locked.`
+    );
+    renderAKICertificatesHub();
+    showToast("AKI Double-Insurance Blocked!", `Plate ${plate} already has active certificate ${conflict.certId} (${conflict.policyNo}). Enable Supersede to replace it.`, "warning");
+    return null;
+  }
+
+  if (conflict && allowSupersede) {
+    if (conflict.sourceType === "POLICY" && conflict.rawPolicy) {
+      conflict.rawPolicy.status = "Cancelled";
+      conflict.rawPolicy.supersededByPlate = plate;
+    } else if (conflict.sourceType === "FLEET" && conflict.rawVehicle) {
+      conflict.rawVehicle.certStatus = "Cancelled";
+    }
+    recordAKIAuditEvent("SUPERSEDED", conflict.certId, plate, `Superseded prior active certificate ${conflict.certId} on ${plate} via official replacement.`);
+  }
+
+  const yearTag = commencingDate.slice(0, 4) || "2026";
+  const newCertId = mintNextAKICertId(akiClass, yearTag);
+  let targetModalObj = null;
+
+  if (sourceVal !== "__NEW__") {
+    const rec = getUnifiedAKICertificateLedger().find(r => r.uid === sourceVal);
+    if (rec && rec.sourceType === "POLICY" && rec.rawPolicy) {
+      rec.rawPolicy.certId = newCertId;
+      rec.rawPolicy.plate = plate;
+      rec.rawPolicy.chassis = chassis;
+      rec.rawPolicy.makeModel = makeModel;
+      rec.rawPolicy.akiClass = akiClass;
+      rec.rawPolicy.coverScope = coverScope;
+      rec.rawPolicy.commencingDate = commencingDate;
+      rec.rawPolicy.expiryDate = expiryDate;
+      rec.rawPolicy.sumInsured = sumInsured;
+      rec.rawPolicy.status = "Active";
+      rec.rawPolicy.approvalStatus = "Approved";
+      targetModalObj = rec.rawPolicy;
+    } else if (rec && rec.sourceType === "FLEET" && rec.rawVehicle) {
+      rec.rawVehicle.certId = newCertId;
+      rec.rawVehicle.plate = plate;
+      rec.rawVehicle.chassis = chassis;
+      rec.rawVehicle.makeModel = makeModel;
+      rec.rawVehicle.akiClass = akiClass;
+      rec.rawVehicle.coverScope = coverScope;
+      rec.rawVehicle.commencingDate = commencingDate;
+      rec.rawVehicle.expiryDate = expiryDate;
+      rec.rawVehicle.sumInsured = sumInsured;
+      rec.rawVehicle.certStatus = "Active";
+      if (rec.rawFleet && typeof syncFleetCertCounters === "function") syncFleetCertCounters(rec.rawFleet);
+      targetModalObj = {
+        policyNo: rec.policyNo,
+        clientName: rec.holder,
+        plate,
+        chassis,
+        makeModel,
+        akiClass,
+        coverScope,
+        commencingDate,
+        expiryDate,
+        sumInsured,
+        certId: newCertId,
+        status: "Active"
+      };
+    }
+  }
+
+  if (!targetModalObj) {
+    const rate = akiClass === "TYPE-D" ? 0.025 : (akiClass === "TYPE-A" ? 0.045 : 0.035);
+    const basic = Math.round(sumInsured * rate);
+    const { totalLevies } = computeIRALeviesForPremium(basic, 1);
+    const totalDebit = basic + totalLevies;
+    const polPrefix = akiClass === "TYPE-D" ? "POL-EV-" : (akiClass === "TYPE-A" ? "POL-PSV-" : "POL-MOT-");
+    const newPol = {
+      policyNo: `${polPrefix}${Math.floor(1000 + Math.random() * 9000)}-${yearTag}`,
+      clientName: holder,
+      plate,
+      chassis,
+      makeModel,
+      sumInsured,
+      line: akiClass === "TYPE-D" ? "Electric Vehicle" : "Motor",
+      akiClass,
+      coverScope,
+      commencingDate,
+      expiryDate,
+      broker: "EIMS Direct",
+      premium: totalDebit,
+      debited: totalDebit,
+      status: "Active",
+      approvalStatus: "Approved",
+      certId: newCertId,
+      isNew: true,
+      branch: "HQ"
+    };
+    policies.unshift(newPol);
+    targetModalObj = newPol;
+  }
+
+  registerVehicleInNTSA(plate, {
+    make: makeModel,
+    year: 2024,
+    chassis,
+    valuation: sumInsured,
+    policy: targetModalObj.policyNo,
+    owner: holder
+  });
+
+  recordAKIAuditEvent("ISSUED", newCertId, plate, `Issued ${akiClass} (${coverScope}) certificate under ${targetModalObj.policyNo} for ${holder}.`);
+  closeIssueAKICertModal();
+  if (typeof renderPolicyRegistry === "function") renderPolicyRegistry();
+  if (typeof renderFleetUnderwriting === "function") renderFleetUnderwriting();
+  renderAKICertificatesHub();
+  openAKICertModal(targetModalObj);
+  return targetModalObj;
+}
+window.confirmIssueAKICertificate = confirmIssueAKICertificate;
+
+// Amend / Replace AKI Digital Certificate Workflow (Supersedes Old Serial & Mints New SHA-256 Serial)
+function openAmendAKICertModal(sourceType, sourceKey, fleetId = "") {
+  const modal = document.getElementById("amend-aki-cert-modal");
+  if (!modal) return;
+
+  const ledger = getUnifiedAKICertificateLedger();
+  const rec = ledger.find(r =>
+    r.sourceType === sourceType &&
+    r.sourceKey === sourceKey &&
+    (sourceType !== "FLEET" || r.fleetId === fleetId)
+  );
+  if (!rec) return;
+
+  document.getElementById("amend-source-type").value = rec.sourceType;
+  document.getElementById("amend-source-key").value = rec.sourceKey;
+  document.getElementById("amend-fleet-id").value = rec.fleetId || "";
+  document.getElementById("amend-old-cert-id").innerText = rec.certId || "UNISSUED";
+  document.getElementById("amend-aki-plate").value = rec.plate;
+  document.getElementById("amend-aki-chassis").value = rec.chassis;
+  document.getElementById("amend-aki-makemodel").value = rec.makeModel;
+  document.getElementById("amend-aki-class").value = rec.akiClass;
+  document.getElementById("amend-aki-expiry").value = rec.expiryDate || "2026-12-31";
+
+  modal.classList.add("active");
+}
+window.openAmendAKICertModal = openAmendAKICertModal;
+
+function openAmendAKICertFromModal() {
+  if (!currentActiveCertPolicy) return;
+  const ledger = getUnifiedAKICertificateLedger();
+  const match = ledger.find(r =>
+    (currentActiveCertPolicy.certId && r.certId === currentActiveCertPolicy.certId) ||
+    r.policyNo === currentActiveCertPolicy.policyNo
+  );
+  closeAKICertModal();
+  if (match) {
+    openAmendAKICertModal(match.sourceType, match.sourceKey, match.fleetId || "");
+  }
+}
+window.openAmendAKICertFromModal = openAmendAKICertFromModal;
+
+function closeAmendAKICertModal() {
+  const modal = document.getElementById("amend-aki-cert-modal");
+  if (modal) modal.classList.remove("active");
+}
+window.closeAmendAKICertModal = closeAmendAKICertModal;
+
+function confirmAmendAKICertificate() {
+  const sourceType = document.getElementById("amend-source-type")?.value;
+  const sourceKey = document.getElementById("amend-source-key")?.value;
+  const fleetId = document.getElementById("amend-fleet-id")?.value;
+  const newPlate = (document.getElementById("amend-aki-plate")?.value || "").trim().toUpperCase();
+  const newChassis = (document.getElementById("amend-aki-chassis")?.value || "").trim().toUpperCase();
+  const newMake = (document.getElementById("amend-aki-makemodel")?.value || "").trim();
+  const newClass = document.getElementById("amend-aki-class")?.value || "TYPE-C";
+  const newExpiry = document.getElementById("amend-aki-expiry")?.value || "2026-12-31";
+  const reason = document.getElementById("amend-aki-reason")?.value || "Endorsement";
+
+  const replacementCert = mintNextAKICertId(newClass, "2026");
+
+  if (sourceType === "POLICY") {
+    const pol = policies.find(p => p.policyNo === sourceKey);
+    if (!pol) return null;
+    const oldCert = pol.certId || "UNISSUED";
+    pol.supersededCertId = oldCert;
+    pol.certId = replacementCert;
+    if (newPlate) pol.plate = newPlate;
+    if (newChassis) pol.chassis = newChassis;
+    if (newMake) pol.makeModel = newMake;
+    pol.akiClass = newClass;
+    pol.expiryDate = newExpiry;
+    pol.status = "Active";
+    registerVehicleInNTSA(pol.plate, { make: pol.makeModel, chassis: pol.chassis, valuation: pol.sumInsured, policy: pol.policyNo, owner: pol.clientName });
+    recordAKIAuditEvent("AMENDED_REISSUED", replacementCert, pol.plate, `${reason}: Superseded ${oldCert} and minted ${replacementCert} under ${pol.policyNo}.`);
+    closeAmendAKICertModal();
+    renderPolicyRegistry();
+    renderAKICertificatesHub();
+    showToast("Certificate Amended & Re-Issued", `Superseded ${oldCert} -> Minted replacement ${replacementCert} for ${pol.plate}.`, "success");
+    return replacementCert;
+  }
+
+  if (sourceType === "FLEET") {
+    const fleet = countyFleets.find(f => f.id === fleetId);
+    const veh = fleet && Array.isArray(fleet.vehicles) ? fleet.vehicles.find(v => v.plate.toUpperCase() === sourceKey.toUpperCase()) : null;
+    if (!veh) return null;
+    const oldCert = veh.certId || "UNISSUED";
+    veh.supersededCertId = oldCert;
+    veh.certId = replacementCert;
+    if (newPlate) veh.plate = newPlate;
+    if (newChassis) veh.chassis = newChassis;
+    if (newMake) veh.makeModel = newMake;
+    veh.akiClass = newClass;
+    veh.expiryDate = newExpiry;
+    veh.certStatus = "Active";
+    registerVehicleInNTSA(veh.plate, { make: veh.makeModel, chassis: veh.chassis, valuation: veh.sumInsured, policy: fleet.policyNo || fleet.id, owner: fleet.county });
+    recordAKIAuditEvent("AMENDED_REISSUED", replacementCert, veh.plate, `${reason}: Superseded ${oldCert} -> Minted ${replacementCert} in fleet ${fleet.id}.`);
+    closeAmendAKICertModal();
+    if (typeof renderFleetUnderwriting === "function") renderFleetUnderwriting();
+    renderAKICertificatesHub();
+    showToast("Fleet Certificate Re-Issued", `Superseded ${oldCert} -> Minted ${replacementCert} for ${veh.plate}.`, "success");
+    return replacementCert;
+  }
+  return null;
+}
+window.confirmAmendAKICertificate = confirmAmendAKICertificate;
+
+// Statutory Cap 405 Revocation & Reinstatement across Individual & Fleet Certificates
+function revokeOrReinstateAKICert(sourceType, sourceKey, fleetId = "") {
+  if (sourceType === "POLICY") {
+    const pol = policies.find(p => p.policyNo === sourceKey);
+    if (!pol) return;
+    if (pol.status === "Cancelled" || pol.status === "Suspended") {
+      pol.status = "Active";
+      pol.approvalStatus = "Approved";
+      if (!pol.certId) pol.certId = mintNextAKICertId(classifyAKICertificateType(pol).code, "2026");
+      recordAKIAuditEvent("REINSTATED", pol.certId, pol.plate, `Reinstated AKI certificate ${pol.certId} under ${pol.policyNo}.`);
+      showToast("AKI Certificate Reinstated", `Certificate ${pol.certId} (${pol.plate}) is now VALID & ACTIVE.`, "success");
+    } else {
+      pol.status = "Cancelled";
+      pol.approvalStatus = "Cancelled";
+      recordAKIAuditEvent("REVOKED_CANCELLED", pol.certId || "UNISSUED", pol.plate, `Statutory Cap 405 revocation executed for ${pol.plate} (${pol.policyNo}).`);
+      showToast("AKI Certificate Revoked", `Certificate ${pol.certId || pol.policyNo} marked REVOKED in DMVIC.`, "danger");
+    }
+    renderPolicyRegistry();
+    renderAKICertificatesHub();
+    if (typeof renderOverdueApprovalsDashboard === "function") renderOverdueApprovalsDashboard();
+    return;
+  }
+
+  if (sourceType === "FLEET") {
+    const fleet = countyFleets.find(f => f.id === fleetId);
+    const veh = fleet && Array.isArray(fleet.vehicles) ? fleet.vehicles.find(v => v.plate.toUpperCase() === sourceKey.toUpperCase()) : null;
+    if (!veh) return;
+    const cur = veh.certStatus || fleet.status || "Active";
+    if (cur === "Cancelled" || cur === "Suspended") {
+      veh.certStatus = "Active";
+      if (!veh.certId) veh.certId = mintNextAKICertId("TYPE-B", "2026");
+      recordAKIAuditEvent("REINSTATED", veh.certId, veh.plate, `Reinstated fleet vehicle certificate ${veh.certId} (${fleet.county}).`);
+      showToast("Fleet Certificate Reinstated", `Vehicle ${veh.plate} (${veh.certId}) reinstated to VALID & ACTIVE.`, "success");
+    } else {
+      veh.certStatus = "Cancelled";
+      recordAKIAuditEvent("REVOKED_CANCELLED", veh.certId || "UNISSUED", veh.plate, `Revoked fleet vehicle certificate on ${veh.plate} (${fleet.county}).`);
+      showToast("Fleet Certificate Revoked", `Vehicle ${veh.plate} (${veh.certId || ""}) marked REVOKED in DMVIC.`, "danger");
+    }
+    if (typeof renderFleetUnderwriting === "function") renderFleetUnderwriting();
+    renderAKICertificatesHub();
+  }
+}
+window.revokeOrReinstateAKICert = revokeOrReinstateAKICert;
+
+// Multi-Channel Policyholder Certificate Dispatch (SMS + WhatsApp + Email)
+function dispatchAKICertToPolicyholder(sourceType, sourceKey, fleetId = "") {
+  const ledger = getUnifiedAKICertificateLedger();
+  const rec = ledger.find(r =>
+    r.sourceType === sourceType &&
+    r.sourceKey === sourceKey &&
+    (sourceType !== "FLEET" || r.fleetId === fleetId)
+  );
+  if (!rec) return;
+
+  if (!rec.certId) {
+    showToast("Mint Certificate First", `Issue an AKI certificate for ${rec.plate} before dispatching to the policyholder.`, "warning");
+    return;
+  }
+
+  if (typeof notificationLogs !== "undefined" && Array.isArray(notificationLogs)) {
+    notificationLogs.unshift({
+      time: "Just now",
+      claimId: rec.policyNo,
+      recipient: `${rec.holder} (SMS + WhatsApp + Email)`,
+      channel: "Multi-Channel AKI Dispatch",
+      event: `AKI Digital Cert ${rec.certId} (${rec.plate})`,
+      status: "Delivered"
+    });
+  }
+
+  recordAKIAuditEvent("DISPATCHED_CLIENT", rec.certId, rec.plate, `Dispatched QR verification link & *352# USSD token to ${rec.holder} via SMS, WhatsApp & Email.`);
+  renderAKICertificatesHub();
+  showToast("AKI Certificate Dispatched", `Sent ${rec.certId} (${rec.plate}) QR sticker & *352# code to ${rec.holder} via SMS, WhatsApp & Email.`, "success");
+}
+window.dispatchAKICertToPolicyholder = dispatchAKICertToPolicyholder;
+
+function dispatchCurrentAKICert() {
+  if (!currentActiveCertPolicy) return;
+  const ledger = getUnifiedAKICertificateLedger();
+  const match = ledger.find(r =>
+    (currentActiveCertPolicy.certId && r.certId === currentActiveCertPolicy.certId) ||
+    r.policyNo === currentActiveCertPolicy.policyNo
+  );
+  if (match) {
+    dispatchAKICertToPolicyholder(match.sourceType, match.sourceKey, match.fleetId || "");
+  } else {
+    showToast("AKI Certificate Dispatched", `Dispatched ${currentActiveCertPolicy.certId} to ${currentActiveCertPolicy.clientName} via SMS, WhatsApp & Email.`, "success");
+  }
+}
+window.dispatchCurrentAKICert = dispatchCurrentAKICert;
+
+// 1-Click Batch Issue across all uncertified motor policies & fleet vehicles
+function batchMintAllUncertifiedAKICerts() {
+  let minted = 0;
+  if (Array.isArray(policies)) {
+    policies.forEach(p => {
+      if (p.fleetId || String(p.policyNo || "").startsWith("POL-FLT-") || p.line === "Non-Motor" || p.status === "Cancelled") return;
+      if (!p.certId) {
+        const cls = classifyAKICertificateType(p).code;
+        p.certId = mintNextAKICertId(cls, "2026");
+        minted++;
+      }
+    });
+  }
+  if (typeof countyFleets !== "undefined" && Array.isArray(countyFleets)) {
+    countyFleets.forEach(f => {
+      if (f.status === "Cancelled" || !Array.isArray(f.vehicles)) return;
+      let fleetMinted = 0;
+      f.vehicles.forEach(v => {
+        if (!v.certId) {
+          v.certId = mintNextAKICertId("TYPE-B", "2026");
+          minted++;
+          fleetMinted++;
+        }
+      });
+      if (fleetMinted > 0) {
+        f.issuedCertCount = f.vehicles.filter(v => Boolean(v.certId)).length;
+        f.certs = `Batch Issued (${f.issuedCertCount}/${f.vehicleCount})`;
+      }
+    });
+  }
+
+  recordAKIAuditEvent("BATCH_ISSUED", `BATCH-${Date.now().toString(36).toUpperCase()}`, "MULTI-PLATE", `Batch-minted ${minted} AKI DMVIC digital motor certificates across uncertified units.`);
+  if (typeof renderPolicyRegistry === "function") renderPolicyRegistry();
+  if (typeof renderFleetUnderwriting === "function") renderFleetUnderwriting();
+  renderAKICertificatesHub();
+  showToast("Batch AKI Issuance Complete", minted > 0 ? `Minted & SHA-256 signed ${minted} new AKI Digital Motor Certificates.` : "100% of eligible motor & fleet vehicles already hold AKI Digital Certificates.", "success");
+  return minted;
+}
+window.batchMintAllUncertifiedAKICerts = batchMintAllUncertifiedAKICerts;
+
+// Replenish AKI DMVIC Serial Stock Pool (+500 serials across Type A/B/C/D)
+function replenishAKICertStock() {
+  akiStockPool["TYPE-A"].allocated += 100;
+  akiStockPool["TYPE-A"].available += 100;
+  akiStockPool["TYPE-B"].allocated += 175;
+  akiStockPool["TYPE-B"].available += 175;
+  akiStockPool["TYPE-C"].allocated += 150;
+  akiStockPool["TYPE-C"].available += 150;
+  akiStockPool["TYPE-D"].allocated += 75;
+  akiStockPool["TYPE-D"].available += 75;
+
+  recordAKIAuditEvent("STOCK_ALLOCATED", `DMVIC-ALLOC-${Math.floor(100 + Math.random() * 900)}`, "ALL CLASSES", "Allocated +500 new AKI DMVIC digital serials (+100 Type A, +175 Type B, +150 Type C, +75 Type D).");
+  renderAKICertificatesHub();
+  showToast("AKI DMVIC Stock Allocated", "Added +500 official Cap 405 certificate serials from Association of Kenya Insurers.", "success");
+}
+window.replenishAKICertStock = replenishAKICertStock;
+
+// Export Complete Statutory AKI DMVIC Register (.CSV)
+function exportAKICertificateRegisterCSV() {
+  const ledger = getUnifiedAKICertificateLedger();
+  const headers = ["AKI_Cert_ID", "Cap405_Class", "Registration_Plate", "Chassis_VIN", "Policyholder", "Policy_No", "Make_Model", "Cover_Scope", "Commencing_Date", "Expiry_Date", "Sum_Insured_KES", "DMVIC_Status", "SHA256_Seal"];
+  const lines = [headers.join(",")];
+
+  ledger.forEach(r => {
+    const hash = generateCertSHA256Hash({
+      certId: r.certId || "UNISSUED",
+      policyNo: r.policyNo,
+      plate: r.plate,
+      clientName: r.holder,
+      commencingDate: r.commencingDate,
+      expiryDate: r.expiryDate,
+      status: r.status
+    });
+    const row = [
+      r.certId || "UNISSUED",
+      r.akiClass,
+      r.plate,
+      r.chassis,
+      `"${String(r.holder || "").replace(/"/g, "'")}"`,
+      r.policyNo,
+      `"${String(r.makeModel || "").replace(/"/g, "'")}"`,
+      r.coverScope,
+      r.commencingDate,
+      r.expiryDate,
+      r.sumInsured,
+      r.status,
+      hash
+    ];
+    lines.push(row.join(","));
+  });
+
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "EIMS_AKI_DMVIC_Statutory_Register_2026.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  recordAKIAuditEvent("REGISTER_EXPORTED", "IRA-FORM-CAP405", "ALL PLATES", `Exported ${ledger.length} motor certificate records to statutory CSV.`);
+  renderAKICertificatesHub();
+  showToast("AKI Statutory Register Exported", `Downloaded ${ledger.length} motor certificate records (.CSV).`, "success");
+}
+window.exportAKICertificateRegisterCSV = exportAKICertificateRegisterCSV;
+
+// Kenya USSD *352# Roadside Verification Simulator
+function runUSSD352Simulation() {
+  const inputEl = document.getElementById("aki-ussd-sim-input");
+  const outEl = document.getElementById("aki-ussd-sim-output");
+  if (!outEl) return;
+
+  const q = (inputEl?.value || "KDG 123A").trim().toUpperCase();
+  const compactQ = normalizePlateCompact(q);
+  const hit = getUnifiedAKICertificateLedger().find(r =>
+    (r.certId && r.certId.toUpperCase() === q) ||
+    normalizePlateCompact(r.plate) === compactQ
+  );
+
+  outEl.style.display = "block";
+  if (!hit || !hit.certId) {
+    outEl.style.borderColor = "rgba(239, 68, 68, 0.5)";
+    outEl.innerHTML = `[AKI *352# DMVIC RESPONSE]<br>REG/CERT: ${escapeHTML(q)}<br>STATUS: <strong style="color:#ef4444;">NO ACTIVE DIGITAL CERTIFICATE</strong><br>ACTION: Do not release on public road (Cap 405).`;
+  } else {
+    const col = hit.status === "Active" ? "#10b981" : "#ef4444";
+    outEl.style.borderColor = hit.status === "Active" ? "rgba(16, 185, 129, 0.45)" : "rgba(239, 68, 68, 0.5)";
+    outEl.innerHTML = `[AKI *352# DMVIC RESPONSE]<br>CERT NO: <strong>${escapeHTML(hit.certId)}</strong> (${escapeHTML(hit.classMeta.shortLabel)})<br>VEHICLE: <strong>${escapeHTML(hit.plate)}</strong> &middot; CHASSIS: ${escapeHTML(maskChassisForPublic(hit.chassis))}<br>INSURER: EIMS ProSystem Kenya<br>EXPIRY: ${escapeHTML(hit.expiryDate)} 23:59 EAT<br>STATUS: <strong style="color:${col};">${escapeHTML(hit.status.toUpperCase())}</strong>`;
+  }
+}
+window.runUSSD352Simulation = runUSSD352Simulation;

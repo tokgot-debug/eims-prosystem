@@ -22,7 +22,7 @@
   </script>
   
   <!-- Modern CSS styling -->
-  <link rel="stylesheet" href="index.css?v=20261108e">
+  <link rel="stylesheet" href="index.css?v=20261108f">
   
   <!-- Leaflet CSS for Map integration -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
@@ -48,7 +48,7 @@
     <section id="public-landing">
       
       <!-- Landing Page Top Left Brand Header Bar -->
-      <div class="landing-top-bar" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:14px 20px; margin-bottom:16px; border:1px solid rgba(139, 90, 43,0.4); background:rgba(12, 10, 9, 0.88); backdrop-filter:blur(12px); border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+      <div class="landing-top-bar" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:14px 20px; margin-bottom:16px; border:1px solid rgba(139, 90, 43,0.4); background:rgba(12, 10, 9, 0.88); backdrop-filter:blur(12px); border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.4); flex-wrap:wrap; gap:12px;">
         <div style="display:flex; align-items:center; gap:16px;">
           <img src="eims_logo.png" alt="EIMS ProSystem Logo" style="height:54px; width:auto; border-radius:10px; background:#0c0a09; padding:6px 12px; border:1px solid rgba(139, 90, 43,0.4); box-shadow:0 4px 16px rgba(139, 90, 43,0.35);">
           <div>
@@ -56,7 +56,10 @@
             <p style="margin:0; font-size:12px; color:#c89565; font-weight:700;">Enterprise Insurance Management System • Enterprise Portal</p>
           </div>
         </div>
-        <div style="display:flex; align-items:center; gap:10px;">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <button class="btn" onclick="openPublicAKIVerifier()" style="background:rgba(28, 20, 14, 0.92); color:#dfc09f; border:1px solid rgba(200, 149, 101, 0.5); padding:9px 16px; font-weight:700; border-radius:8px; gap:6px;">
+            Verify AKI Cert
+          </button>
           <button class="btn" onclick="openLogin()" style="background:linear-gradient(135deg, #8b5a2b, #6f4722); color:#ffffff; border:none; padding:9px 18px; font-weight:700; border-radius:8px; gap:6px; box-shadow:0 4px 14px rgba(139, 90, 43,0.4);">
             Staff Login
           </button>
@@ -307,26 +310,50 @@
   </div>
 
   <!-- ================= PUBLIC AKI CERTIFICATE VERIFICATION DIALOG ================= -->
-  <div class="modal-overlay" id="public-verification-modal">
-    <div class="modal-window" style="max-width:500px; padding:24px; text-align:center;">
-      <div style="width:60px; height:60px; border-radius:50%; background:rgba(16,185,129,0.15); color:#10b981; display:flex; align-items:center; justify-content:center; font-size:30px; margin:0 auto 16px;">✓</div>
-      <h2 style="font-size:18px; color:var(--text-primary);">AKI Digital Registry Verified</h2>
-      <p style="font-size:12px; color:var(--text-secondary); margin-top:4px; margin-bottom:20px;">
-        This certificate was officially issued by the Association of Kenya Insurers (AKI) and is cryptographically matched with the NTSA database.
+  <div class="modal-overlay" id="public-verification-modal" onclick="if(event.target===this) this.classList.remove('active')">
+    <div class="modal-window" style="max-width:560px; padding:24px; text-align:center;">
+      <div id="v-verify-banner-icon" style="width:56px; height:56px; border-radius:50%; background:rgba(16,185,129,0.15); color:#10b981; display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:800; margin:0 auto 12px;">✓</div>
+      <h2 id="v-verify-title" style="font-size:18px; color:var(--text-primary); margin:0;">AKI DMVIC Digital Certificate Verifier</h2>
+      <p id="v-verify-subtitle" style="font-size:12px; color:var(--text-secondary); margin-top:4px; margin-bottom:16px;">
+        Association of Kenya Insurers (AKI) &amp; NTSA Cap 405 Real-Time Cryptographic Motor Insurance Verification
       </p>
-      
-      <div style="background:var(--bg-primary); border:1px solid var(--border-color); border-radius:10px; padding:16px; text-align:left; font-size:12.5px; display:flex; flex-direction:column; gap:8px; margin-bottom:20px;">
-        <div><strong>Certificate Ref:</strong> <span id="v-cert-id"></span></div>
-        <div><strong>Vehicle Plate:</strong> <span id="v-plate"></span></div>
-        <div><strong>Policyholder:</strong> <span id="v-owner"></span></div>
-        <div><strong>Policy Number:</strong> <span id="v-policy"></span></div>
-        <div><strong>Status:</strong> <span class="status-badge green" style="padding:2px 8px; font-size:11px;">VALID & ACTIVE</span></div>
-        <div style="font-size:10px; color:var(--text-muted); border-top:1px dashed var(--border-color); padding-top:8px; margin-top:4px;">
-          <strong>SHA-256 Digital Hash Seal:</strong><br>
-          <code id="v-hash" style="font-family:monospace; color:#c89565;"></code>
+
+      <!-- Interactive Public / Traffic Police Lookup Bar -->
+      <div style="background:var(--bg-surface); border:1px solid rgba(200, 149, 101, 0.35); border-radius:10px; padding:12px; margin-bottom:14px; text-align:left;">
+        <label for="public-aki-query-input" style="display:block; font-size:11px; font-weight:700; color:#dfc09f; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">
+          Verify by AKI Certificate Number or Registration Plate
+        </label>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <input type="text" id="public-aki-query-input" class="form-control" placeholder="e.g. CERT-9082-2026, KDG 123A, KCG 001A" style="flex:1; min-width:180px; text-transform:uppercase; font-weight:700;" onkeydown="if(event.key==='Enter'){event.preventDefault(); executePublicAKIVerification();}">
+          <button type="button" class="btn btn-primary" onclick="executePublicAKIVerification()" style="padding:8px 16px; font-size:12px; font-weight:700;">
+            Verify Now
+          </button>
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; align-items:center;">
+          <span style="font-size:10.5px; color:var(--text-muted);">Quick Test:</span>
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('public-aki-query-input').value='CERT-9082-2026'; executePublicAKIVerification();" style="padding:2px 8px; font-size:10.5px; min-height:26px;">CERT-9082-2026</button>
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('public-aki-query-input').value='KDG 123A'; executePublicAKIVerification();" style="padding:2px 8px; font-size:10.5px; min-height:26px;">KDG 123A</button>
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('public-aki-query-input').value='KCG 001A'; executePublicAKIVerification();" style="padding:2px 8px; font-size:10.5px; min-height:26px;">KCG 001A (Fleet)</button>
         </div>
       </div>
-      
+
+      <div id="public-verification-card-box" style="background:var(--bg-primary); border:1px solid var(--border-color); border-radius:10px; padding:16px; text-align:left; font-size:12.5px; display:flex; flex-direction:column; gap:8px; margin-bottom:18px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+          <div><strong>Certificate Ref:</strong> <code id="v-cert-id" style="font-weight:700; color:#dfc09f;">CERT-9082-2026</code></div>
+          <span id="v-status-badge" class="status-badge green" style="padding:3px 10px; font-size:11px;">VALID &amp; ACTIVE</span>
+        </div>
+        <div><strong>Cap 405 Class:</strong> <span id="v-cert-class">TYPE C — Private Motor Comprehensive</span></div>
+        <div><strong>Vehicle Plate:</strong> <strong id="v-plate">KDG 123A</strong> &middot; <span style="color:var(--text-secondary);">Chassis: <code id="v-chassis-masked">NZE161***421</code></span></div>
+        <div><strong>Policyholder:</strong> <span id="v-owner">Boniface Mwangi</span></div>
+        <div><strong>Policy Number:</strong> <span id="v-policy">POL-MOT-8973-2026</span></div>
+        <div><strong>Cover Period:</strong> <span id="v-cover-period">2026-01-01 to 2026-12-31 (Midnight EAT)</span></div>
+        <div><strong>Underwriter:</strong> <span id="v-insurer">EIMS ProSystem Insurance Kenya (IRA/01/487/2026)</span></div>
+        <div style="font-size:10px; color:var(--text-muted); border-top:1px dashed var(--border-color); padding-top:8px; margin-top:4px;">
+          <strong>SHA-256 Digital Signature Seal:</strong><br>
+          <code id="v-hash" style="font-family:monospace; color:#c89565; word-break:break-all;">SHA256-AKI-VERIFIED-2026</code>
+        </div>
+      </div>
+
       <button class="btn btn-primary" onclick="document.getElementById('public-verification-modal').classList.remove('active')" style="width:100%;">Close Verification</button>
     </div>
   </div>
@@ -422,7 +449,11 @@
           <div class="accordion-content">
             <a class="accordion-item" data-view="policy-registry" id="nav-policy-registry">
               <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line></svg>
-              Policy & Cert Registry
+              Policy &amp; Cert Registry
+            </a>
+            <a class="accordion-item" data-view="aki-certificates" id="nav-aki-certificates">
+              <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
+              AKI Digital Certificates
             </a>
             <a class="accordion-item" data-view="fleet-underwriting" id="nav-fleet-underwriting">
               <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
@@ -605,6 +636,7 @@
             </optgroup>
             <optgroup label="3. Underwriting &amp; Fleet">
               <option value="policy-registry">Policy &amp; Cert Registry</option>
+              <option value="aki-certificates">AKI Digital Certificates (DMVIC)</option>
               <option value="fleet-underwriting">County &amp; Commercial Fleet</option>
               <option value="ev-underwriting">International EV Premium</option>
               <option value="reinsurance-ceding">Reinsurance Quota Share</option>
@@ -1244,6 +1276,13 @@
                         <span class="label">Market Valuation</span>
                         <span class="value" id="ntsa-valuation">KSh 1,850,000</span>
                       </div>
+                      <div class="info-item" style="border-top:1px dashed var(--border-color); padding-top:8px;">
+                        <span class="label">AKI Digital Certificate (DMVIC)</span>
+                        <span class="value" id="ntsa-aki-cert" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                          <code style="color:#dfc09f;">CERT-9082-2026</code>
+                          <span class="status-badge approved" style="font-size:10px; padding:2px 7px;">VALID &amp; ACTIVE</span>
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1670,6 +1709,9 @@
               <p>Underwrite, approve, debit, suspend, or cancel policies, and issue or verify cryptographic AKI digital certificates</p>
             </div>
             <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+              <button class="btn btn-secondary" onclick="navigateToView('aki-certificates')" style="padding:10px 14px; font-weight:600; border-color:rgba(200, 149, 101, 0.45); color:#dfc09f;">
+                AKI DMVIC Hub
+              </button>
               <button class="btn btn-secondary" onclick="openRenewalModal()" style="padding:10px 14px; font-weight:600;">
                 Renewal Batch
               </button>
@@ -1778,6 +1820,156 @@
               <p style="font-size:12px; color:var(--text-secondary); line-height:1.55; margin:0;">
                 Statutory levies follow Kenya Insurance Act Cap 487 (0.25% PHCF, 0.20% Training Levy, and KSh 40 Stamp Duty per certificate). Physical motor valuation inspection applies within 14 days of inception.
               </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= AKI DIGITAL MOTOR CERTIFICATES (DMVIC / IMIDS) HUB VIEW ================= -->
+        <section class="app-view" id="view-aki-certificates">
+          <div class="view-title-block">
+            <div>
+              <h1>AKI Digital Motor Certificates (DMVIC / IMIDS Hub)</h1>
+              <p>End-to-end Association of Kenya Insurers Cap 405 digital certificate stock allocation, issuance, double-insurance guard, QR verification, amendment, and statutory revocation</p>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+              <button class="btn btn-secondary" onclick="openPublicAKIVerifier()" style="padding:9px 14px; font-size:12.5px;">
+                Public / Police Verifier
+              </button>
+              <button class="btn btn-secondary" onclick="exportAKICertificateRegisterCSV()" style="padding:9px 14px; font-size:12.5px;">
+                Export Register (.CSV)
+              </button>
+              <button class="btn btn-primary" onclick="openIssueAKICertModal()" style="background:linear-gradient(135deg, #8b5a2b, #6f4722); font-weight:700; border:1px solid rgba(200, 149, 101, 0.4); padding:10px 18px; border-radius:10px;">
+                + Issue AKI Certificate
+              </button>
+            </div>
+          </div>
+
+          <!-- AKI DMVIC Live KPI Strip -->
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:16px; margin-bottom:20px;">
+            <div class="dashboard-card" style="padding:16px 18px;">
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Active AKI Certificates</div>
+              <div id="aki-kpi-active" style="font-size:24px; font-weight:800; color:var(--success); margin-top:4px;">190</div>
+              <div id="aki-kpi-active-sub" style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">Individual, EV &amp; County Fleet units</div>
+            </div>
+            <div class="dashboard-card" style="padding:16px 18px;">
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">DMVIC Stock Pool Balance</div>
+              <div id="aki-kpi-stock" style="font-size:24px; font-weight:800; color:#dfc09f; margin-top:4px;">2,450</div>
+              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">Allocated Type A, B, C &amp; D serials</div>
+            </div>
+            <div class="dashboard-card" style="padding:16px 18px;">
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Pending 60m SLA / Unissued</div>
+              <div id="aki-kpi-pending" style="font-size:24px; font-weight:800; color:#c89565; margin-top:4px;">0</div>
+              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">Awaiting underwriting sign-off or batch</div>
+            </div>
+            <div class="dashboard-card" style="padding:16px 18px;">
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted);">Suspended / Revoked / Blocks</div>
+              <div id="aki-kpi-revoked" style="font-size:24px; font-weight:800; color:var(--text-primary); margin-top:4px;">0</div>
+              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">Cap 405 cancellations &amp; duplicate locks</div>
+            </div>
+          </div>
+
+          <!-- Unified AKI Digital Certificate Master Register -->
+          <div class="dashboard-card" style="padding:20px; margin-bottom:22px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+              <div>
+                <h3 style="font-size:15px; font-weight:700; margin:0;">Unified AKI Digital Certificate Register (Individual, EV, PSV &amp; County Fleets)</h3>
+                <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Two-way synchronized with Policy Registry, Fleet Schedules, FNOL ANPR Check, and Roadside Police QR Verifier</div>
+              </div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="btn btn-secondary" onclick="batchMintAllUncertifiedAKICerts()" style="padding:7px 12px; font-size:12px;">
+                  Batch Issue Uncertified Units
+                </button>
+                <button class="btn btn-secondary" onclick="replenishAKICertStock()" style="padding:7px 12px; font-size:12px; border-color:rgba(200, 149, 101, 0.45); color:#dfc09f;">
+                  Allocate DMVIC Stock (+500)
+                </button>
+              </div>
+            </div>
+
+            <!-- Filter Strip -->
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+              <select class="form-control" id="aki-filter-class" onchange="renderAKICertificatesHub()" style="width:185px; padding:6px 10px; font-size:12px;">
+                <option value="ALL">All Cap 405 Classes</option>
+                <option value="TYPE-A">Type A — PSV Passenger</option>
+                <option value="TYPE-B">Type B — Commercial / Fleet</option>
+                <option value="TYPE-C">Type C — Private Motor</option>
+                <option value="TYPE-D">Type D — EV / Special</option>
+              </select>
+              <select class="form-control" id="aki-filter-status" onchange="renderAKICertificatesHub()" style="width:165px; padding:6px 10px; font-size:12px;">
+                <option value="ALL">All DMVIC Statuses</option>
+                <option value="Active">Valid &amp; Active</option>
+                <option value="Pending">Pending / Unissued</option>
+                <option value="Suspended">Suspended</option>
+                <option value="Cancelled">Revoked / Cancelled</option>
+              </select>
+              <select class="form-control" id="aki-filter-source" onchange="renderAKICertificatesHub()" style="width:180px; padding:6px 10px; font-size:12px;">
+                <option value="ALL">All Underwriting Sources</option>
+                <option value="POLICY">Individual &amp; EV Policies</option>
+                <option value="FLEET">County &amp; Corporate Fleets</option>
+              </select>
+              <input type="text" class="form-control" id="aki-search-input" oninput="renderAKICertificatesHub()" placeholder="Search cert ID, plate, chassis, holder, policy..." style="flex:1; min-width:220px; padding:6px 12px; font-size:12px;">
+            </div>
+
+            <div class="claims-table-wrapper" style="border:none;">
+              <table class="claims-table" id="aki-master-ledger-table">
+                <thead>
+                  <tr>
+                    <th>AKI Cert Ref</th>
+                    <th>Cap 405 Class</th>
+                    <th>Plate &amp; Chassis</th>
+                    <th>Policyholder &amp; Policy</th>
+                    <th>Cover Period</th>
+                    <th>Sum Insured</th>
+                    <th>DMVIC Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="aki-master-ledger-tbody">
+                  <!-- Populated dynamically via renderAKICertificatesHub() -->
+                </tbody>
+              </table>
+            </div>
+            <div id="aki-ledger-pagination-note" style="font-size:11.5px; color:var(--text-muted); margin-top:10px;"></div>
+          </div>
+
+          <!-- Bottom 2-Column Governance Grid: DMVIC Stock + USSD *352# Simulator & Immutable Audit Log -->
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:20px;">
+            <!-- Left: AKI DMVIC Stock Pool & USSD *352# Simulator -->
+            <div class="dashboard-card" style="padding:20px;">
+              <h3 style="font-size:15px; font-weight:700; margin:0 0 6px 0;">AKI DMVIC Serial Stock Allocation &amp; USSD *352# Check</h3>
+              <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">
+                Live statutory certificate serial inventory allocated by AKI across Cap 405 motor classes, plus instant USSD *352# verification check.
+              </p>
+
+              <div id="aki-stock-breakdown-grid" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; margin-bottom:16px;">
+                <!-- Populated dynamically -->
+              </div>
+
+              <div style="background:var(--bg-primary); border:1px solid rgba(200, 149, 101, 0.35); border-radius:10px; padding:14px;">
+                <div style="font-size:11.5px; font-weight:700; color:#dfc09f; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.4px;">
+                  Kenya USSD *352# Roadside Verification Simulator
+                </div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                  <input type="text" id="aki-ussd-sim-input" class="form-control" placeholder="Enter Plate or Cert ID (e.g. KDG 123A)" style="flex:1; min-width:170px; text-transform:uppercase; font-size:12px;">
+                  <button type="button" class="btn btn-primary" onclick="runUSSD352Simulation()" style="padding:8px 14px; font-size:12px;">
+                    Dial *352#
+                  </button>
+                </div>
+                <div id="aki-ussd-sim-output" style="display:none; margin-top:10px; padding:10px 12px; border-radius:8px; background:#0d0a08; border:1px solid var(--border-color); font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11.5px; line-height:1.5; color:#e4e4e7;"></div>
+              </div>
+            </div>
+
+            <!-- Right: Immutable AKI Cryptographic Audit Trail -->
+            <div class="dashboard-card" style="padding:20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px;">
+                <div>
+                  <h3 style="font-size:15px; font-weight:700; margin:0;">Immutable AKI DMVIC Audit Ledger</h3>
+                  <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Cryptographic log of issuances, double-insurance locks, amendments, dispatches &amp; revocations</div>
+                </div>
+                <span class="status-badge approved" style="font-size:10.5px;">SHA-256 SEALED</span>
+              </div>
+              <div id="aki-audit-trail-list" style="display:flex; flex-direction:column; gap:8px; max-height:340px; overflow-y:auto; padding-right:4px;">
+                <!-- Populated dynamically -->
+              </div>
             </div>
           </div>
         </section>
@@ -4789,7 +4981,7 @@
                   <div>ISSUED BY: EIMS</div>
                   <div>PHONE NO: 020-221234</div>
                 </div>
-                <div style="background:#15803d; color:#ffffff; font-weight:900; text-align:center; padding:2px; margin-top:4px; border-radius:3px; letter-spacing:1px; font-size:8px;">PRIVATE CAR</div>
+                <div id="cert-band-1" style="background:#15803d; color:#ffffff; font-weight:900; text-align:center; padding:2px; margin-top:4px; border-radius:3px; letter-spacing:1px; font-size:8px;">TYPE C — PRIVATE CAR</div>
               </div>
             </div>
 
@@ -4819,7 +5011,7 @@
                   <div>ISSUED BY: EIMS</div>
                   <div>PHONE NO: 020-221234</div>
                 </div>
-                <div style="background:#15803d; color:#ffffff; font-weight:900; text-align:center; padding:2px; margin-top:4px; border-radius:3px; letter-spacing:1px; font-size:8px;">PRIVATE CAR</div>
+                <div id="cert-band-2" style="background:#15803d; color:#ffffff; font-weight:900; text-align:center; padding:2px; margin-top:4px; border-radius:3px; letter-spacing:1px; font-size:8px;">TYPE C — PRIVATE CAR</div>
               </div>
             </div>
 
@@ -4846,15 +5038,15 @@
                   <div><strong>COMMENCING DATE:</strong> <span id="cert-start-date" style="font-weight:600;">XXXXXXXX</span></div>
                   <div><strong>EXPIRING:</strong> <strong id="cert-expiry-date" style="color:#dc2626;">XXXXXXXX</strong></div>
                   <div><strong>REGISTRATION NO:</strong> <strong id="cert-plate" style="font-size:10px; color:#120f0d; border: 1px solid #cbd5e1; padding: 0 4px; border-radius: 2px; background: #fff; display: inline-block; margin-top: 1px;">XXXXXXXX</strong></div>
-                  <div style="display:none;"><strong>CHASSIS NUMBER:</strong> <span id="cert-chassis">XXXXXXXX</span></div>
+                  <div><strong>CHASSIS / VIN:</strong> <span id="cert-chassis" style="font-family:monospace; font-weight:600;">XXXXXXXX</span></div>
                 </div>
               </div>
               <div>
                 <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #cbd5e1; padding-top:4px; margin-top:4px; font-size:7px; color:#84776d;">
-                  <div>ISSUED BY: EIMS</div>
-                  <div>PHONE NO: 020-221234</div>
+                  <div>ISSUED BY: EIMS KENYA</div>
+                  <div id="cert-cover-scope">COMPREHENSIVE</div>
                 </div>
-                <div style="background:#120f0d; color:#ffffff; font-weight:900; text-align:center; padding:2px; margin-top:4px; border-radius:3px; letter-spacing:1px; font-size:8px;">PRIVATE CAR</div>
+                <div id="cert-band-3" style="background:#120f0d; color:#ffffff; font-weight:900; text-align:center; padding:2px; margin-top:4px; border-radius:3px; letter-spacing:1px; font-size:8px;">TYPE C — PRIVATE CAR</div>
               </div>
             </div>
             
@@ -4893,7 +5085,7 @@
 
             <!-- Column 2: Legal Certification Statement -->
             <div style="border-right:1px solid #cbd5e1; padding-right:12px; font-size:9px; line-height:1.3; color:#334155; text-align:justify;">
-              <strong>XYZ Insurance Company Ltd.</strong><br>
+              <strong id="cert-underwriter-name">EIMS ProSystem Insurance Kenya Ltd.</strong><br>
               in collaboration with the Association of Kenya Insurers (AKI), hereby certifies that the Policy of Insurance (Ref number listed above) covering the liabilities required to be covered by the Insurance (Motor Vehicles Third Party Risks) Act Cap 405 of the laws of Kenya has been issued as detailed above.
             </div>
 
@@ -4922,19 +5114,196 @@
           
         </div>
 
+          <!-- Dynamic Revoked / Suspended Diagonal Watermark -->
+          <div id="cert-revoked-watermark" style="display:none; position:absolute; top:44%; left:50%; transform:translate(-50%, -50%) rotate(-18deg); border:4px solid #dc2626; color:#dc2626; background:rgba(255,255,255,0.88); padding:8px 26px; font-size:22px; font-weight:900; letter-spacing:3px; text-transform:uppercase; border-radius:8px; pointer-events:none; z-index:20;">
+            REVOKED / INVALID
+          </div>
+        </div>
+
         <!-- Action Controls -->
-        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px; flex-wrap:wrap;">
-          <button class="btn btn-secondary" onclick="simulateTamperAttempt()" style="font-size:12px; border-color:var(--danger); color:var(--danger);">
-             Test Fraudulent Edit Protection
+        <div class="no-print" style="display:flex; gap:8px; justify-content:flex-end; margin-top:18px; flex-wrap:wrap;">
+          <button class="btn btn-secondary" onclick="simulateTamperAttempt()" style="font-size:11.5px; border-color:var(--danger); color:var(--danger);">
+            Test Fraud Guard
           </button>
-          <button class="btn btn-secondary" onclick="simulatePoliceQRScan()" style="font-size:12px;">
-             Simulate Police Traffic QR Scan
+          <button class="btn btn-secondary" onclick="openAmendAKICertFromModal()" style="font-size:11.5px; border-color:rgba(200, 149, 101, 0.45); color:#dfc09f;">
+            Amend / Replace Cert
           </button>
-          <button class="btn btn-secondary" onclick="saveToMobileWallet()" style="font-size:12px;">
-             Add to Mobile Wallet (Apple/Google)
+          <button class="btn btn-secondary" onclick="dispatchCurrentAKICert()" style="font-size:11.5px;">
+            Dispatch SMS / Email
           </button>
-          <button class="btn btn-primary" onclick="downloadDigitalCertPDF()" style="font-size:12px;">
-             Download Digital Certificate (PDF)
+          <button class="btn btn-secondary" onclick="simulatePoliceQRScan()" style="font-size:11.5px;">
+            Police QR Scan
+          </button>
+          <button class="btn btn-secondary" onclick="saveToMobileWallet()" style="font-size:11.5px;">
+            Save Wallet Pass
+          </button>
+          <button class="btn btn-secondary" onclick="printCurrentAKICert()" style="font-size:11.5px;">
+            Print A4
+          </button>
+          <button class="btn btn-primary" onclick="downloadDigitalCertPDF()" style="font-size:11.5px;">
+            Download Official Certificate
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= DIRECT ISSUE AKI DIGITAL CERTIFICATE MODAL ================= -->
+  <div class="modal-overlay" id="issue-aki-cert-modal" onclick="if(event.target===this) closeIssueAKICertModal()">
+    <div class="modal-window" style="max-width:640px; background:#151210; border:1px solid #8b5a2b;">
+      <div class="modal-header">
+        <h3 style="font-size:16px; color:#ffffff; margin:0;">Issue Official AKI Digital Motor Certificate (DMVIC)</h3>
+        <button class="modal-close-btn" onclick="closeIssueAKICertModal()">×</button>
+      </div>
+      <div class="modal-body" style="padding:22px;">
+        <div style="background:rgba(139, 90, 43, 0.12); border:1px solid rgba(200, 149, 101, 0.4); border-radius:10px; padding:12px 14px; margin-bottom:16px; font-size:12px; color:#dfc09f;">
+          Executes live AKI IMIDS Double-Insurance Verification on Registration Plate &amp; Chassis before allocating an official Cap 405 serial and SHA-256 QR signature.
+        </div>
+
+        <div class="form-group" style="margin-bottom:14px;">
+          <label for="aki-issue-policy-select">Link to Existing Policy / Fleet Vehicle (or Issue New Motor Cover)</label>
+          <select id="aki-issue-policy-select" class="form-control" onchange="onSelectAKIIssueSource()">
+            <!-- Populated via JS -->
+          </select>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+          <div class="form-group">
+            <label for="aki-issue-holder">Policyholder / Entity Name</label>
+            <input type="text" id="aki-issue-holder" class="form-control" placeholder="e.g. Samuel Kariuki">
+          </div>
+          <div class="form-group">
+            <label for="aki-issue-plate">Registration Plate (Kenya)</label>
+            <input type="text" id="aki-issue-plate" class="form-control" placeholder="e.g. KDG 550M" style="text-transform:uppercase; font-weight:700;" oninput="previewAKIDoubleInsuranceStatus()">
+          </div>
+        </div>
+
+        <div id="aki-double-ins-alert" style="display:none; padding:10px 14px; border-radius:8px; margin-bottom:14px; font-size:12px;"></div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+          <div class="form-group">
+            <label for="aki-issue-chassis">Chassis / VIN Number</label>
+            <input type="text" id="aki-issue-chassis" class="form-control" placeholder="e.g. NZE161-904821" style="text-transform:uppercase; font-family:monospace;">
+          </div>
+          <div class="form-group">
+            <label for="aki-issue-makemodel">Vehicle Make &amp; Model</label>
+            <input type="text" id="aki-issue-makemodel" class="form-control" placeholder="e.g. Toyota Prado TX (2023)">
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+          <div class="form-group">
+            <label for="aki-issue-class">AKI Statutory Class (Cap 405)</label>
+            <select id="aki-issue-class" class="form-control">
+              <option value="TYPE-C">Type C — Private Motor Car</option>
+              <option value="TYPE-B">Type B — Commercial / County Fleet</option>
+              <option value="TYPE-A">Type A — PSV Public Service Vehicle</option>
+              <option value="TYPE-D">Type D — Electric Vehicle (EV) / Special</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="aki-issue-scope">Cover Scope</label>
+            <select id="aki-issue-scope" class="form-control">
+              <option value="COMPREHENSIVE">Comprehensive Motor Cover</option>
+              <option value="THIRD PARTY ONLY">Third Party Only (Cap 405 TPO)</option>
+              <option value="THIRD PARTY FIRE & THEFT">Third Party, Fire &amp; Theft</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:14px;">
+          <div class="form-group">
+            <label for="aki-issue-start">Commencing Date</label>
+            <input type="date" id="aki-issue-start" class="form-control" value="2026-11-08">
+          </div>
+          <div class="form-group">
+            <label for="aki-issue-expiry">Expiring Date</label>
+            <input type="date" id="aki-issue-expiry" class="form-control" value="2027-11-07">
+          </div>
+          <div class="form-group">
+            <label for="aki-issue-suminsured">Sum Insured (KSh)</label>
+            <input type="number" id="aki-issue-suminsured" class="form-control" value="3200000">
+          </div>
+        </div>
+
+        <label style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-secondary); margin-bottom:18px; cursor:pointer;">
+          <input type="checkbox" id="aki-issue-replace-existing" style="width:16px; height:16px; accent-color:#c89565;">
+          Supersede &amp; cancel any prior active certificate on this plate (Official Endorsement / Replacement)
+        </label>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button class="btn btn-secondary" onclick="closeIssueAKICertModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="confirmIssueAKICertificate()" style="background:linear-gradient(135deg, #8b5a2b, #6f4722); font-weight:700;">
+            Mint &amp; Sign AKI Certificate
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= AMEND / REPLACE AKI DIGITAL CERTIFICATE MODAL ================= -->
+  <div class="modal-overlay" id="amend-aki-cert-modal" onclick="if(event.target===this) closeAmendAKICertModal()">
+    <div class="modal-window" style="max-width:580px; background:#151210; border:1px solid #8b5a2b;">
+      <div class="modal-header">
+        <h3 style="font-size:16px; color:#ffffff; margin:0;">Amend &amp; Re-Issue AKI Digital Certificate</h3>
+        <button class="modal-close-btn" onclick="closeAmendAKICertModal()">×</button>
+      </div>
+      <div class="modal-body" style="padding:22px;">
+        <div style="background:rgba(139, 90, 43, 0.12); border:1px solid rgba(200, 149, 101, 0.4); border-radius:10px; padding:12px 14px; margin-bottom:16px; font-size:12px; color:#dfc09f;">
+          Under AKI DMVIC rules, certificate details cannot be silently overwritten. Amending a plate, chassis, or class supersedes the old serial (<code id="amend-old-cert-id">CERT-XXXX</code>) and mints a fresh SHA-256 replacement certificate.
+        </div>
+
+        <input type="hidden" id="amend-source-type">
+        <input type="hidden" id="amend-source-key">
+        <input type="hidden" id="amend-fleet-id">
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+          <div class="form-group">
+            <label for="amend-aki-plate">Updated Registration Plate</label>
+            <input type="text" id="amend-aki-plate" class="form-control" style="text-transform:uppercase; font-weight:700;">
+          </div>
+          <div class="form-group">
+            <label for="amend-aki-chassis">Updated Chassis / VIN</label>
+            <input type="text" id="amend-aki-chassis" class="form-control" style="text-transform:uppercase; font-family:monospace;">
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+          <div class="form-group">
+            <label for="amend-aki-makemodel">Make &amp; Model</label>
+            <input type="text" id="amend-aki-makemodel" class="form-control">
+          </div>
+          <div class="form-group">
+            <label for="amend-aki-class">AKI Statutory Class</label>
+            <select id="amend-aki-class" class="form-control">
+              <option value="TYPE-C">Type C — Private Motor Car</option>
+              <option value="TYPE-B">Type B — Commercial / County Fleet</option>
+              <option value="TYPE-A">Type A — PSV Public Service Vehicle</option>
+              <option value="TYPE-D">Type D — Electric Vehicle (EV) / Special</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px;">
+          <div class="form-group">
+            <label for="amend-aki-expiry">Expiry Date</label>
+            <input type="date" id="amend-aki-expiry" class="form-control">
+          </div>
+          <div class="form-group">
+            <label for="amend-aki-reason">Statutory Endorsement Reason</label>
+            <select id="amend-aki-reason" class="form-control">
+              <option value="Registration Plate Transfer (NTSA)">Registration Plate Transfer (NTSA)</option>
+              <option value="Chassis / Logbook Correction">Chassis / Logbook Correction</option>
+              <option value="Vehicle Substitution Endorsement">Vehicle Substitution Endorsement</option>
+              <option value="Cover Class Upgrade">Cover Class Upgrade</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button class="btn btn-secondary" onclick="closeAmendAKICertModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="confirmAmendAKICertificate()" style="background:linear-gradient(135deg, #8b5a2b, #6f4722); font-weight:700;">
+            Supersede &amp; Re-Issue Certificate
           </button>
         </div>
       </div>
@@ -5578,7 +5947,7 @@
   <script src="qrcode.min.js?v=20260817b"></script>
 
   <!-- EIMS application logic -->
-  <script src="app.js?v=20261108e"></script>
+  <script src="app.js?v=20261108f"></script>
 </body>
 </html>
 
