@@ -22,7 +22,7 @@
   </script>
   
   <!-- Modern CSS styling -->
-  <link rel="stylesheet" href="index.css?v=20261108g">
+  <link rel="stylesheet" href="index.css?v=20261108h">
   
   <!-- Leaflet CSS for Map integration -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
@@ -375,11 +375,12 @@
         </button>
       </div>
 
-      <div class="sidebar-menu">
+      <div class="sidebar-menu sidebar-bookstack">
         
-        <!-- MODULE 1: CORE OPERATIONS & DASHBOARD -->
-        <div class="accordion-group open active-group" id="mod-core">
+        <!-- MODULE 1: CORE OPERATIONS & DASHBOARD (Top Venetian Russet & Obsidian Tome, Left Page Block) -->
+        <div class="accordion-group open active-group" id="mod-core" data-tome="russet" data-pages="left">
           <button class="accordion-header" onclick="toggleAccordion('mod-core')">
+            <span class="tome-page-edge tome-page-left" aria-hidden="true"></span>
             <div class="accordion-header-left">
               <span class="accordion-icon">
                 <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
@@ -400,14 +401,14 @@
           </div>
         </div>
 
-        <!-- MODULE 2: CLAIMS & LOSS RECOVERY -->
-        <div class="accordion-group" id="mod-claims">
+        <!-- MODULE 2: CLAIMS & LOSS RECOVERY (Weathered Olive-Pewter Filigree Tome) -->
+        <div class="accordion-group" id="mod-claims" data-tome="olive" data-pages="none">
           <button class="accordion-header" onclick="toggleAccordion('mod-claims')">
             <div class="accordion-header-left">
               <span class="accordion-icon">
                 <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
               </span>
-              <span>Claims & Recovery</span>
+              <span>Claims &amp; Recovery</span>
             </div>
             <span class="accordion-chevron" aria-hidden="true"></span>
           </button>
@@ -422,11 +423,11 @@
             </a>
             <a class="accordion-item" data-view="garage-network" id="nav-garage-network">
               <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
-              Garages & Work Orders
+              Garages &amp; Work Orders
             </a>
             <a class="accordion-item" data-view="loss-assessors" id="nav-loss-assessors">
               <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              Loss Assessors & SIU
+              Loss Assessors &amp; SIU
             </a>
             <a class="accordion-item" data-view="subrogation-recovery" id="nav-subrogation-recovery">
               <svg viewBox="0 0 24 24"><path d="M12 3v18M3 9l9-6 9 6M6 12l-3 6h6l-3-6zm12 0l-3 6h6l-3-6z"></path></svg>
@@ -435,14 +436,15 @@
           </div>
         </div>
 
-        <!-- MODULE 3: UNDERWRITING & FLEET -->
-        <div class="accordion-group" id="mod-underwriting">
+        <!-- MODULE 3: UNDERWRITING & FLEET (Burnished Cognac & Espresso Ribbed Tome, Left Page Block) -->
+        <div class="accordion-group" id="mod-underwriting" data-tome="cognac" data-pages="left">
           <button class="accordion-header" onclick="toggleAccordion('mod-underwriting')">
+            <span class="tome-page-edge tome-page-left" aria-hidden="true"></span>
             <div class="accordion-header-left">
               <span class="accordion-icon">
                 <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
               </span>
-              <span>Underwriting & Fleet</span>
+              <span>Underwriting &amp; Fleet</span>
             </div>
             <span class="accordion-chevron" aria-hidden="true"></span>
           </button>
@@ -457,7 +459,7 @@
             </a>
             <a class="accordion-item" data-view="fleet-underwriting" id="nav-fleet-underwriting">
               <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
-              County & Commercial Fleet
+              County &amp; Commercial Fleet
             </a>
             <a class="accordion-item" data-view="ev-underwriting" id="nav-ev-underwriting">
               <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
@@ -470,8 +472,8 @@
           </div>
         </div>
 
-        <!-- MODULE 3B: COMPOSITE INSURANCE LINES & DEDICATED MODULES -->
-        <div class="accordion-group open" id="mod-insurance-lines">
+        <!-- MODULE 3B: COMPOSITE INSURANCE LINES & DEDICATED MODULES (Marbled Vellum, Sienna & Charcoal Tome) -->
+        <div class="accordion-group" id="mod-insurance-lines" data-tome="vellum" data-pages="none">
           <button class="accordion-header" onclick="toggleAccordion('mod-insurance-lines')">
             <div class="accordion-header-left">
               <span class="accordion-icon">
@@ -509,29 +511,30 @@
           </div>
         </div>
 
-        <!-- MODULE 4: FINANCE, TAXES & COMPLIANCE -->
-        <div class="accordion-group" id="mod-finance">
+        <!-- MODULE 4: FINANCE, TAXES & COMPLIANCE (Smooth Saddle Mahogany Tome, Right Page Block) -->
+        <div class="accordion-group" id="mod-finance" data-tome="mahogany" data-pages="right">
           <button class="accordion-header" onclick="toggleAccordion('mod-finance')">
             <div class="accordion-header-left">
               <span class="accordion-icon">
                 <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
               </span>
-              <span>Finance & Compliance</span>
+              <span>Finance &amp; Compliance</span>
             </div>
             <span class="accordion-chevron" aria-hidden="true"></span>
+            <span class="tome-page-edge tome-page-right" aria-hidden="true"></span>
           </button>
           <div class="accordion-content">
             <a class="accordion-item" data-view="mpesa-gateway" id="nav-mpesa-gateway">
               <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
-              M-PESA B2C & STK Push
+              M-PESA B2C &amp; STK Push
             </a>
             <a class="accordion-item" data-view="ecitizen-pesaflow" id="nav-ecitizen-pesaflow">
               <svg viewBox="0 0 24 24"><path d="M3 21h18M3 10h18M5 10v11M9 10v11M13 10v11M17 10v11M12 3L2 10h20L12 3z"></path></svg>
-              e-Citizen & PesaFlow
+              e-Citizen &amp; PesaFlow
             </a>
             <a class="accordion-item" data-view="itax-compliance" id="nav-itax-compliance">
               <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line></svg>
-              KRA iTax & eTIMS
+              KRA iTax &amp; eTIMS
             </a>
             <a class="accordion-item" data-view="ira-compliance" id="nav-ira-compliance">
               <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
@@ -540,21 +543,21 @@
           </div>
         </div>
 
-        <!-- MODULE 5: ANALYTICS & PERFORMANCE -->
-        <div class="accordion-group" id="mod-analytics">
+        <!-- MODULE 5: ANALYTICS & PERFORMANCE (Hunter-Forest Morocco & Filigree Endbands Tome) -->
+        <div class="accordion-group" id="mod-analytics" data-tome="forest" data-pages="none">
           <button class="accordion-header" onclick="toggleAccordion('mod-analytics')">
             <div class="accordion-header-left">
               <span class="accordion-icon">
                 <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
               </span>
-              <span>Analytics & Staff</span>
+              <span>Analytics &amp; Staff</span>
             </div>
             <span class="accordion-chevron" aria-hidden="true"></span>
           </button>
           <div class="accordion-content">
             <a class="accordion-item" data-view="production-reports" id="nav-production-reports">
               <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-              Reports & Query Center
+              Reports &amp; Query Center
             </a>
             <a class="accordion-item" data-view="vehicle-loss-ratios" id="nav-vehicle-loss-ratios">
               <svg viewBox="0 0 24 24"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>
@@ -567,16 +570,17 @@
           </div>
         </div>
 
-        <!-- MODULE 6: AI TELEMETRY & DIGITAL TOOLS -->
-        <div class="accordion-group" id="mod-tools">
+        <!-- MODULE 6: AI TELEMETRY & DIGITAL TOOLS (Grand Marbled Sienna Folio, Right Page Block) -->
+        <div class="accordion-group" id="mod-tools" data-tome="sienna" data-pages="right">
           <button class="accordion-header" onclick="toggleAccordion('mod-tools')">
             <div class="accordion-header-left">
               <span class="accordion-icon">
                 <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
               </span>
-              <span>AI Tools & OCR</span>
+              <span>AI Tools &amp; OCR</span>
             </div>
             <span class="accordion-chevron" aria-hidden="true"></span>
+            <span class="tome-page-edge tome-page-right" aria-hidden="true"></span>
           </button>
           <div class="accordion-content">
             <a class="accordion-item" data-view="lpr-scanner" id="nav-lpr-scanner">
@@ -585,7 +589,7 @@
             </a>
             <a class="accordion-item" data-view="qr-generator" id="nav-qr-generator">
               <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-              QR Code & Badge Engine
+              QR Code &amp; Badge Engine
             </a>
             <a class="accordion-item" data-view="ai-assistant" id="nav-ai-assistant">
               <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
@@ -598,21 +602,22 @@
           </div>
         </div>
 
-        <!-- MODULE 7: PLATFORM & SETTINGS -->
-        <div class="accordion-group" id="mod-settings">
+        <!-- MODULE 7: PLATFORM & SETTINGS (Heavy Chestnut-Walnut Base Volume, Right Page Block) -->
+        <div class="accordion-group" id="mod-settings" data-tome="chestnut" data-pages="right">
           <button class="accordion-header" onclick="toggleAccordion('mod-settings')">
             <div class="accordion-header-left">
               <span class="accordion-icon">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
               </span>
-              <span>Platform & Settings</span>
+              <span>Platform &amp; Settings</span>
             </div>
             <span class="accordion-chevron" aria-hidden="true"></span>
+            <span class="tome-page-edge tome-page-right" aria-hidden="true"></span>
           </button>
           <div class="accordion-content">
             <a class="accordion-item" data-view="subscription-pricing" id="nav-subscription-pricing">
               <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
-              Subscriptions & Licenses
+              Subscriptions &amp; Licenses
             </a>
             <a class="accordion-item" data-view="alerts-simulator" id="nav-alerts-simulator">
               <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>

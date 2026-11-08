@@ -5541,3 +5541,605 @@ div[style*="display: grid"] > * {
   }
 }
 
+/* ==========================================================================
+   STACKED ANTIQUE LEATHER-BOUND BOOK TOWER SIDEBAR (DESIGN 1 REPLACEMENT)
+   Replaces flat dark pill accordion cards with horizontally stacked vintage
+   leather-bound volumes, raised gilt spine ribs, obsidian title cartouches,
+   and alternating 3D cream/parchment lined page-edge blocks.
+   ========================================================================== */
+
+.app-sidebar:has(.sidebar-bookstack) {
+  background:
+    radial-gradient(ellipse at 50% 18%, rgba(164, 106, 52, 0.14) 0%, transparent 62%),
+    linear-gradient(180deg, #120e0b 0%, #0d0a08 55%, #090705 100%);
+  border-right: 1px solid rgba(200, 149, 101, 0.22);
+  box-shadow: inset -1px 0 0 rgba(255, 235, 205, 0.05), 6px 0 24px rgba(0, 0, 0, 0.55);
+}
+
+.app-sidebar:has(.sidebar-bookstack) .sidebar-header {
+  background: linear-gradient(180deg, rgba(28, 20, 15, 0.95) 0%, rgba(16, 12, 9, 0.92) 100%);
+  border-bottom: 1px solid rgba(200, 149, 101, 0.24);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+}
+
+.sidebar-menu.sidebar-bookstack {
+  gap: 0;
+  padding: 14px 10px 20px;
+  position: relative;
+}
+
+/* Subtle carved walnut & brass library plinth ledge beneath the bottom volume */
+.sidebar-menu.sidebar-bookstack::after {
+  content: "";
+  display: block;
+  flex-shrink: 0;
+  height: 7px;
+  margin: 0 2px;
+  border-radius: 2px 2px 5px 5px;
+  background: linear-gradient(180deg, #5a3418 0%, #2f190a 55%, #160b04 100%);
+  border-top: 1px solid rgba(229, 196, 154, 0.42);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.85), 0 3px 6px rgba(0, 0, 0, 0.7);
+}
+
+/* Individual Horizontal Leather Tome in the Stack */
+.sidebar-bookstack .accordion-group {
+  --tome-board: #7a3e18;
+  --tome-board-dark: #3d1c08;
+  --tome-gilt: rgba(232, 201, 155, 0.78);
+  flex-shrink: 0;
+  margin-bottom: 0;
+  border-radius: 4px 5px 5px 4px;
+  border: none;
+  border-top: 1px solid rgba(255, 236, 209, 0.24);
+  border-bottom: 2px solid rgba(10, 6, 3, 0.92);
+  background: #2b1a10;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 4px 9px rgba(0, 0, 0, 0.65),
+    inset 0 2px 2px rgba(255, 238, 214, 0.18),
+    inset 0 -3px 5px rgba(0, 0, 0, 0.58);
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.22s ease,
+    filter 0.22s ease;
+}
+
+/* Organic hand-stacked horizontal stagger & Z-layering so upper books cast shadow onto lower books */
+.sidebar-bookstack .accordion-group:nth-child(1) { z-index: 9; margin-left: 5px; margin-right: 3px; }
+.sidebar-bookstack .accordion-group:nth-child(2) { z-index: 8; margin-left: 10px; margin-right: 9px; }
+.sidebar-bookstack .accordion-group:nth-child(3) { z-index: 7; margin-left: 1px; margin-right: 4px; }
+.sidebar-bookstack .accordion-group:nth-child(4) { z-index: 6; margin-left: 3px; margin-right: 7px; }
+.sidebar-bookstack .accordion-group:nth-child(5) { z-index: 5; margin-left: 5px; margin-right: 1px; }
+.sidebar-bookstack .accordion-group:nth-child(6) { z-index: 4; margin-left: 9px; margin-right: 7px; }
+.sidebar-bookstack .accordion-group:nth-child(7) { z-index: 3; margin-left: 0px; margin-right: 5px; }
+.sidebar-bookstack .accordion-group:nth-child(8) { z-index: 2; margin-left: 4px; margin-right: 2px; }
+
+.sidebar-bookstack .accordion-group:hover {
+  transform: translateX(3px);
+  filter: brightness(1.06);
+  box-shadow:
+    -3px 6px 14px rgba(0, 0, 0, 0.75),
+    0 0 0 1px rgba(229, 196, 154, 0.32),
+    inset 0 2px 3px rgba(255, 242, 222, 0.28),
+    inset 0 -3px 5px rgba(0, 0, 0, 0.55);
+}
+
+.sidebar-bookstack .accordion-group.active-group,
+.sidebar-bookstack .accordion-group.open {
+  box-shadow:
+    0 7px 16px rgba(0, 0, 0, 0.78),
+    0 0 0 1px rgba(229, 196, 154, 0.42),
+    inset 0 2px 3px rgba(255, 240, 215, 0.26);
+}
+
+/* Leather Spine Header Surface */
+.sidebar-bookstack .accordion-header {
+  position: relative;
+  min-height: 48px;
+  padding: 7px 11px;
+  gap: 7px;
+  color: #fbf3e6;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.25px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 0, 0, 0.65);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+/* Fine calfskin leather grain & cylindrical spine highlight across every volume */
+.sidebar-bookstack .accordion-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 244, 227, 0.18) 0%,
+      rgba(255, 235, 205, 0.04) 26%,
+      rgba(0, 0, 0, 0.08) 72%,
+      rgba(0, 0, 0, 0.44) 100%
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.018) 0px,
+      rgba(255, 255, 255, 0.018) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+  z-index: 0;
+}
+
+.sidebar-bookstack .accordion-header:hover {
+  color: #fffaf0;
+}
+
+/* Obsidian & Gilt Spine Title Cartouche Plate (guarantees WCAG AA/AAA readability on all leather & vellum finishes) */
+.sidebar-bookstack .accordion-header-left {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  min-width: 0;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(22, 16, 13, 0.88) 0%, rgba(28, 20, 16, 0.78) 85%, rgba(22, 16, 13, 0.62) 100%);
+  border-top: 1px solid rgba(232, 201, 155, 0.34);
+  border-bottom: 1px solid rgba(232, 201, 155, 0.24);
+  border-left: 2px solid var(--tome-gilt);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.65), 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+
+.sidebar-bookstack .accordion-header-left > span:not(.accordion-icon) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.25;
+}
+
+.sidebar-bookstack .accordion-icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  background: radial-gradient(circle at 35% 30%, rgba(229, 196, 154, 0.24), rgba(18, 12, 9, 0.75));
+  border: 1px solid rgba(229, 196, 154, 0.42);
+  color: #ebd0a7;
+  box-shadow: inset 0 1px 1px rgba(255, 245, 228, 0.25);
+}
+
+.sidebar-bookstack .accordion-icon svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.1;
+}
+
+.sidebar-bookstack .accordion-chevron {
+  position: relative;
+  z-index: 2;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(18, 13, 10, 0.76);
+  border: 1px solid rgba(229, 196, 154, 0.38);
+  color: #e6c699;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.sidebar-bookstack .accordion-group.open .accordion-chevron {
+  background: rgba(164, 106, 52, 0.42);
+  border-color: #f0d7b0;
+  color: #fff6e5;
+}
+
+/* ==========================================================================
+   3D RECESSED CREAM / PARCHMENT PAGE-EDGE BLOCKS (.tome-page-edge)
+   Sandwiched between overhanging top & bottom leather cover boards, matching
+   the alternating left & right page blocks in Design 1.
+   ========================================================================== */
+.sidebar-bookstack .tome-page-edge {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 34px;
+  height: 36px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  /* Overhanging top and bottom antique leather cover boards */
+  border-top: 3px solid var(--tome-board);
+  border-bottom: 3.5px solid var(--tome-board-dark);
+  /* Multi-layered horizontal paper leaf striations */
+  background:
+    linear-gradient(180deg, rgba(65, 38, 15, 0.34) 0%, transparent 18%, transparent 82%, rgba(45, 24, 8, 0.38) 100%),
+    repeating-linear-gradient(
+      180deg,
+      #f6ebd6 0px,
+      #f6ebd6 1.5px,
+      #DFCBB0 1.5px,
+      #DFCBB0 3px
+    );
+  box-shadow:
+    inset 0 2px 3px rgba(52, 28, 10, 0.42),
+    inset 0 -2px 3px rgba(42, 22, 7, 0.45),
+    0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* Left-facing 3D cream page wedge (Tomes 1 & 3) */
+.sidebar-bookstack .tome-page-left {
+  margin-left: -6px;
+  margin-right: 2px;
+  border-radius: 2px 4px 4px 2px;
+  border-left: 1px solid rgba(196, 171, 135, 0.85);
+  /* Woven silk headband & curved leather spine joint on the right side of the page block */
+  border-right: 3.5px solid var(--tome-board);
+  box-shadow:
+    inset -4px 0 6px rgba(58, 30, 10, 0.38),
+    inset 2px 0 3px rgba(255, 252, 244, 0.65),
+    2px 0 4px rgba(0, 0, 0, 0.55);
+}
+
+/* Right-facing 3D cream page wedge (Tomes 5, 7 & 8) */
+.sidebar-bookstack .tome-page-right {
+  margin-right: -6px;
+  margin-left: 2px;
+  border-radius: 4px 2px 2px 4px;
+  border-right: 1px solid rgba(196, 171, 135, 0.85);
+  /* Woven silk headband & curved leather spine joint on the left side of the page block */
+  border-left: 3.5px solid var(--tome-board);
+  box-shadow:
+    inset 4px 0 6px rgba(58, 30, 10, 0.38),
+    inset -2px 0 3px rgba(255, 252, 244, 0.65),
+    -2px 0 4px rgba(0, 0, 0, 0.55);
+}
+
+/* ==========================================================================
+   8 INDIVIDUAL ANTIQUE LEATHER BINDING FINISHES (FROM DESIGN 1 TOP -> BOTTOM)
+   ========================================================================== */
+
+/* 1. RUSSET (#mod-core): Venetian crimson-vermilion leather, obsidian compartment & gilt ribs */
+.sidebar-bookstack .accordion-group[data-tome="russet"] {
+  --tome-board: #a92916;
+  --tome-board-dark: #5e1308;
+  --tome-gilt: #f0cf9d;
+}
+.sidebar-bookstack .accordion-group[data-tome="russet"] .accordion-header {
+  min-height: 46px;
+  background:
+    linear-gradient(
+      90deg,
+      #9e2412 0%,
+      #b62e1a 18%,
+      #dfbe8f 18.6%,
+      #221512 19.4%,
+      #1b110f 38%,
+      #dfbe8f 38.7%,
+      #b52b17 39.5%,
+      #9c2010 63%,
+      #d8b384 63.6%,
+      #a82614 64.4%,
+      #8b1b0c 84%,
+      #d8b384 84.6%,
+      #751508 100%
+    );
+}
+
+/* 2. OLIVE (#mod-claims): Weathered olive-pewter Morocco leather with terracotta left collar & filigree ribs */
+.sidebar-bookstack .accordion-group[data-tome="olive"] {
+  --tome-board: #555748;
+  --tome-board-dark: #2a2c23;
+  --tome-gilt: #d7c7a3;
+}
+.sidebar-bookstack .accordion-group[data-tome="olive"] .accordion-header {
+  min-height: 44px;
+  background:
+    linear-gradient(
+      90deg,
+      #744935 0%,
+      #8b5940 18%,
+      #cbb994 18.7%,
+      #4d5042 19.5%,
+      #595c4c 42%,
+      #cbb994 42.6%,
+      #45483b 43.4%,
+      #545748 69%,
+      #cbb994 69.6%,
+      #3b3e33 70.4%,
+      #2f3128 100%
+    );
+}
+
+/* 3. COGNAC (#mod-underwriting): Thick burnished cognac saddle leather, wide espresso compartments & gilt rules */
+.sidebar-bookstack .accordion-group[data-tome="cognac"] {
+  --tome-board: #8f4c19;
+  --tome-board-dark: #4e2608;
+  --tome-gilt: #f1d3a4;
+}
+.sidebar-bookstack .accordion-group[data-tome="cognac"] .accordion-header {
+  min-height: 54px;
+  background:
+    linear-gradient(
+      90deg,
+      #8b4917 0%,
+      #9c551e 24%,
+      #e8c896 24.7%,
+      #231712 25.5%,
+      #1d130f 45%,
+      #e8c896 45.7%,
+      #96501b 46.5%,
+      #7f4113 68%,
+      #e8c896 68.6%,
+      #221611 69.3%,
+      #221611 75%,
+      #e8c896 75.6%,
+      #7c3e11 76.3%,
+      #5b2b09 100%
+    );
+}
+.sidebar-bookstack .accordion-group[data-tome="cognac"] .tome-page-edge {
+  width: 38px;
+  height: 42px;
+}
+
+/* 4. VELLUM (#mod-insurance-lines): Speckled antique parchment-vellum, burnt terracotta band & charcoal label */
+.sidebar-bookstack .accordion-group[data-tome="vellum"] {
+  --tome-board: #b98b5b;
+  --tome-board-dark: #6e4c2b;
+  --tome-gilt: #f3d7ab;
+}
+.sidebar-bookstack .accordion-group[data-tome="vellum"] .accordion-header {
+  min-height: 52px;
+  background:
+    radial-gradient(circle at 14% 35%, rgba(92, 54, 24, 0.24) 0%, transparent 26%),
+    radial-gradient(circle at 82% 65%, rgba(86, 48, 20, 0.28) 0%, transparent 28%),
+    linear-gradient(
+      90deg,
+      #c99c6e 0%,
+      #be8f60 11%,
+      #efe0c4 11.6%,
+      #ba5634 12.3%,
+      #a84929 25%,
+      #efe0c4 25.6%,
+      #c59666 26.3%,
+      #b58555 43%,
+      #e8d3ae 43.7%,
+      #282320 44.5%,
+      #211d1b 60%,
+      #e8d3ae 60.7%,
+      #c49564 61.5%,
+      #9f6f41 100%
+    );
+}
+.sidebar-bookstack .accordion-group[data-tome="vellum"] .accordion-header-left {
+  background: linear-gradient(90deg, rgba(24, 19, 16, 0.94) 0%, rgba(30, 24, 20, 0.9) 100%);
+}
+
+/* 5. MAHOGANY (#mod-finance): Smooth saddle oxblood-mahogany calfskin with twin fine gold hairline fillets */
+.sidebar-bookstack .accordion-group[data-tome="mahogany"] {
+  --tome-board: #6d3625;
+  --tome-board-dark: #3a190f;
+  --tome-gilt: #e4c293;
+}
+.sidebar-bookstack .accordion-group[data-tome="mahogany"] .accordion-header {
+  min-height: 46px;
+  background:
+    linear-gradient(
+      90deg,
+      #592a1b 0%,
+      #6f3827 17%,
+      #dfb986 17.5%,
+      #6b3524 18.1%,
+      #753c2a 24%,
+      #dfb986 24.5%,
+      #6d3625 25.1%,
+      #5c2b1c 68%,
+      #461e13 100%
+    );
+}
+
+/* 6. FOREST (#mod-analytics): Deep hunter-forest Morocco leather, cream-gilt endbands & dark obsidian compartments */
+.sidebar-bookstack .accordion-group[data-tome="forest"] {
+  --tome-board: #31493e;
+  --tome-board-dark: #182620;
+  --tome-gilt: #e6cfa4;
+}
+.sidebar-bookstack .accordion-group[data-tome="forest"] .accordion-header {
+  min-height: 48px;
+  background:
+    linear-gradient(
+      90deg,
+      #d8c7a4 0%,
+      #283d34 2.2%,
+      #365044 22%,
+      #e2ca9c 22.7%,
+      #221c19 23.4%,
+      #221c19 30%,
+      #e2ca9c 30.7%,
+      #354f43 31.4%,
+      #2d443a 57%,
+      #e2ca9c 57.7%,
+      #231c19 58.4%,
+      #231c19 74%,
+      #e2ca9c 74.7%,
+      #2e463b 75.4%,
+      #22352c 97.8%,
+      #d8c7a4 100%
+    );
+}
+
+/* 7. SIENNA (#mod-tools): Grand marbled golden-sienna folio, terracotta stripe & slate-obsidian cartouche */
+.sidebar-bookstack .accordion-group[data-tome="sienna"] {
+  --tome-board: #ad7744;
+  --tome-board-dark: #633e1c;
+  --tome-gilt: #f2d6a9;
+}
+.sidebar-bookstack .accordion-group[data-tome="sienna"] .accordion-header {
+  min-height: 54px;
+  background:
+    radial-gradient(circle at 20% 70%, rgba(78, 42, 16, 0.25) 0%, transparent 30%),
+    linear-gradient(
+      90deg,
+      #ba8654 0%,
+      #ad7846 11%,
+      #ead6b3 11.6%,
+      #b04e2e 12.3%,
+      #9d4224 23%,
+      #ead6b3 23.6%,
+      #b47f4c 24.3%,
+      #a16d3c 38%,
+      #e8d1aa 38.7%,
+      #262423 39.4%,
+      #201e1d 52%,
+      #e8d1aa 52.7%,
+      #b27d4a 53.4%,
+      #8b592c 100%
+    );
+}
+.sidebar-bookstack .accordion-group[data-tome="sienna"] .accordion-header-left {
+  background: linear-gradient(90deg, rgba(24, 19, 16, 0.93) 0%, rgba(30, 24, 20, 0.88) 100%);
+}
+.sidebar-bookstack .accordion-group[data-tome="sienna"] .tome-page-edge {
+  width: 38px;
+  height: 42px;
+}
+
+/* 8. CHESTNUT (#mod-settings): Heavy burnished chestnut-walnut base volume with obsidian bands & plinth shadow */
+.sidebar-bookstack .accordion-group[data-tome="chestnut"] {
+  --tome-board: #7d3f18;
+  --tome-board-dark: #3f1d08;
+  --tome-gilt: #efd0a0;
+  box-shadow:
+    0 8px 16px rgba(0, 0, 0, 0.82),
+    inset 0 2px 2px rgba(255, 238, 214, 0.2),
+    inset 0 -3px 5px rgba(0, 0, 0, 0.62);
+}
+.sidebar-bookstack .accordion-group[data-tome="chestnut"] .accordion-header {
+  min-height: 50px;
+  background:
+    linear-gradient(
+      90deg,
+      #dfd2bc 0%,
+      #7c3f18 2.4%,
+      #8a491e 14%,
+      #ebcb9a 14.7%,
+      #211612 15.4%,
+      #1b120e 32%,
+      #ebcb9a 32.7%,
+      #88471d 33.4%,
+      #743913 51%,
+      #ebcb9a 51.7%,
+      #211612 52.4%,
+      #211612 58%,
+      #ebcb9a 58.7%,
+      #7c3f18 59.4%,
+      #592a0c 100%
+    );
+}
+
+/* ==========================================================================
+   OPENED TOME ILLUMINATED ARCHIVAL FOLIO LEAVES (.accordion-content)
+   ========================================================================== */
+.sidebar-bookstack .accordion-content {
+  padding: 0 10px;
+  /* Cream/gilt multi-page edges on left & right + deep archival espresso reading bed */
+  background:
+    linear-gradient(
+      90deg,
+      #e9dac0 0px,
+      #cbb491 2px,
+      #efe2ca 3.5px,
+      rgba(139, 90, 43, 0.45) 5px,
+      #17120e 6px,
+      #130f0c calc(100% - 6px),
+      rgba(139, 90, 43, 0.45) calc(100% - 5px),
+      #efe2ca calc(100% - 3.5px),
+      #cbb491 calc(100% - 2px),
+      #e9dac0 100%
+    );
+  border-top: 1px solid rgba(229, 196, 154, 0.22);
+  box-shadow: inset 0 5px 10px rgba(0, 0, 0, 0.55);
+}
+
+.sidebar-bookstack .accordion-group.open .accordion-content {
+  padding: 6px 11px 10px;
+  border-bottom: 3px solid var(--tome-board-dark);
+}
+
+.sidebar-bookstack .accordion-item {
+  padding: 7.5px 10px 7.5px 14px;
+  margin-top: 2px;
+  border-radius: 5px;
+  color: #dfd3c3;
+  font-size: 11.8px;
+  font-weight: 600;
+  border-bottom: 1px dashed rgba(200, 149, 101, 0.12);
+}
+
+.sidebar-bookstack .accordion-item:last-child {
+  border-bottom: none;
+}
+
+.sidebar-bookstack .accordion-item svg {
+  color: #c89565;
+}
+
+.sidebar-bookstack .accordion-item:hover {
+  background: linear-gradient(90deg, rgba(200, 149, 101, 0.18) 0%, rgba(139, 90, 43, 0.06) 100%);
+  color: #fffaf2;
+  padding-left: 18px;
+}
+
+/* Silk Crimson & Burnished Gold Bookmark Ribbon for Active View */
+.sidebar-bookstack .accordion-item.active {
+  background: linear-gradient(90deg, rgba(166, 46, 26, 0.34) 0%, rgba(139, 90, 43, 0.26) 55%, rgba(28, 20, 14, 0.4) 100%);
+  color: #fffaf2;
+  font-weight: 800;
+  border-left: 3px solid #eab975;
+  border-bottom-color: rgba(234, 185, 117, 0.28);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 240, 214, 0.14);
+}
+
+.sidebar-bookstack .accordion-item.active svg {
+  color: #f3cf98;
+}
+
+/* ==========================================================================
+   COLLAPSED 72PX RAIL COMPATIBILITY (.app-sidebar.collapsed)
+   ========================================================================== */
+.app-sidebar.collapsed .sidebar-menu.sidebar-bookstack {
+  gap: 5px !important;
+  padding: 10px 7px !important;
+}
+
+.app-sidebar.collapsed .sidebar-menu.sidebar-bookstack::after,
+.app-sidebar.collapsed .sidebar-bookstack .tome-page-edge {
+  display: none !important;
+}
+
+.app-sidebar.collapsed .sidebar-bookstack .accordion-group {
+  margin: 0 !important;
+  border-radius: 7px !important;
+  transform: none !important;
+}
+
+.app-sidebar.collapsed .sidebar-bookstack .accordion-header {
+  min-height: 44px !important;
+  padding: 8px 0 !important;
+}
+
+.app-sidebar.collapsed .sidebar-bookstack .accordion-header-left {
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.app-sidebar.collapsed .sidebar-bookstack .accordion-icon {
+  width: 30px !important;
+  height: 30px !important;
+  background: rgba(20, 14, 11, 0.86) !important;
+  border: 1px solid rgba(232, 201, 155, 0.55) !important;
+}
+
+
