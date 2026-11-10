@@ -1,7 +1,7 @@
 {
-  "name": "EIMS ProSystem - Kenya County Insurance",
-  "short_name": "EIMS Mobile",
-  "description": "Claims-centric digital insurance management platform for Motor & General Insurance in Kenya",
+  "name": "EIMS ProSystem - Composite Multi-Line Insurance Platform",
+  "short_name": "EIMS ProSystem",
+  "description": "Composite digital insurance & claims management platform covering Motor & Fleet, Medical & Health, Property & Fire, Life & Pension, WIBA & Liability, Marine & Transit, and Agriculture & Climate across Kenya",
   "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#0c0a09",
